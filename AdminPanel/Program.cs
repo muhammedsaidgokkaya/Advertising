@@ -1,6 +1,8 @@
 using Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Repository.Implementations;
+using Service.Implementations.Meta;
+using Service.Implementations.User;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
@@ -10,7 +12,9 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("Default Connection bulunmamaktadýr.");
 }
 builder.Services.AddDbContext<Context>(options => options.UseNpgsql(connectionString));
-
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<MetaService>();
 builder.Services.AddScoped(typeof(Repository<>));
 Utilities.Helper.Sql.Initialize(connectionString);
 

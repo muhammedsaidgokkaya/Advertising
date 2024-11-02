@@ -4,12 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.Domain
+namespace Core.Domain.Meta
 {
-    public class BaseEntity
+    public class MetaUser
     {
         public int Id { get; set; }
-        public bool IsActive { get; set; }
-        public bool IsDeleted { get; set; }
+        public string Name { get; set; }
     }
 }
