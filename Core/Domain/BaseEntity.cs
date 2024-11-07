@@ -11,5 +11,7 @@ namespace Core.Domain
         public int Id { get; set; }
         public bool IsActive { get; set; }
         public bool IsDeleted { get; set; }
+        public DateTime? InsertedDate { get; set; }
+        public DateTime? UpdateDate { get; set; }
     }
 }

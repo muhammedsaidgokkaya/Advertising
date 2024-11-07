@@ -74,6 +74,11 @@ namespace Repository.Implementations
             return _context.Set<E>().Where(expression).FirstOrDefault();
         }
 
+        public E GetById<E>(int id) where E : class
+        {
+            return _context.Set<E>().Find(id);
+        }
+
         public IEnumerable<E> Filter<E>(Expression<Func<E, bool>> expression) where E : class, new()
         {
             return _context.Set<E>().Where(expression).AsEnumerable();

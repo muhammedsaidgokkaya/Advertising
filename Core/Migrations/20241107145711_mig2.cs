@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Core.Migrations
 {
-    public partial class mig1 : Migration
+    public partial class mig2 : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -17,7 +18,9 @@ namespace Core.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    InsertedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdateDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -35,7 +38,9 @@ namespace Core.Migrations
                     AppSecret = table.Column<string>(type: "text", nullable: false),
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    InsertedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdateDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -54,9 +59,14 @@ namespace Core.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AccessToken = table.Column<string>(type: "text", nullable: false),
+                    TokenType = table.Column<string>(type: "text", nullable: false),
+                    ExpiresIn = table.Column<int>(type: "integer", nullable: false),
                     MetaAccessId = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    InsertedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdateDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {

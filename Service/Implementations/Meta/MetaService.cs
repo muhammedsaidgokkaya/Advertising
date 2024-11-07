@@ -1,5 +1,6 @@
 ﻿using Core.Data;
 using Core.Domain.Meta;
+using Core.Domain.User;
 using Microsoft.EntityFrameworkCore;
 using Repository.Implementations;
 using Service.Interfaces.Meta;
@@ -24,38 +25,135 @@ namespace Service.Implementations.Meta
             _httpClient = httpClient;
         }
 
-        public async Task<Core.Domain.Meta.MetaUser> GetMetaUser(string accessToken)
+        #region Admin
+
+        public int AddAccessToken(int userId, string accessToken, string appId, string appSecret)
         {
-            var url = $"https://graph.facebook.com/v13.0/me?access_token={accessToken}";
-            var user = await _httpClient.GetFromJsonAsync<Core.Domain.Meta.MetaUser>(url);
-            return user;
+            var user = GetUserById(userId);
+            if (user != null)
+            {
+                var metaAccess = new MetaAccess
+                {
+                    UserId = userId,
+                    AccessToken = accessToken,
+                    AppId = appId,
+                    AppSecret = appSecret,
+                    InsertedDate = DateTime.UtcNow,
+                    IsActive = true,
+                    IsDeleted = false
+                };
+
+                _repository.Save(metaAccess);
+                return metaAccess.Id;
+            }
+            return 0;
         }
 
-        public IQueryable<MetaAccess> GetAccessToken(int userId)
+        public int UpdateAccessToken(int id, string accessToken, string appId, string appSecret)
         {
-            var data = _repository.FilterAsQueryable<MetaAccess>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeAll();
+            var metaAccess = GetMetaAccessById(id);
+            if (metaAccess != null)
+            {
+                metaAccess.AccessToken = accessToken;
+                metaAccess.AppId = appId;
+                metaAccess.AppSecret = appSecret;
+                metaAccess.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(metaAccess);
+                return metaAccess.Id;
+            }
+            return 0;
+        }
+
+        public int IsActiveAccessToken(int id)
+        {
+            var metaAccess = GetMetaAccessById(id);
+            if (metaAccess != null)
+            {
+                metaAccess.IsActive = !metaAccess.IsActive;
+                metaAccess.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(metaAccess);
+                return metaAccess.Id;
+            }
+            return 0;
+        }
+
+        public int IsDeletedAccessToken(int id)
+        {
+            var metaAccess = GetMetaAccessById(id);
+            if (metaAccess != null)
+            {
+                metaAccess.IsDeleted = !metaAccess.IsDeleted;
+                metaAccess.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(metaAccess);
+                return metaAccess.Id;
+            }
+            return 0;
+        }
+
+        public MetaAccess GetMetaAccessById(int id)
+        {
+            return _repository.GetById<MetaAccess>(id);
+        }
+
+        public MetaAccess GetAccessToken(int userId)
+        {
+            var data = _repository.FilterAsQueryable<MetaAccess>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeMetaAccess().FirstOrDefault();
             return data;
         }
 
-        public async Task<string> GetLongLivedAccessTokenAsync(string appId, string appSecret, string shortLivedToken)
+        public int AddLongAccessToken(int metaAccessId, string accessToken, string tokenType, int expiresIn)
         {
-            var url = $"https://graph.facebook.com/v21.0/oauth/access_token" +
-                      $"?grant_type=fb_exchange_token&client_id={appId}&client_secret={appSecret}&fb_exchange_token={shortLivedToken}";
+            var metaAccess = GetMetaAccessById(metaAccessId);
+            if (metaAccess != null)
+            {
+                var metaLongAccess = new MetaLongAccess
+                {
+                    MetaAccessId = metaAccessId,
+                    AccessToken = accessToken,
+                    TokenType = tokenType,
+                    ExpiresIn = expiresIn,
+                    InsertedDate = DateTime.UtcNow,
+                    IsActive = true,
+                    IsDeleted = false
+                };
 
-            var response = await _httpClient.GetAsync(url);
-
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync();
+                _repository.Save(metaLongAccess);
+                return metaLongAccess.Id;
+            }
+            return 0;
         }
+
+        public MetaLongAccess GetLongAccessToken(int userId)
+        {
+            var data = _repository.FilterAsQueryable<MetaLongAccess>(p => p.IsActive && !p.IsDeleted && p.MetaAccess.User.Id.Equals(userId)).IncludeMetaLongAccess().FirstOrDefault();
+            return data;
+        }
+
+        public Core.Domain.User.User GetUserById(int id)
+        {
+            return _repository.GetById<Core.Domain.User.User>(id);
+        }
+
+        #endregion
     }
 
     public static class MetaAccessExtensions
     {
-        public static IQueryable<MetaAccess> IncludeAll(this IQueryable<MetaAccess> query)
+        public static IQueryable<MetaAccess> IncludeMetaAccess(this IQueryable<MetaAccess> query)
         {
             return query
                 .Include(ma => ma.User)
                 .Include(ma => ma.MetaLongAccess);
+        }
+
+        public static IQueryable<MetaLongAccess> IncludeMetaLongAccess(this IQueryable<MetaLongAccess> query)
+        {
+            return query
+                .Include(ma => ma.MetaAccess)
+                .Include(ma => ma.MetaAccess.User);
         }
     }
 }

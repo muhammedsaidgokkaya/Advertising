@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
+using Utilities.Utilities.MetaData;
 using MetaAccess = AdminPanel.Models.MetaAccess;
 
 namespace AdminPanel.Controllers
@@ -24,26 +25,39 @@ namespace AdminPanel.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<MetaAccess>> GetMetaTokens(int id)
+        public ActionResult<IEnumerable<UserViewModel>> GetNewUser(int userId)
         {
-            var data = _metaService.GetAccessToken(id).FirstOrDefault();
-            var metaAccess = new MetaAccess
+            var model = _userService.GetById(userId);
+            var personCount = _userService.GetAllCount();
+            var list = model.Select(q => new UserViewModel
             {
-                AccessToken = data.AccessToken,
-                AppId = data.AppId,
-                AppSecret = data.AppSecret,
-                Name = data.User.Name
-            };
-            var longAccess = _metaService.GetLongLivedAccessTokenAsync(metaAccess.AppId, metaAccess.AppSecret, metaAccess.AccessToken);
-            var model = _metaService.GetAccessToken(id);
-            var list = model.Select(q => new MetaAccess
-            {
-                AccessToken = q.AccessToken,
-                AppId = q.AppId,
-                AppSecret = q.AppSecret,
-                Name = q.User.Name
+                Id = q.Id,
+                Name = q.Name,
+                IsActive = q.IsActive,
+                PersonCount = personCount
             });
             return list.ToList();
         }
+
+        //test
+        //[HttpGet]
+        //public ActionResult<IEnumerable<UserViewModel>> GetNewUser(int userId)
+        //{
+        //    var shortAccessToken = _metaService.GetAccessToken(userId);
+        //    MetaData metaData = new MetaData();
+        //    var longAccessToken = metaData.LongAccessTokenAdmin(shortAccessToken.AppId, shortAccessToken.AppSecret, shortAccessToken.AccessToken);
+        //    var longAccesTokenUserId = _metaService.AddLongAccessToken(shortAccessToken.Id, longAccessToken.AccessToken, longAccessToken.TokenType, longAccessToken.ExpiresIn);
+        //    var id = 1;
+        //    var model = _userService.GetById(id);
+        //    var personCount = _userService.GetAllCount();
+        //    var list = model.Select(q => new UserViewModel
+        //    {
+        //        Id = q.Id,
+        //        Name = q.Name,
+        //        IsActive = q.IsActive,
+        //        PersonCount = personCount
+        //    });
+        //    return list.ToList();
+        //}
     }
 }

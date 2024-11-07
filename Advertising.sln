@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Service", "Service\Service.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "Utilities\Utilities.csproj", "{5CDDA115-4203-4E95-B286-D87109AC3065}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminPanel", "AdminPanel\AdminPanel.csproj", "{21F8522F-F266-4847-BEAF-7E080E13B260}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminPanel", "AdminPanel\AdminPanel.csproj", "{21F8522F-F266-4847-BEAF-7E080E13B260}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
