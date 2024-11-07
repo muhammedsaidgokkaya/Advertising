@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
 using Utilities.Utilities.MetaData;
-using MetaAccess = AdminPanel.Models.MetaAccess;
 
 namespace AdminPanel.Controllers
 {
