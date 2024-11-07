@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 
 namespace Utilities.Utilities.MetaData
 {
@@ -51,6 +52,39 @@ namespace Utilities.Utilities.MetaData
                 throw new Exception("Hata.");
             }
         }
+
+        public BusinessResponse BusinessAdmin(string access_token)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "businessAdmin.py");
+            var jsonOutput = RunPythonScript(pythonScriptPath, access_token);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<BusinessResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        public AdvertisingAccountsResponse AdvertisingAccountsAdmin(string access_token, string business_id)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "advertisingAccountsAdmin.py");
+            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, business_id);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<AdvertisingAccountsResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
         #endregion
 
         #region Class
@@ -64,6 +98,36 @@ namespace Utilities.Utilities.MetaData
 
             [JsonProperty("expires_in")]
             public int ExpiresIn { get; set; }
+        }
+
+        public class BusinessResponse
+        {
+            [JsonProperty("data")]
+            public List<Business> Data { get; set; }
+        }
+
+        public class Business
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+        }
+
+        public class AdvertisingAccountsResponse
+        {
+            [JsonProperty("data")]
+            public List<AdvertisingAccounts> Data { get; set; }
+        }
+
+        public class AdvertisingAccounts
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
         }
         #endregion
 

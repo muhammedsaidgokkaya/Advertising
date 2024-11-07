@@ -24,9 +24,9 @@ namespace AdminPanel.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<UserViewModel>> GetNewUser(int userId)
+        public ActionResult<IEnumerable<UserViewModel>> GetNewUser(int id)
         {
-            var model = _userService.GetById(userId);
+            var model = _userService.GetById(id);
             var personCount = _userService.GetAllCount();
             var list = model.Select(q => new UserViewModel
             {
@@ -46,6 +46,9 @@ namespace AdminPanel.Controllers
         //    MetaData metaData = new MetaData();
         //    var longAccessToken = metaData.LongAccessTokenAdmin(shortAccessToken.AppId, shortAccessToken.AppSecret, shortAccessToken.AccessToken);
         //    var longAccesTokenUserId = _metaService.AddLongAccessToken(shortAccessToken.Id, longAccessToken.AccessToken, longAccessToken.TokenType, longAccessToken.ExpiresIn);
+        //    var accessToken = _metaService.GetLongAccessToken(userId);
+        //    var business = metaData.BusinessAdmin(accessToken.AccessToken);
+        //    var advertisingAccounts = metaData.AdvertisingAccountsAdmin(accessToken.AccessToken, "853553183009246");
         //    var id = 1;
         //    var model = _userService.GetById(id);
         //    var personCount = _userService.GetAllCount();
