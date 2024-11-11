@@ -1,5 +1,4 @@
 ﻿using AdminPanel.Models;
-using AdminPanel.Models.Insight;
 using AdminPanel.Models.Meta.Campaign;
 using AdminPanel.Models.Meta.Insight;
 using Core.Domain.Meta;
@@ -25,21 +24,6 @@ namespace AdminPanel.Controllers
             _userService = new UserService();
             _metaService = metaService;
         }
-
-        //[HttpGet]
-        //public ActionResult<IEnumerable<UserViewModel>> GetNewUser(int id)
-        //{
-        //    var model = _userService.GetById(id);
-        //    var personCount = _userService.GetAllCount();
-        //    var list = model.Select(q => new UserViewModel
-        //    {
-        //        Id = q.Id,
-        //        Name = q.Name,
-        //        IsActive = q.IsActive,
-        //        PersonCount = personCount
-        //    });
-        //    return list.ToList();
-        //}
 
         //test
         [HttpGet]

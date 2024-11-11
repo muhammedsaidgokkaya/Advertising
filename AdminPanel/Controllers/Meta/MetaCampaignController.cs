@@ -1,5 +1,4 @@
-﻿using AdminPanel.Models.Insight;
-using AdminPanel.Models.Meta.Campaign;
+﻿using AdminPanel.Models.Meta.Campaign;
 using AdminPanel.Models.Meta.Insight;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
