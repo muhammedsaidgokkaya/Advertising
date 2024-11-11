@@ -39,7 +39,7 @@ namespace Utilities.Utilities.MetaData
         #region Meta
         public AccessTokenResponse LongAccessTokenAdmin(string app_id, string app_secret, string short_lived_token)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "longAccessTokenAdmin.py");
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "AccessToken", "longAccessTokenAdmin.py");
             var jsonOutput = RunPythonScript(pythonScriptPath, app_id, app_secret, short_lived_token);
 
             try
@@ -55,7 +55,7 @@ namespace Utilities.Utilities.MetaData
 
         public BusinessResponse BusinessAdmin(string access_token)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "businessAdmin.py");
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "Business", "businessAdmin.py");
             var jsonOutput = RunPythonScript(pythonScriptPath, access_token);
 
             try
@@ -71,7 +71,7 @@ namespace Utilities.Utilities.MetaData
 
         public AdvertisingAccountsResponse AdvertisingAccountsAdmin(string access_token, string business_id)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "advertisingAccountsAdmin.py");
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "Business", "advertisingAccountsAdmin.py");
             var jsonOutput = RunPythonScript(pythonScriptPath, access_token, business_id);
 
             try
@@ -87,7 +87,7 @@ namespace Utilities.Utilities.MetaData
 
         public CampaignResponse CampaignsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "campaigns.py");
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "AdvertisingManager", "campaigns.py");
             var jsonOutput = RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
 
             try
@@ -103,12 +103,28 @@ namespace Utilities.Utilities.MetaData
 
         public AdSetResponse AdSetsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "adsets.py");
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "AdvertisingManager", "adsets.py");
             var jsonOutput = RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
 
             try
             {
                 var tokenResponse = JsonConvert.DeserializeObject<AdSetResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        public AdResponse AdsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "AdvertisingManager", "ads.py");
+            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<AdResponse>(jsonOutput.ToString());
                 return tokenResponse;
             }
             catch (Exception ex)
@@ -186,7 +202,7 @@ namespace Utilities.Utilities.MetaData
             public InsightResponse Insights { get; set; }
 
             [JsonProperty("end_time")]
-            public string EndTime { get; set; }
+            public DateTime? EndTime { get; set; }
         }
 
         public class AdSetResponse
@@ -210,19 +226,40 @@ namespace Utilities.Utilities.MetaData
             public string BidStrategy { get; set; }
 
             [JsonProperty("daily_budget")]
-            public string DailyBudget { get; set; }
+            public int DailyBudget { get; set; }
 
             [JsonProperty("lifetime_budget")]
-            public string LifeTimeBudget { get; set; }
+            public int LifeTimeBudget { get; set; }
 
             [JsonProperty("updated_time")]
-            public string UpdateTime { get; set; }
+            public DateTime? UpdateTime { get; set; }
 
             [JsonProperty("start_time")]
-            public string StartTime { get; set; }
+            public DateTime? StartTime { get; set; }
 
             [JsonProperty("end_time")]
-            public string EndTime { get; set; }
+            public DateTime? EndTime { get; set; }
+
+            [JsonProperty("insights")]
+            public InsightResponse Insights { get; set; }
+        }
+
+        public class AdResponse
+        {
+            [JsonProperty("data")]
+            public List<Ad> Data { get; set; }
+        }
+
+        public class Ad
+        {
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("configured_status")]
+            public string Status { get; set; }
+
+            [JsonProperty("adset")]
+            public AdSet AdSet { get; set; }
 
             [JsonProperty("insights")]
             public InsightResponse Insights { get; set; }
@@ -237,25 +274,34 @@ namespace Utilities.Utilities.MetaData
         public class Insight
         {
             [JsonProperty("reach")]
-            public string Reach { get; set; }
+            public int Reach { get; set; }
 
             [JsonProperty("impressions")]
-            public string Impressions { get; set; }
+            public int Impressions { get; set; }
 
             [JsonProperty("cpc")]
-            public string Cpc { get; set; }
+            public double Cpc { get; set; }
 
             [JsonProperty("cpm")]
-            public string Cpm { get; set; }
+            public double Cpm { get; set; }
 
             [JsonProperty("spend")]
-            public string Spend { get; set; }
+            public double Spend { get; set; }
+
+            [JsonProperty("quality_ranking")]
+            public string QualityRanking { get; set; }
+
+            [JsonProperty("engagement_rate_ranking")]
+            public string EngagementRateRanking { get; set; }
+
+            [JsonProperty("conversion_rate_ranking")]
+            public string ConversionRateRanking { get; set; }
 
             [JsonProperty("date_start")]
-            public string DateStart { get; set; }
+            public DateTime DateStart { get; set; }
 
             [JsonProperty("date_stop")]
-            public string DateStop { get; set; }
+            public DateTime DateStop { get; set; }
 
             [JsonProperty("actions")]
             public List<Action> Actions { get; set; }

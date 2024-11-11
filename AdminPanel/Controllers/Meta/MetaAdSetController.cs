@@ -1,5 +1,4 @@
-﻿using AdminPanel.Models;
-using AdminPanel.Models.Insight;
+﻿using AdminPanel.Models.Insight;
 using AdminPanel.Models.Meta.AdSet;
 using AdminPanel.Models.Meta.Insight;
 using Microsoft.AspNetCore.Http;
@@ -8,17 +7,17 @@ using Service.Implementations.Meta;
 using Service.Implementations.User;
 using Utilities.Utilities.MetaData;
 
-namespace AdminPanel.Controllers
+namespace AdminPanel.Controllers.Meta
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class GoogleController : ControllerBase
+    public class MetaAdSetController : ControllerBase
     {
-        private readonly ILogger<GoogleController> _logger;
+        private readonly ILogger<MetaAdSetController> _logger;
         private readonly UserService _userService;
         private readonly MetaService _metaService;
 
-        public GoogleController(ILogger<GoogleController> logger, MetaService metaService)
+        public MetaAdSetController(ILogger<MetaAdSetController> logger, MetaService metaService)
         {
             _logger = logger;
             _userService = new UserService();

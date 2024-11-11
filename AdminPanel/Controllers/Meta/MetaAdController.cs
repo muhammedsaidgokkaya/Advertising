@@ -1,5 +1,4 @@
-﻿using AdminPanel.Models;
-using AdminPanel.Models.Insight;
+﻿using AdminPanel.Models.Meta.Ad;
 using AdminPanel.Models.Meta.AdSet;
 using AdminPanel.Models.Meta.Insight;
 using Microsoft.AspNetCore.Http;
@@ -8,17 +7,17 @@ using Service.Implementations.Meta;
 using Service.Implementations.User;
 using Utilities.Utilities.MetaData;
 
-namespace AdminPanel.Controllers
+namespace AdminPanel.Controllers.Meta
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class GoogleController : ControllerBase
+    public class MetaAdController : ControllerBase
     {
-        private readonly ILogger<GoogleController> _logger;
+        private readonly ILogger<MetaAdController> _logger;
         private readonly UserService _userService;
         private readonly MetaService _metaService;
 
-        public GoogleController(ILogger<GoogleController> logger, MetaService metaService)
+        public MetaAdController(ILogger<MetaAdController> logger, MetaService metaService)
         {
             _logger = logger;
             _userService = new UserService();
@@ -26,24 +25,24 @@ namespace AdminPanel.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<AdSetResponse>> GetAdSets(int userId)
+        public ActionResult<IEnumerable<AdResponse>> GetAds(int userId)
         {
             MetaData metaData = new MetaData();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var adSets = metaData.AdSetsAdmin(accessToken.AccessToken, "342280538743641", "2024-01-01", "2024-11-08");
-            var data = new AdSetResponse
+            var ads = metaData.AdsAdmin(accessToken.AccessToken, "342280538743641", "2024-01-01", "2024-11-08");
+            var data = new AdResponse
             {
-                Data = adSets.Data?.Select(q => new AdSet
+                Data = ads.Data?.Select(q => new Ad
                 {
-                    Id = q.Id,
                     Name = q.Name,
                     Status = q.Status,
-                    BidStrategy = q.BidStrategy,
-                    DailyBudget = q.DailyBudget,
-                    LifeTimeBudget = q.LifeTimeBudget,
-                    UpdateTime = q.UpdateTime,
-                    StartTime = q.StartTime,
-                    EndTime = q.EndTime,
+                    AdSet = new AdSet
+                    {
+                        Name = q.AdSet.Name,
+                        BidStrategy = q.AdSet.BidStrategy,
+                        DailyBudget = q.AdSet.DailyBudget,
+                        UpdateTime = q.AdSet.UpdateTime,
+                    },
                     Insights = new InsightResponse
                     {
                         Data = q.Insights?.Data?.Select(i => new Insight
@@ -53,6 +52,9 @@ namespace AdminPanel.Controllers
                             Cpc = i.Cpc,
                             Cpm = i.Cpm,
                             Spend = i.Spend,
+                            ConversionRateRanking = i.ConversionRateRanking,
+                            EngagementRateRanking = i.EngagementRateRanking,
+                            QualityRanking = i.QualityRanking,
                             DateStart = i.DateStart,
                             DateStop = i.DateStop,
                             Actions = i.Actions?.Select(action => new AdminPanel.Models.Meta.Action.Action
@@ -62,10 +64,10 @@ namespace AdminPanel.Controllers
                             }).ToList() ?? new List<Models.Meta.Action.Action>()
                         }).ToList() ?? new List<Insight>()
                     }
-                }).ToList() ?? new List<AdSet>()
+                }).ToList() ?? new List<Ad>()
             };
 
-            return Ok(new List<AdSetResponse> { data });
+            return Ok(new List<AdResponse> { data });
         }
     }
 }

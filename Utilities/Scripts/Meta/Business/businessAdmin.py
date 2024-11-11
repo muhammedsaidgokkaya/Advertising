@@ -2,12 +2,11 @@ import requests
 import sys
 import json
 
-def get_facebook_campaigns(access_token, business_id):
+def get_facebook_businesses(access_token):
     api_version = "v21.0"
-    url = f"https://graph.facebook.com/{api_version}/{business_id}/owned_ad_accounts"
+    url = f"https://graph.facebook.com/{api_version}/me/businesses"
     parameters = {
-        "access_token": access_token,
-        "fields": "id,name"
+        "access_token": access_token
     }
     response = requests.get(url, params=parameters)
 
@@ -18,6 +17,5 @@ def get_facebook_campaigns(access_token, business_id):
 
 if __name__ == "__main__":
     access_token = sys.argv[1]
-    business_id = sys.argv[2]
-    result = get_facebook_campaigns(access_token, business_id)
+    result = get_facebook_businesses(access_token)
     print(json.dumps(result))

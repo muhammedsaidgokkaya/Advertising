@@ -1,6 +1,5 @@
-﻿using AdminPanel.Models;
-using AdminPanel.Models.Insight;
-using AdminPanel.Models.Meta.AdSet;
+﻿using AdminPanel.Models.Insight;
+using AdminPanel.Models.Meta.Campaign;
 using AdminPanel.Models.Meta.Insight;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,17 +7,17 @@ using Service.Implementations.Meta;
 using Service.Implementations.User;
 using Utilities.Utilities.MetaData;
 
-namespace AdminPanel.Controllers
+namespace AdminPanel.Controllers.Meta
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class GoogleController : ControllerBase
+    public class MetaCampaignController : ControllerBase
     {
-        private readonly ILogger<GoogleController> _logger;
+        private readonly ILogger<MetaCampaignController> _logger;
         private readonly UserService _userService;
         private readonly MetaService _metaService;
 
-        public GoogleController(ILogger<GoogleController> logger, MetaService metaService)
+        public MetaCampaignController(ILogger<MetaCampaignController> logger, MetaService metaService)
         {
             _logger = logger;
             _userService = new UserService();
@@ -26,23 +25,19 @@ namespace AdminPanel.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<AdSetResponse>> GetAdSets(int userId)
+        public ActionResult<IEnumerable<CampaignResponse>> GetCampaigns(int userId)
         {
             MetaData metaData = new MetaData();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var adSets = metaData.AdSetsAdmin(accessToken.AccessToken, "342280538743641", "2024-01-01", "2024-11-08");
-            var data = new AdSetResponse
+            var campaigns = metaData.CampaignsAdmin(accessToken.AccessToken, "342280538743641", "2024-01-01", "2024-11-08");
+            var data = new CampaignResponse
             {
-                Data = adSets.Data?.Select(q => new AdSet
+                Data = campaigns.Data?.Select(q => new Campaign
                 {
                     Id = q.Id,
                     Name = q.Name,
                     Status = q.Status,
-                    BidStrategy = q.BidStrategy,
-                    DailyBudget = q.DailyBudget,
-                    LifeTimeBudget = q.LifeTimeBudget,
-                    UpdateTime = q.UpdateTime,
-                    StartTime = q.StartTime,
+                    AccountId = q.AccountId,
                     EndTime = q.EndTime,
                     Insights = new InsightResponse
                     {
@@ -62,10 +57,10 @@ namespace AdminPanel.Controllers
                             }).ToList() ?? new List<Models.Meta.Action.Action>()
                         }).ToList() ?? new List<Insight>()
                     }
-                }).ToList() ?? new List<AdSet>()
+                }).ToList() ?? new List<Campaign>()
             };
 
-            return Ok(new List<AdSetResponse> { data });
+            return Ok(new List<CampaignResponse> { data });
         }
     }
 }

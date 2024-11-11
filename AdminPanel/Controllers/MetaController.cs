@@ -1,4 +1,7 @@
 ﻿using AdminPanel.Models;
+using AdminPanel.Models.Insight;
+using AdminPanel.Models.Meta.Campaign;
+using AdminPanel.Models.Meta.Insight;
 using Core.Domain.Meta;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -40,23 +43,23 @@ namespace AdminPanel.Controllers
 
         //test
         [HttpGet]
-        public ActionResult<IEnumerable<CampaignAdminViewModel.CampaignResponse>> GetCampaigns(int userId)
+        public ActionResult<IEnumerable<CampaignResponse>> GetCampaigns(int userId)
         {
             MetaData metaData = new MetaData();
             var accessToken = _metaService.GetLongAccessToken(userId);
             var campaigns = metaData.CampaignsAdmin(accessToken.AccessToken, "342280538743641", "2024-01-01", "2024-11-08");
-            var data = new CampaignAdminViewModel.CampaignResponse
+            var data = new CampaignResponse
             {
-                Data = campaigns.Data?.Select(q => new CampaignAdminViewModel.Campaign
+                Data = campaigns.Data?.Select(q => new Campaign
                 {
                     Id = q.Id,
                     Name = q.Name,
                     Status = q.Status,
                     AccountId = q.AccountId,
                     EndTime = q.EndTime,
-                    Insights = new CampaignAdminViewModel.InsightResponse
+                    Insights = new InsightResponse
                     {
-                        Data = q.Insights?.Data?.Select(i => new CampaignAdminViewModel.Insight
+                        Data = q.Insights?.Data?.Select(i => new Insight
                         {
                             Reach = i.Reach,
                             Impressions = i.Impressions,
@@ -65,17 +68,17 @@ namespace AdminPanel.Controllers
                             Spend = i.Spend,
                             DateStart = i.DateStart,
                             DateStop = i.DateStop,
-                            Actions = i.Actions?.Select(action => new CampaignAdminViewModel.Action
+                            Actions = i.Actions?.Select(action => new AdminPanel.Models.Meta.Action.Action
                             {
                                 ActionType = action.ActionType,
                                 Value = action.Value
-                            }).ToList() ?? new List<CampaignAdminViewModel.Action>()
-                        }).ToList() ?? new List<CampaignAdminViewModel.Insight>()
+                            }).ToList() ?? new List<Models.Meta.Action.Action>()
+                        }).ToList() ?? new List<Insight>()
                     }
-                }).ToList() ?? new List<CampaignAdminViewModel.Campaign>()
+                }).ToList() ?? new List<Campaign>()
             };
 
-            return Ok(new List<CampaignAdminViewModel.CampaignResponse> { data });
+            return Ok(new List<CampaignResponse> { data });
         }
     }
 }
