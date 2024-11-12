@@ -24,11 +24,21 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<CampaignResponse>> GetCampaigns(int userId)
+        public ActionResult<IEnumerable<CampaignResponse>> GetCampaigns(int userId, DateTime? startDate = null, DateTime? endDate = null)
         {
+            DateTime defaultEndDate = endDate ?? DateTime.Now;
+            DateTime defaultStartDate = startDate ?? defaultEndDate.AddDays(-30);
+            if (startDate.HasValue && !endDate.HasValue)
+            {
+                defaultEndDate = startDate.Value.AddDays(1);
+            }
+            else if (!startDate.HasValue && endDate.HasValue)
+            {
+                defaultStartDate = endDate.Value.AddDays(-1);
+            }
             MetaData metaData = new MetaData();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var campaigns = metaData.CampaignsAdmin(accessToken.AccessToken, "342280538743641", "2024-01-01", "2024-11-08");
+            var campaigns = metaData.CampaignsAdmin(accessToken.AccessToken, "342280538743641", defaultStartDate.ToString("yyyy-MM-dd"), defaultEndDate.ToString("yyyy-MM-dd"));
             var data = new CampaignResponse
             {
                 Data = campaigns.Data?.Select(q => new Campaign
