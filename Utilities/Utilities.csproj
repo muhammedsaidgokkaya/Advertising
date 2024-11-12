@@ -9,7 +9,6 @@
   <ItemGroup>
     <Folder Include="Enum\" />
     <Folder Include="Scripts\Google\" />
-    <Folder Include="Scripts\Meta\Report\" />
   </ItemGroup>
 
   <ItemGroup>
