@@ -4,7 +4,7 @@ import json
 
 def get_facebook_insights(access_token, ad_account_id, start_date, end_date):
     api_version = "v21.0"
-    url = f"https://graph.facebook.com/{api_version}/act_{ad_account_id}/insights"
+    url = f"https://graph.facebook.com/{api_version}/{ad_account_id}/insights"
     parameters = {
         "access_token": access_token,
         "level": "account",

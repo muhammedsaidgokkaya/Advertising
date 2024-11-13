@@ -4,12 +4,14 @@ import json
 
 def get_facebook_adsets(access_token, ad_account_id, start_date, end_date):
     api_version = "v21.0"
-    url = f"https://graph.facebook.com/{api_version}/act_{ad_account_id}/adsets"
+    url = f"https://graph.facebook.com/{api_version}/{ad_account_id}/adsets"
     parameters = {
         "access_token": access_token,
-        "fields": "id,name,status,bid_strategy,daily_budget,lifetime_budget,updated_time,insights{reach,impressions,cpc,cpm,spend,actions},end_time,start_time",
-        "since": start_date,
-        "until": end_date
+        "fields": (
+            "id,name,status,bid_strategy,daily_budget,lifetime_budget,updated_time,"
+            "insights.time_range({"f"'since':'{start_date}', 'until':'{end_date}'"
+            "}){reach,impressions,cpc,cpm,spend,actions},end_time,start_time"
+        )
     }
     response = requests.get(url, params=parameters)
 

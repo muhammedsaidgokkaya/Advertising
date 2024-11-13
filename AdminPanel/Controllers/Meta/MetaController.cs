@@ -23,7 +23,7 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<InsightGeneralResponse>> GetInsights(int userId, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<InsightGeneralResponse>> GetInsights(int userId, string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
             DateTime defaultEndDate = endDate ?? DateTime.Now;
             DateTime defaultStartDate = startDate ?? defaultEndDate.AddDays(-30);
@@ -37,7 +37,7 @@ namespace AdminPanel.Controllers.Meta
             }
             MetaData metaData = new MetaData();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var insights = metaData.InsightsAdmin(accessToken.AccessToken, "342280538743641", defaultStartDate.ToString("yyyy-MM-dd"), defaultEndDate.ToString("yyyy-MM-dd"));
+            var insights = metaData.InsightsAdmin(accessToken.AccessToken, accountId, defaultStartDate.ToString("yyyy-MM-dd"), defaultEndDate.ToString("yyyy-MM-dd"));
             var data = new InsightGeneralResponse
             {
                 Data = insights.Data?.Select(q => new InsightGeneral

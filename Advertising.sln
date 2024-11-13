@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "Utilities\Util
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminPanel", "AdminPanel\AdminPanel.csproj", "{21F8522F-F266-4847-BEAF-7E080E13B260}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminTest", "AdminTest\AdminTest.csproj", "{07D22F24-5C07-4502-B87F-D10E07EAA910}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,10 @@ Global
 		{21F8522F-F266-4847-BEAF-7E080E13B260}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21F8522F-F266-4847-BEAF-7E080E13B260}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21F8522F-F266-4847-BEAF-7E080E13B260}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07D22F24-5C07-4502-B87F-D10E07EAA910}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07D22F24-5C07-4502-B87F-D10E07EAA910}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07D22F24-5C07-4502-B87F-D10E07EAA910}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07D22F24-5C07-4502-B87F-D10E07EAA910}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,6 +59,7 @@ Global
 		{9A599E44-F956-4C35-BAEB-7E67C3591C6A} = {4A286EEB-2E1F-40B7-B735-FF20198A768B}
 		{5CDDA115-4203-4E95-B286-D87109AC3065} = {4A286EEB-2E1F-40B7-B735-FF20198A768B}
 		{21F8522F-F266-4847-BEAF-7E080E13B260} = {06B2F09A-86C6-4F23-A0F9-6E830613D8C6}
+		{07D22F24-5C07-4502-B87F-D10E07EAA910} = {06B2F09A-86C6-4F23-A0F9-6E830613D8C6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7E52AC20-0044-4932-B86B-086ECF838519}

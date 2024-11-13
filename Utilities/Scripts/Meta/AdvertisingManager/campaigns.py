@@ -4,12 +4,14 @@ import json
 
 def get_facebook_campaigns(access_token, ad_account_id, start_date, end_date):
     api_version = "v21.0"
-    url = f"https://graph.facebook.com/{api_version}/act_{ad_account_id}/campaigns"
+    url = f"https://graph.facebook.com/{api_version}/{ad_account_id}/campaigns"
     parameters = {
         "access_token": access_token,
-        "fields": "id,name,status,bid_strategy,daily_budget,account_id,insights{reach,impressions,cpc,cpm,spend,actions},end_time",
-        "since": start_date,
-        "until": end_date
+        "fields": (
+            "id,name,status,bid_strategy,daily_budget,account_id,"
+            "insights.time_range({"f"'since':'{start_date}', 'until':'{end_date}'"
+            "}){reach,impressions,cpc,cpm,spend,actions},end_time"
+        )
     }
     response = requests.get(url, params=parameters)
 
