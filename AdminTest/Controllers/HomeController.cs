@@ -83,7 +83,8 @@ namespace AdminTest.Controllers
 
         public async Task<IActionResult> ReportFilter(int userId, string accountId, string reportFilter = ",", DateTime? startDate = null, DateTime? endDate = null)
         {
-            var url = "https://localhost:7081/api/MetaReport?userId=1&accountId=" + accountId + "&reportFilter" + reportFilter + "&startDate=" + startDate + "&endDate=" + endDate;
+            var url = "https://localhost:7081/api/MetaReport?userId=1&accountId=" + accountId + "&reportFilter=" + reportFilter + "&startDate=" + startDate + "&endDate=" + endDate;
+            // testUrl = https://localhost:7043/Home/ReportFilter?accountId="act_342280538743641"&reportFilter="age,gender"
             var response = await _httpClient.GetStringAsync(url);
             var data = JsonConvert.DeserializeObject<List<ReportFilterResponse>>(response);
             return View(data);
