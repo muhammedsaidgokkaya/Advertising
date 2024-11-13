@@ -26,7 +26,7 @@ namespace AdminPanel.Controllers.Meta
         public ActionResult<IEnumerable<InsightGeneralResponse>> GetInsights(int userId, string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
             DateTime defaultEndDate = endDate ?? DateTime.Now;
-            DateTime defaultStartDate = startDate ?? defaultEndDate.AddDays(-30);
+            DateTime defaultStartDate = startDate ?? defaultEndDate.AddDays(-90);
             if (startDate.HasValue && !endDate.HasValue)
             {
                 defaultEndDate = startDate.Value.AddDays(1);

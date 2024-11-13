@@ -21,6 +21,9 @@
                 <th>Gösterim</th>
                 <th>CPC (Bağlantı Tıklaması Başına Ücret)</th>
                 <th>Harcanan Tutar</th>
+                <th>Kalite Sıralaması</th>
+                <th>Dönüşüm Oranı Sıralaması</th>
+                <th>Katılım Oranı Sıralaması</th>
             </tr>
         </thead>
         <tbody>
@@ -48,6 +51,9 @@
                         <td>@insight?.Impressions</td>
                         <td>@cpc</td>
                         <td>@spend</td>
+                        <td>@insight?.QualityRanking</td>
+                        <td>@insight?.ConversionRateRanking</td>
+                        <td>@insight?.EngagementRateRanking</td>
                     </tr>
                     sayi++;
                 }
