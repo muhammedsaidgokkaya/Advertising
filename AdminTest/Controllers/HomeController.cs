@@ -90,6 +90,8 @@ namespace AdminTest.Controllers
             return View(data);
         }
 
+        public IActionResult callback(string access_token, string expires_in, string state) { return View(); }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
