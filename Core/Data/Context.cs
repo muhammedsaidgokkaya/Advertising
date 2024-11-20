@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using System.IO;
 using Core.Domain.User;
 using Core.Domain.Meta;
+using Core.Domain.Google;
 
 namespace Core.Data
 {
@@ -39,5 +40,8 @@ namespace Core.Data
         public DbSet<User> User { get; set; }
         public DbSet<MetaAccess> MetaAccess { get; set; }
         public DbSet<MetaLongAccess> MetaLongAccess { get; set; }
+        public DbSet<GoogleApp> GoogleApp { get; set; }
+        public DbSet<GoogleAuthorizationCode> GoogleAuthorizationCode { get; set; }
+        public DbSet<GoogleAccessToken> GoogleAccessToken { get; set; }
     }
 }

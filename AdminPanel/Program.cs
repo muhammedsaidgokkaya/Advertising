@@ -1,6 +1,7 @@
 using Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Repository.Implementations;
+using Service.Implementations.Google;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
 
@@ -15,6 +16,7 @@ builder.Services.AddDbContext<Context>(options => options.UseNpgsql(connectionSt
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<MetaService>();
+builder.Services.AddScoped<GoogleService>();
 builder.Services.AddScoped(typeof(Repository<>));
 Utilities.Helper.Sql.Initialize(connectionString);
 

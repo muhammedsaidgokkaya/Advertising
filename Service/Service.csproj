@@ -26,9 +26,4 @@
     <ProjectReference Include="..\Repository\Repository.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Implementations\Google\" />
-    <Folder Include="Interfaces\Google\" />
-  </ItemGroup>
-
 </Project>
