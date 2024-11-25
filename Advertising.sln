@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{4A286EEB-2E1F-40B7-B735-FF20198A768B}"
+	ProjectSection(SolutionItems) = preProject
+		readme.txt = readme.txt
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Web", "Web", "{06B2F09A-86C6-4F23-A0F9-6E830613D8C6}"
 EndProject
@@ -17,7 +20,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "Utilities\Util
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminPanel", "AdminPanel\AdminPanel.csproj", "{21F8522F-F266-4847-BEAF-7E080E13B260}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminTest", "AdminTest\AdminTest.csproj", "{07D22F24-5C07-4502-B87F-D10E07EAA910}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminTest", "AdminTest\AdminTest.csproj", "{07D22F24-5C07-4502-B87F-D10E07EAA910}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

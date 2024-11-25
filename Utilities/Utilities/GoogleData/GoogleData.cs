@@ -51,6 +51,41 @@ namespace Utilities.Utilities.GoogleData
                 throw new Exception("Hata.");
             }
         }
+
+        public AccessTokenResponse RefreshAccessTokenAdmin(string client_id, string client_secret, string refresh_token)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "AccessToken", "refreshToken.py");
+            var jsonOutput = RunPythonScript(pythonScriptPath, client_id, client_secret, refresh_token);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<AccessTokenResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        #region SearchConsole
+        public SiteResponse SiteAdmin(string access_token)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "sites.py");
+            var jsonOutput = RunPythonScript(pythonScriptPath, access_token);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<SiteResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+        #endregion
+
         #endregion
 
         #region Class
@@ -71,6 +106,24 @@ namespace Utilities.Utilities.GoogleData
             [JsonProperty("expires_in")]
             public int ExpiresIn { get; set; }
         }
+
+        #region SearchConsole
+        public class SiteResponse
+        {
+            [JsonProperty("siteEntry")]
+            public List<Sites> SiteEntry { get; set; }
+        }
+
+        public class Sites
+        {
+            [JsonProperty("siteUrl")]
+            public string SiteUrl { get; set; }
+
+            [JsonProperty("permissionLevel")]
+            public string PermissionLevel { get; set; }
+        }
+        #endregion
+
         #endregion
 
         #region Test

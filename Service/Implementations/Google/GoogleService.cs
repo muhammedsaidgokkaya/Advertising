@@ -157,6 +157,20 @@ namespace Service.Implementations.Google
 
         public GoogleAccessToken GetGoogleAccessToken(int userId)
         {
+            var now = DateTime.UtcNow;
+            var data = _repository.FilterAsQueryable<GoogleAccessToken>(p =>
+                    p.IsActive &&
+                    !p.IsDeleted &&
+                    p.User.Id.Equals(userId) &&
+                    p.InsertedDate.HasValue &&
+                    p.InsertedDate.Value.AddSeconds(p.ExpiresIn) > now)
+                .IncludeGoogleAccessToken()
+                .FirstOrDefault();
+            return data;
+        }
+
+        public GoogleAccessToken GetGoogleAccessTokenControl(int userId)
+        {
             var data = _repository.FilterAsQueryable<GoogleAccessToken>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeGoogleAccessToken().FirstOrDefault();
             return data;
         }
