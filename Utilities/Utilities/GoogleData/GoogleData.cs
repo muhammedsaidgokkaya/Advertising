@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Diagnostics;
+using static Utilities.Utilities.GoogleData.GoogleData;
 
 namespace Utilities.Utilities.GoogleData
 {
@@ -84,6 +85,38 @@ namespace Utilities.Utilities.GoogleData
                 throw new Exception("Hata.");
             }
         }
+
+        public SitemapResponse SiteMapAdmin(string access_token, string site_url)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "siteMap.py");
+            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, site_url);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<SitemapResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        public RowResponse SearchConsoleQueryAdmin(string access_token, string site_url, string rows, string dimensions, string start_date, string end_date)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "searchConsoleQuery.py");
+            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, site_url, rows, dimensions, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<RowResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
         #endregion
 
         #endregion
@@ -121,6 +154,81 @@ namespace Utilities.Utilities.GoogleData
 
             [JsonProperty("permissionLevel")]
             public string PermissionLevel { get; set; }
+        }
+
+        public class Sitemap
+        {
+            [JsonProperty("path")]
+            public string Path { get; set; }
+
+            [JsonProperty("lastSubmitted")]
+            public DateTime LastSubmitted { get; set; }
+
+            [JsonProperty("isPending")]
+            public bool IsPending { get; set; }
+
+            [JsonProperty("isSitemapsIndex")]
+            public bool IsSitemapsIndex { get; set; }
+
+            [JsonProperty("type")]
+            public string Type { get; set; }
+
+            [JsonProperty("lastDownloaded")]
+            public DateTime LastDownloaded { get; set; }
+
+            [JsonProperty("warnings")]
+            public int Warnings { get; set; }
+
+            [JsonProperty("errors")]
+            public int Errors { get; set; }
+
+            [JsonProperty("contents")]
+            public List<Content> Contents { get; set; }
+        }
+
+        public class Content
+        {
+            [JsonProperty("type")]
+            public string Type { get; set; }
+
+            [JsonProperty("submitted")]
+            public int Submitted { get; set; }
+
+            [JsonProperty("indexed")]
+            public int Indexed { get; set; }
+        }
+
+        public class SitemapResponse
+        {
+            [JsonProperty("sitemap")]
+            public List<Sitemap> Sitemap { get; set; }
+        }
+
+        public class Row
+        {
+            [JsonProperty("keys")]
+            public List<string> Keys { get; set; }
+
+            [JsonProperty("clicks")]
+            public int Clicks { get; set; }
+
+            [JsonProperty("impressions")]
+            public int Impressions { get; set; }
+
+            [JsonProperty("ctr")]
+            public double Ctr { get; set; }
+
+            [JsonProperty("position")]
+            public double Position { get; set; }
+        }
+
+        public class RowResponse
+        {
+            [JsonProperty("rows")]
+            public List<Row> Rows { get; set; }
+
+            [JsonProperty("responseAggregationType")]
+            public string ResponseAggregationType { get; set; }
         }
         #endregion
 
