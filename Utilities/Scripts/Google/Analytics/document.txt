@@ -1,0 +1,32 @@
+Dimensions = 
+    sessionDefaultChannelGroup:kanal grubu, 
+    landingPage: açýlýþ sayfasý, 
+    country: Ülke, 
+    audienceName: Kitle, 
+    unifiedPagePathScreen: Sayfa yolu ve ekran sýnýfý, 
+    eventName: Etkinlik adý, 
+    browser: Tarayýcý,
+    pageTitle: Sayfa Baþlýðý, 
+    unifiedScreenClass: Sayfa Baþlýðý ve Ekran Sýnýfý, 
+    language: Dil, 
+    city: Þehir
+
+Metrics =
+    averageSessionDuration: Ortalama oturum süresi,
+    eventsPerSession: Oturum baþýna etkinlik sayýsý,
+    sessionKeyEventRate: Oturum önemli etkinlik oraný,
+    screenPageViewsPerSession: Oturum baþýna görüntüleme sayýsý,
+    engagementRate: Etkileþim oraný,
+    engagedSessions: Etkileþim saðlanan oturum sayýsý,
+    screenPageViewsPerUser: Etkin kullanýcý baþýna görüntüleme sayýsý,
+    eventCountPerUser: Kullanýcý baþýna etkinlik sayýsý,
+    userKeyEventRate: Kullanýcý önemli etkinlik oraný
+    totalUsers: Toplam kullanýcý sayýsý
+    activeUsers: Etkin kullanýcý sayýsý
+    newUsers: Yeni kullanýcý sayýsý
+    screenPageViews: Görüntüleme sayýsý
+    sessions: Oturum sayýsý
+    eventCount: Etkinlik sayýsý
+    keyEvents: Önemli etkinlikler
+    totalRevenue: Toplam gelir
+    transactions: Ýþlemler

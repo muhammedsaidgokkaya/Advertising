@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Implementations.Google;
 using Service.Implementations.User;
+using Utilities.Helper;
 using Utilities.Utilities.GoogleData;
 
-namespace AdminPanel.Controllers.Google
+namespace AdminPanel.Controllers.Google.SearchConsole
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -14,28 +15,23 @@ namespace AdminPanel.Controllers.Google
         private readonly ILogger<GoogleSiteMapController> _logger;
         private readonly UserService _userService;
         private readonly GoogleService _googleService;
+        private readonly GoogleTokenControl _googleTokenControl;
+        private readonly GoogleData _googleData;
 
         public GoogleSiteMapController(ILogger<GoogleSiteMapController> logger, GoogleService googleService)
         {
             _logger = logger;
             _userService = new UserService();
             _googleService = googleService;
+            _googleTokenControl = new GoogleTokenControl(googleService);
+            _googleData = new GoogleData();
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<SitemapResponse>> GetSiteMaps(int userId, string url)
         {
-            var control = _googleService.GetGoogleAccessToken(userId);
-            GoogleData googleData = new GoogleData();
-            if (control == null)
-            {
-                var model = _googleService.GetGoogleApp(userId);
-                var accessToken = _googleService.GetGoogleAccessTokenControl(userId);
-                var refreshToken = googleData.RefreshAccessTokenAdmin(model.AppId, model.AppSecret, accessToken.RefreshToken);
-                var newAccessToken = _googleService.AddGoogleAccessToken(model.Id, userId, refreshToken.AccessToken, accessToken.RefreshToken, refreshToken.ExpiresIn, refreshToken.Scope, refreshToken.TokenType);
-                control = _googleService.GetGoogleAccessToken(userId);
-            }
-            var siteMaps = googleData.SiteMapAdmin(control.AccessToken, url);
+            var accessTokenControl = _googleTokenControl.GetControl(userId);
+            var siteMaps = _googleData.SiteMapAdmin(accessTokenControl, url);
 
             var data = new SitemapResponse
             {

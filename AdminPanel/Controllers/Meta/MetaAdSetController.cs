@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
+using Utilities.Helper;
 using Utilities.Utilities.MetaData;
 
 namespace AdminPanel.Controllers.Meta
@@ -15,30 +16,24 @@ namespace AdminPanel.Controllers.Meta
         private readonly ILogger<MetaAdSetController> _logger;
         private readonly UserService _userService;
         private readonly MetaService _metaService;
+        private readonly MetaData _metaData;
+        private readonly DefaultValues _defaultValues;
 
         public MetaAdSetController(ILogger<MetaAdSetController> logger, MetaService metaService)
         {
             _logger = logger;
             _userService = new UserService();
             _metaService = metaService;
+            _metaData = new MetaData();
+            _defaultValues = new DefaultValues();
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<AdSetResponse>> GetAdSets(int userId, string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
-            DateTime defaultEndDate = endDate ?? DateTime.Now;
-            DateTime defaultStartDate = startDate ?? defaultEndDate.AddDays(-30);
-            if (startDate.HasValue && !endDate.HasValue)
-            {
-                defaultEndDate = startDate.Value.AddDays(1);
-            }
-            else if (!startDate.HasValue && endDate.HasValue)
-            {
-                defaultStartDate = endDate.Value.AddDays(-1);
-            }
-            MetaData metaData = new MetaData();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var adSets = metaData.AdSetsAdmin(accessToken.AccessToken, accountId, defaultStartDate.ToString("yyyy-MM-dd"), defaultEndDate.ToString("yyyy-MM-dd"));
+            var adSets = _metaData.AdSetsAdmin(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var data = new AdSetResponse
             {
                 Data = adSets.Data?.Select(q => new AdSet

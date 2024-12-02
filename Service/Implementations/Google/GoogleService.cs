@@ -138,6 +138,21 @@ namespace Service.Implementations.Google
             return 0;
         }
 
+        public int UpdateGoogleAccessToken(int id, string accessToken, int expiresIn)
+        {
+            var googleAccessToken = GetGoogleAccessTokenById(id);
+            if (googleAccessToken != null)
+            {
+                googleAccessToken.AccessToken = accessToken;
+                googleAccessToken.ExpiresIn = expiresIn;
+                googleAccessToken.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(googleAccessToken);
+                return googleAccessToken.Id;
+            }
+            return 0;
+        }
+
         public GoogleApp GetGoogleAppById(int id)
         {
             return _repository.GetById<GoogleApp>(id);
@@ -155,6 +170,11 @@ namespace Service.Implementations.Google
             return data;
         }
 
+        public GoogleAccessToken GetGoogleAccessTokenById(int id)
+        {
+            return _repository.GetById<GoogleAccessToken>(id);
+        }
+
         public GoogleAccessToken GetGoogleAccessToken(int userId)
         {
             var now = DateTime.UtcNow;
@@ -162,8 +182,8 @@ namespace Service.Implementations.Google
                     p.IsActive &&
                     !p.IsDeleted &&
                     p.User.Id.Equals(userId) &&
-                    p.InsertedDate.HasValue &&
-                    p.InsertedDate.Value.AddSeconds(p.ExpiresIn) > now)
+                    p.UpdateDate.HasValue &&
+                    p.UpdateDate.Value.AddSeconds(p.ExpiresIn) > now)
                 .IncludeGoogleAccessToken()
                 .FirstOrDefault();
             return data;

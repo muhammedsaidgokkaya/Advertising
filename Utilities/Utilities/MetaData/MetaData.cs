@@ -1,46 +1,24 @@
 ﻿using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
+using Utilities.Helper;
 
 namespace Utilities.Utilities.MetaData
 {
     public class MetaData
     {
-        public object RunPythonScript(string scriptPath, params string[] args)
+        private readonly PythonRun _pythonRun;
+
+        public MetaData()
         {
-            try
-            {
-                // Argümanları birleştirerek Python komutuna ekliyoruz
-                string arguments = $"\"{scriptPath}\" " + string.Join(" ", args);
-
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = "python",
-                    Arguments = arguments,
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (Process process = Process.Start(startInfo))
-                {
-                    string output = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit();
-
-                    return output;
-                }
-            }
-            catch (Exception ex)
-            {
-                return new { error = ex.Message };
-            }
+            _pythonRun = new PythonRun();
         }
 
         #region Meta
         public AccessTokenResponse LongAccessTokenAdmin(string app_id, string app_secret, string short_lived_token)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "AccessToken", "longAccessTokenAdmin.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, app_id, app_secret, short_lived_token);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, app_id, app_secret, short_lived_token);
 
             try
             {
@@ -56,7 +34,7 @@ namespace Utilities.Utilities.MetaData
         public BusinessResponse BusinessAdmin(string access_token)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "Business", "businessAdmin.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
 
             try
             {
@@ -72,7 +50,7 @@ namespace Utilities.Utilities.MetaData
         public AdvertisingAccountsResponse AdvertisingAccountsAdmin(string access_token, string business_id)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "Business", "advertisingAccountsAdmin.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, business_id);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, business_id);
 
             try
             {
@@ -88,7 +66,7 @@ namespace Utilities.Utilities.MetaData
         public CampaignResponse CampaignsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "AdvertisingManager", "campaigns.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
 
             try
             {
@@ -104,7 +82,7 @@ namespace Utilities.Utilities.MetaData
         public AdSetResponse AdSetsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "AdvertisingManager", "adsets.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
 
             try
             {
@@ -120,7 +98,7 @@ namespace Utilities.Utilities.MetaData
         public AdResponse AdsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "AdvertisingManager", "ads.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
 
             try
             {
@@ -136,7 +114,7 @@ namespace Utilities.Utilities.MetaData
         public InsightGeneralResponse InsightsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "Report", "insights.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
 
             try
             {
@@ -152,7 +130,7 @@ namespace Utilities.Utilities.MetaData
         public ReportFilterResponse InsightsFilterAdmin(string access_token, string ad_account_id, string start_date, string end_date, string filterParams)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "Report", "insgihtsFilter.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date, filterParams);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date, filterParams);
 
             try
             {
@@ -598,42 +576,6 @@ namespace Utilities.Utilities.MetaData
 
             [JsonProperty("value")]
             public double Value { get; set; }
-        }
-        #endregion
-
-        #region Test
-        //Test içeriğidir
-        public object deneme(string accessToken, string adAccountId)
-        {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "test.py");
-            return RunPythonScript(pythonScriptPath, accessToken, adAccountId);
-        }
-
-        public object LongAccessToken(string app_id, string app_secret, string short_lived_token)
-        {
-            try
-            {
-                string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "longAccessTokenAdmin.py");
-
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = "python",
-                    Arguments = $"\"{pythonScriptPath}\" {app_id} {app_secret} {short_lived_token}",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                Process process = Process.Start(startInfo);
-                string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-
-                return output;
-            }
-            catch (Exception ex)
-            {
-                return new { error = ex.Message };
-            }
         }
         #endregion
     }

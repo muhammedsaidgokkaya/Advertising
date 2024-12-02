@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
+using Utilities.Helper;
 using Utilities.Utilities.MetaData;
 
 namespace AdminPanel.Controllers.Meta
@@ -14,20 +15,21 @@ namespace AdminPanel.Controllers.Meta
         private readonly ILogger<MetaBusinessController> _logger;
         private readonly UserService _userService;
         private readonly MetaService _metaService;
+        private readonly MetaData _metaData;
 
         public MetaBusinessController(ILogger<MetaBusinessController> logger, MetaService metaService)
         {
             _logger = logger;
             _userService = new UserService();
             _metaService = metaService;
+            _metaData = new MetaData();
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<BusinessResponse>> GetBusiness(int userId)
         {
-            MetaData metaData = new MetaData();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var business = metaData.BusinessAdmin(accessToken.AccessToken);
+            var business = _metaData.BusinessAdmin(accessToken.AccessToken);
             var data = new BusinessResponse
             {
                 Data = business.Data?.Select(q => new Business

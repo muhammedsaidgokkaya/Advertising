@@ -1,46 +1,25 @@
 ﻿using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
+using Utilities.Helper;
 using static Utilities.Utilities.GoogleData.GoogleData;
 
 namespace Utilities.Utilities.GoogleData
 {
     public class GoogleData
     {
-        public object RunPythonScript(string scriptPath, params string[] args)
+        private readonly PythonRun _pythonRun;
+
+        public GoogleData()
         {
-            try
-            {
-                // Argümanları birleştirerek Python komutuna ekliyoruz
-                string arguments = $"\"{scriptPath}\" " + string.Join(" ", args);
-
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = "python",
-                    Arguments = arguments,
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (Process process = Process.Start(startInfo))
-                {
-                    string output = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit();
-
-                    return output;
-                }
-            }
-            catch (Exception ex)
-            {
-                return new { error = ex.Message };
-            }
+            _pythonRun = new PythonRun();
         }
 
         #region Google
         public AccessTokenResponse AccessTokenAdmin(string client_id, string client_secret, string redirect_uri, string authorization_code)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "AccessToken", "accessTokenAdmin.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, client_id, client_secret, redirect_uri, authorization_code);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, client_id, client_secret, redirect_uri, authorization_code);
 
             try
             {
@@ -56,7 +35,7 @@ namespace Utilities.Utilities.GoogleData
         public AccessTokenResponse RefreshAccessTokenAdmin(string client_id, string client_secret, string refresh_token)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "AccessToken", "refreshToken.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, client_id, client_secret, refresh_token);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, client_id, client_secret, refresh_token);
 
             try
             {
@@ -73,7 +52,7 @@ namespace Utilities.Utilities.GoogleData
         public SiteResponse SiteAdmin(string access_token)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "sites.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
 
             try
             {
@@ -89,7 +68,7 @@ namespace Utilities.Utilities.GoogleData
         public SitemapResponse SiteMapAdmin(string access_token, string site_url)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "siteMap.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, site_url);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url);
 
             try
             {
@@ -105,11 +84,93 @@ namespace Utilities.Utilities.GoogleData
         public RowResponse SearchConsoleQueryAdmin(string access_token, string site_url, string rows, string dimensions, string start_date, string end_date)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "searchConsoleQuery.py");
-            var jsonOutput = RunPythonScript(pythonScriptPath, access_token, site_url, rows, dimensions, start_date, end_date);
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url, rows, dimensions, start_date, end_date);
 
             try
             {
                 var tokenResponse = JsonConvert.DeserializeObject<RowResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+        #endregion
+
+        #region Analytics
+        public AccountSummaryResponse AccountSummaryAdmin(string access_token)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "accountSummary.py");
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<AccountSummaryResponse>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        public List<DashboardResponse> DashboardAdmin(string access_token, string property_id, string start_date, string end_date)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "analyticsDashboard.py");
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<List<DashboardResponse>>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        public List<DashboardDimensionResponse> DashboardDimensionAdmin(string access_token, string property_id, string dimension, string metric, string start_date, string end_date)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "analyticsDashboardDimension.py");
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, metric, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<List<DashboardDimensionResponse>>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        public List<GeneralCountResponse> GeneralCountAdmin(string access_token, string property_id, string dimension, string start_date, string end_date)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "analyticsGeneralCount.py");
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<List<GeneralCountResponse>>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        public List<GeneralRateResponse> GeneralRateAdmin(string access_token, string property_id, string dimension, string start_date, string end_date)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "analyticsGeneralRate.py");
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<List<GeneralRateResponse>>(jsonOutput.ToString());
                 return tokenResponse;
             }
             catch (Exception ex)
@@ -232,35 +293,134 @@ namespace Utilities.Utilities.GoogleData
         }
         #endregion
 
+        #region Analytics
+        public class AccountSummary
+        {
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("account")]
+            public string Account { get; set; }
+
+            [JsonProperty("displayName")]
+            public string DisplayName { get; set; }
+
+            [JsonProperty("propertySummaries")]
+            public List<PropertySummary> PropertySummaries { get; set; }
+        }
+
+        public class PropertySummary
+        {
+            [JsonProperty("property")]
+            public string Property { get; set; }
+
+            [JsonProperty("displayName")]
+            public string DisplayName { get; set; }
+
+            [JsonProperty("propertyType")]
+            public string PropertyType { get; set; }
+
+            [JsonProperty("parent")]
+            public string Parent { get; set; }
+        }
+
+        public class AccountSummaryResponse
+        {
+            [JsonProperty("accountSummaries")]
+            public List<AccountSummary> AccountSummaries { get; set; }
+        }
+
+        public class DashboardResponse
+        {
+            [JsonProperty("activeUsers")]
+            public int ActiveUsers { get; set; }
+
+            [JsonProperty("eventCount")]
+            public int EventCount { get; set; }
+
+            [JsonProperty("newUsers")]
+            public int NewUsers { get; set; }
+
+            [JsonProperty("engagedSessions")]
+            public int EngagedSessions { get; set; }
+        }
+
+        public class DashboardDimensionResponse
+        {
+            [JsonProperty("dimension")]
+            public string Dimension { get; set; }
+
+            [JsonProperty("metric")]
+            public double Metric { get; set; }
+        }
+
+        public class GeneralCountResponse
+        {
+            [JsonProperty("dimension")]
+            public string Dimension { get; set; }
+
+            [JsonProperty("totalUsers")]
+            public int TotalUsers { get; set; }
+
+            [JsonProperty("activeUsers")]
+            public int ActiveUsers { get; set; }
+
+            [JsonProperty("newUsers")]
+            public int NewUsers { get; set; }
+
+            [JsonProperty("screenPageViews")]
+            public int ScreenPageViews { get; set; }
+
+            [JsonProperty("sessions")]
+            public int Sessions { get; set; }
+
+            [JsonProperty("eventCount")]
+            public int EventCount { get; set; }
+
+            [JsonProperty("keyEvents")]
+            public int KeyEvents { get; set; }
+
+            [JsonProperty("totalRevenue")]
+            public double TotalRevenue { get; set; }
+
+            [JsonProperty("transactions")]
+            public int Transactions { get; set; }
+        }
+
+        public class GeneralRateResponse
+        {
+            [JsonProperty("dimension")]
+            public string Dimension { get; set; }
+
+            [JsonProperty("averageSessionDuration")]
+            public double AverageSessionDuration { get; set; }
+
+            [JsonProperty("eventsPerSession")]
+            public double EventsPerSession { get; set; }
+
+            [JsonProperty("sessionKeyEventRate")]
+            public double SessionKeyEventRate { get; set; }
+
+            [JsonProperty("screenPageViewsPerSession")]
+            public double ScreenPageViewsPerSession { get; set; }
+
+            [JsonProperty("engagementRate")]
+            public double EngagementRate { get; set; }
+
+            [JsonProperty("engagedSessions")]
+            public int EngagedSessions { get; set; }
+
+            [JsonProperty("screenPageViewsPerUser")]
+            public double ScreenPageViewsPerUser { get; set; }
+
+            [JsonProperty("eventCountPerUser")]
+            public double EventCountPerUser { get; set; }
+
+            [JsonProperty("userKeyEventRate")]
+            public double UserKeyEventRate { get; set; }
+        }
         #endregion
 
-        #region Test
-        public object LongAccessToken(string client_id, string client_secret, string redirect_uri, string authorization_code)
-        {
-            try
-            {
-                string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "AccessToken", "accessTokenAdmin.py");
-
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = "python",
-                    Arguments = $"\"{pythonScriptPath}\" {client_id} {client_secret} {redirect_uri} {authorization_code}",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                Process process = Process.Start(startInfo);
-                string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-
-                return output;
-            }
-            catch (Exception ex)
-            {
-                return new { error = ex.Message };
-            }
-        }
         #endregion
     }
 }
