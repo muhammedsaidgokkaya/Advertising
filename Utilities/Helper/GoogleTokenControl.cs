@@ -28,7 +28,7 @@ namespace Utilities.Helper
             GoogleData googleData = new GoogleData();
             if (control == null)
             {
-                var model = _googleService.GetGoogleApp(userId);
+                var model = _googleService.GetGoogleApp();
                 var accessToken = _googleService.GetGoogleAccessTokenControl(userId);
                 var refreshToken = googleData.RefreshAccessTokenAdmin(model.AppId, model.AppSecret, accessToken.RefreshToken);
                 var newAccessToken = _googleService.UpdateGoogleAccessToken(accessToken.Id, refreshToken.AccessToken, refreshToken.ExpiresIn);

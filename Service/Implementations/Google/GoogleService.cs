@@ -26,26 +26,20 @@ namespace Service.Implementations.Google
 
         #region Admin
 
-        public int AddGoogleApp(int userId, string redirectUrl, string appId, string appSecret)
+        public int AddGoogleApp(string redirectUrl, string appId, string appSecret)
         {
-            var user = GetUserById(userId);
-            if (user != null)
+            var googleApp = new GoogleApp
             {
-                var googleApp = new GoogleApp
-                {
-                    UserId = userId,
-                    AppId = appId,
-                    AppSecret = appSecret,
-                    RedirectUrl = redirectUrl,
-                    InsertedDate = DateTime.UtcNow,
-                    IsActive = true,
-                    IsDeleted = false
-                };
+                AppId = appId,
+                AppSecret = appSecret,
+                RedirectUrl = redirectUrl,
+                InsertedDate = DateTime.UtcNow,
+                IsActive = true,
+                IsDeleted = false
+            };
 
-                _repository.Save(googleApp);
-                return googleApp.Id;
-            }
-            return 0;
+            _repository.Save(googleApp);
+            return googleApp.Id;
         }
 
         public int UpdateGoogleApp(int id, string redirectUrl, string appId, string appSecret)
@@ -88,27 +82,6 @@ namespace Service.Implementations.Google
 
                 _repository.Update(googleApp);
                 return googleApp.Id;
-            }
-            return 0;
-        }
-
-        public int AddGoogleAuthorizationCode(int googleAppId, int userId, string authorizationCode)
-        {
-            var googleApp = GetGoogleAppById(googleAppId);
-            if (googleApp != null)
-            {
-                var googleAuthorizationCode = new GoogleAuthorizationCode
-                {
-                    AuthorizationCode = authorizationCode,
-                    GoogleAppId = googleAppId,
-                    UserId = userId,
-                    InsertedDate = DateTime.UtcNow,
-                    IsActive = true,
-                    IsDeleted = false
-                };
-
-                _repository.Save(googleAuthorizationCode);
-                return googleAuthorizationCode.Id;
             }
             return 0;
         }
@@ -158,15 +131,9 @@ namespace Service.Implementations.Google
             return _repository.GetById<GoogleApp>(id);
         }
 
-        public GoogleApp GetGoogleApp(int userId)
+        public GoogleApp GetGoogleApp()
         {
-            var data = _repository.FilterAsQueryable<GoogleApp>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeGoogleApp().FirstOrDefault();
-            return data;
-        }
-
-        public GoogleAuthorizationCode GetGoogleAuthorizationCode(int userId)
-        {
-            var data = _repository.FilterAsQueryable<GoogleAuthorizationCode>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeGoogleAuthorizationCode().FirstOrDefault();
+            var data = _repository.FilterAsQueryable<GoogleApp>(p => p.IsActive && !p.IsDeleted).IncludeGoogleApp().FirstOrDefault();
             return data;
         }
 
@@ -208,25 +175,14 @@ namespace Service.Implementations.Google
         public static IQueryable<GoogleApp> IncludeGoogleApp(this IQueryable<GoogleApp> query)
         {
             return query
-                .Include(ma => ma.User)
-                .Include(ma => ma.GoogleAuthorizationCode)
                 .Include(ma => ma.GoogleAccessToken);
-        }
-
-        public static IQueryable<GoogleAuthorizationCode> IncludeGoogleAuthorizationCode(this IQueryable<GoogleAuthorizationCode> query)
-        {
-            return query
-                .Include(ma => ma.GoogleApp)
-                .Include(ma => ma.User)
-                .Include(ma => ma.GoogleApp.GoogleAccessToken);
         }
 
         public static IQueryable<GoogleAccessToken> IncludeGoogleAccessToken(this IQueryable<GoogleAccessToken> query)
         {
             return query
                 .Include(ma => ma.GoogleApp)
-                .Include(ma => ma.User)
-                .Include(ma => ma.GoogleApp.GoogleAuthorizationCode);
+                .Include(ma => ma.User);
         }
     }
 }

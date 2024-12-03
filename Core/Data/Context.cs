@@ -38,10 +38,27 @@ namespace Core.Data
         }
 
         public DbSet<User> User { get; set; }
-        public DbSet<MetaAccess> MetaAccess { get; set; }
+        public DbSet<Role> Role { get; set; }
+        public DbSet<UserRole> UserRole { get; set; }
+        public DbSet<MetaApp> MetaApp { get; set; }
         public DbSet<MetaLongAccess> MetaLongAccess { get; set; }
         public DbSet<GoogleApp> GoogleApp { get; set; }
-        public DbSet<GoogleAuthorizationCode> GoogleAuthorizationCode { get; set; }
         public DbSet<GoogleAccessToken> GoogleAccessToken { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<UserRole>()
+                .HasKey(ur => new { ur.UserId, ur.RoleId });
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.User)
+                .WithMany(u => u.UserRole)
+                .HasForeignKey(ur => ur.UserId);
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Role)
+                .WithMany(r => r.UserRole)
+                .HasForeignKey(ur => ur.RoleId);
+        }
     }
 }

@@ -12,7 +12,9 @@ def get_access_token(client_id, client_secret, redirect_uri, authorization_code)
         "client_id": client_id,
         "client_secret": client_secret,
         "redirect_uri": redirect_uri,
-        "grant_type": "authorization_code"
+        "grant_type": "authorization_code",
+        "access_type": "offline",
+        "prompt": "consent"
     }
 
     response = requests.post(url, data=data)

@@ -35,7 +35,7 @@ namespace AdminTest.Controllers
         //}
         public async Task<IActionResult> Index()
         {
-            var url = "https://localhost:7081/api/MetaBusiness?userId=1";
+            var url = "https://localhost:7081/api/Meta/business?userId=1";
             var response = await _httpClient.GetStringAsync(url);
             var data = JsonConvert.DeserializeObject<List<BusinessResponse>>(response);
             return View(data);
@@ -43,7 +43,7 @@ namespace AdminTest.Controllers
 
         public async Task<IActionResult> Advertising(string businessId)
         {
-            var url = "https://localhost:7081/api/MetaAdvertisingAccount?userId=1&businessId=" + businessId;
+            var url = "https://localhost:7081/api/Meta/advertising-accounts?userId=1&businessId=" + businessId;
             var response = await _httpClient.GetStringAsync(url);
             var data = JsonConvert.DeserializeObject<List<AdvertisingAccountsResponse>>(response);
             return View(data);
@@ -51,7 +51,7 @@ namespace AdminTest.Controllers
 
         public async Task<IActionResult> Ads(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var url = "https://localhost:7081/api/MetaAd?userId=1&accountId=" + accountId + "&startDate=" + startDate + "&endDate=" + endDate;
+            var url = "https://localhost:7081/api/Meta/ads?userId=1&accountId=" + accountId + "&startDate=" + startDate + "&endDate=" + endDate;
             var response = await _httpClient.GetStringAsync(url);
             var data = JsonConvert.DeserializeObject<List<AdResponse>>(response);
             return View(data);
@@ -59,7 +59,7 @@ namespace AdminTest.Controllers
 
         public async Task<IActionResult> AdSets(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var url = "https://localhost:7081/api/MetaAdSet?userId=1&accountId=" + accountId + "&startDate=" + startDate + "&endDate=" + endDate;
+            var url = "https://localhost:7081/api/Meta/adsets?userId=1&accountId=" + accountId + "&startDate=" + startDate + "&endDate=" + endDate;
             var response = await _httpClient.GetStringAsync(url);
             var data = JsonConvert.DeserializeObject<List<AdSetResponse>>(response);
             return View(data);
@@ -67,7 +67,7 @@ namespace AdminTest.Controllers
 
         public async Task<IActionResult> Campaigns(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var url = "https://localhost:7081/api/MetaCampaign?userId=1&accountId=" + accountId + "&startDate=" + startDate + "&endDate=" + endDate;
+            var url = "https://localhost:7081/api/Meta/campaigns?userId=1&accountId=" + accountId + "&startDate=" + startDate + "&endDate=" + endDate;
             var response = await _httpClient.GetStringAsync(url);
             var data = JsonConvert.DeserializeObject<List<CampaignResponse>>(response);
             return View(data);
@@ -75,7 +75,7 @@ namespace AdminTest.Controllers
 
         public async Task<IActionResult> Report(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var url = "https://localhost:7081/api/Meta?userId=1&accountId=" + accountId + "&startDate=" + startDate + "&endDate=" + endDate;
+            var url = "https://localhost:7081/api/Meta/general-query?userId=1&accountId=" + accountId + "&startDate=" + startDate + "&endDate=" + endDate;
             var response = await _httpClient.GetStringAsync(url);
             var data = JsonConvert.DeserializeObject<List<InsightGeneralResponse>>(response);
             return View(data);
@@ -83,7 +83,7 @@ namespace AdminTest.Controllers
 
         public async Task<IActionResult> ReportFilter(int userId, string accountId, string reportFilter = ",", DateTime? startDate = null, DateTime? endDate = null)
         {
-            var url = "https://localhost:7081/api/MetaReport?userId=1&accountId=" + accountId + "&reportFilter=" + reportFilter + "&startDate=" + startDate + "&endDate=" + endDate;
+            var url = "https://localhost:7081/api/Meta/report-query?userId=1&accountId=" + accountId + "&reportFilter=" + reportFilter + "&startDate=" + startDate + "&endDate=" + endDate;
             // testUrl = https://localhost:7043/Home/ReportFilter?accountId="act_342280538743641"&reportFilter="age,gender"
             var response = await _httpClient.GetStringAsync(url);
             var data = JsonConvert.DeserializeObject<List<ReportFilterResponse>>(response);

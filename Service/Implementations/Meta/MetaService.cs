@@ -27,94 +27,87 @@ namespace Service.Implementations.Meta
 
         #region Admin
 
-        public int AddAccessToken(int userId, string accessToken, string appId, string appSecret)
+        public int AddMetaApp(string appId, string appSecret)
         {
-            var user = GetUserById(userId);
-            if (user != null)
+            var metaApp = new MetaApp
             {
-                var metaAccess = new MetaAccess
-                {
-                    UserId = userId,
-                    AccessToken = accessToken,
-                    AppId = appId,
-                    AppSecret = appSecret,
-                    InsertedDate = DateTime.UtcNow,
-                    IsActive = true,
-                    IsDeleted = false
-                };
+                AppId = appId,
+                AppSecret = appSecret,
+                InsertedDate = DateTime.UtcNow,
+                IsActive = true,
+                IsDeleted = false
+            };
 
-                _repository.Save(metaAccess);
-                return metaAccess.Id;
+            _repository.Save(metaApp);
+            return metaApp.Id;
+        }
+
+        public int UpdateMetaApp(int id, string accessToken, string appId, string appSecret)
+        {
+            var metaApp = GetMetaAppById(id);
+            if (metaApp != null)
+            {
+                metaApp.AppId = appId;
+                metaApp.AppSecret = appSecret;
+                metaApp.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(metaApp);
+                return metaApp.Id;
             }
             return 0;
         }
 
-        public int UpdateAccessToken(int id, string accessToken, string appId, string appSecret)
+        public int IsActiveMetaApp(int id)
         {
-            var metaAccess = GetMetaAccessById(id);
-            if (metaAccess != null)
+            var metaApp = GetMetaAppById(id);
+            if (metaApp != null)
             {
-                metaAccess.AccessToken = accessToken;
-                metaAccess.AppId = appId;
-                metaAccess.AppSecret = appSecret;
-                metaAccess.UpdateDate = DateTime.UtcNow;
+                metaApp.IsActive = !metaApp.IsActive;
+                metaApp.UpdateDate = DateTime.UtcNow;
 
-                _repository.Update(metaAccess);
-                return metaAccess.Id;
+                _repository.Update(metaApp);
+                return metaApp.Id;
             }
             return 0;
         }
 
-        public int IsActiveAccessToken(int id)
+        public int IsDeletedMetaApp(int id)
         {
-            var metaAccess = GetMetaAccessById(id);
-            if (metaAccess != null)
+            var metaApp = GetMetaAppById(id);
+            if (metaApp != null)
             {
-                metaAccess.IsActive = !metaAccess.IsActive;
-                metaAccess.UpdateDate = DateTime.UtcNow;
+                metaApp.IsDeleted = !metaApp.IsDeleted;
+                metaApp.UpdateDate = DateTime.UtcNow;
 
-                _repository.Update(metaAccess);
-                return metaAccess.Id;
+                _repository.Update(metaApp);
+                return metaApp.Id;
             }
             return 0;
         }
 
-        public int IsDeletedAccessToken(int id)
+        public MetaApp GetMetaAppById(int id)
         {
-            var metaAccess = GetMetaAccessById(id);
-            if (metaAccess != null)
-            {
-                metaAccess.IsDeleted = !metaAccess.IsDeleted;
-                metaAccess.UpdateDate = DateTime.UtcNow;
-
-                _repository.Update(metaAccess);
-                return metaAccess.Id;
-            }
-            return 0;
+            return _repository.GetById<MetaApp>(id);
         }
 
-        public MetaAccess GetMetaAccessById(int id)
+        public MetaApp GetMetaApp()
         {
-            return _repository.GetById<MetaAccess>(id);
-        }
-
-        public MetaAccess GetAccessToken(int userId)
-        {
-            var data = _repository.FilterAsQueryable<MetaAccess>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeMetaAccess().FirstOrDefault();
+            var data = _repository.FilterAsQueryable<MetaApp>(p => p.IsActive && !p.IsDeleted).IncludeMetaApp().FirstOrDefault();
             return data;
         }
 
-        public int AddLongAccessToken(int metaAccessId, string accessToken, string tokenType, int expiresIn)
+        public int AddLongAccessToken(int metaAppId, int userId, string accessToken, string tokenType, int expiresIn)
         {
-            var metaAccess = GetMetaAccessById(metaAccessId);
-            if (metaAccess != null)
+            var metaApp = GetMetaAppById(metaAppId);
+            if (metaApp != null)
             {
                 var metaLongAccess = new MetaLongAccess
                 {
-                    MetaAccessId = metaAccessId,
+                    MetaAppId = metaAppId,
                     AccessToken = accessToken,
                     TokenType = tokenType,
                     ExpiresIn = expiresIn,
+                    UserId = userId,
                     InsertedDate = DateTime.UtcNow,
                     IsActive = true,
                     IsDeleted = false
@@ -128,7 +121,7 @@ namespace Service.Implementations.Meta
 
         public MetaLongAccess GetLongAccessToken(int userId)
         {
-            var data = _repository.FilterAsQueryable<MetaLongAccess>(p => p.IsActive && !p.IsDeleted && p.MetaAccess.User.Id.Equals(userId)).IncludeMetaLongAccess().FirstOrDefault();
+            var data = _repository.FilterAsQueryable<MetaLongAccess>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeMetaLongAccess().FirstOrDefault();
             return data;
         }
 
@@ -142,18 +135,17 @@ namespace Service.Implementations.Meta
 
     public static class MetaAccessExtensions
     {
-        public static IQueryable<MetaAccess> IncludeMetaAccess(this IQueryable<MetaAccess> query)
+        public static IQueryable<MetaApp> IncludeMetaApp(this IQueryable<MetaApp> query)
         {
             return query
-                .Include(ma => ma.User)
                 .Include(ma => ma.MetaLongAccess);
         }
 
         public static IQueryable<MetaLongAccess> IncludeMetaLongAccess(this IQueryable<MetaLongAccess> query)
         {
             return query
-                .Include(ma => ma.MetaAccess)
-                .Include(ma => ma.MetaAccess.User);
+                .Include(ma => ma.MetaApp)
+                .Include(ma => ma.User);
         }
     }
 }

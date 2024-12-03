@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.Domain.Meta
+namespace Core.Domain.User
 {
-    public class MetaUser
+    public class Role
     {
         public int Id { get; set; }
         public string Name { get; set; }
+        public virtual ICollection<UserRole> UserRole { get; set; }
     }
 }

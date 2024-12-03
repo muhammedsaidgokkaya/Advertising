@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Core.Migrations
 {
     [DbContext(typeof(Context))]
-    [Migration("20241120071140_mig12")]
-    partial class mig12
+    [Migration("20241203124750_mig1")]
+    partial class mig1
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -110,66 +110,18 @@ namespace Core.Migrations
                     b.Property<DateTime?>("UpdateDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("GoogleApp");
                 });
 
-            modelBuilder.Entity("Core.Domain.Google.GoogleAuthorizationCode", b =>
+            modelBuilder.Entity("Core.Domain.Meta.MetaApp", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AuthorizationCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("GoogleAppId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("InsertedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("UpdateDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GoogleAppId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("GoogleAuthorizationCode");
-                });
-
-            modelBuilder.Entity("Core.Domain.Meta.MetaAccess", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AccessToken")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("AppId")
                         .IsRequired()
@@ -191,14 +143,9 @@ namespace Core.Migrations
                     b.Property<DateTime?>("UpdateDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
-
-                    b.ToTable("MetaAccess");
+                    b.ToTable("MetaApp");
                 });
 
             modelBuilder.Entity("Core.Domain.Meta.MetaLongAccess", b =>
@@ -225,7 +172,7 @@ namespace Core.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("MetaAccessId")
+                    b.Property<int>("MetaAppId")
                         .HasColumnType("integer");
 
                     b.Property<string>("TokenType")
@@ -235,11 +182,33 @@ namespace Core.Migrations
                     b.Property<DateTime?>("UpdateDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("MetaAccessId");
+                    b.HasIndex("MetaAppId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("MetaLongAccess");
+                });
+
+            modelBuilder.Entity("Core.Domain.User.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Role");
                 });
 
             modelBuilder.Entity("Core.Domain.User.User", b =>
@@ -263,12 +232,35 @@ namespace Core.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("UpdateDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.ToTable("User");
+                });
+
+            modelBuilder.Entity("Core.Domain.User.UserRole", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("UserRole");
                 });
 
             modelBuilder.Entity("Core.Domain.Google.GoogleAccessToken", b =>
@@ -290,79 +282,66 @@ namespace Core.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Core.Domain.Google.GoogleApp", b =>
-                {
-                    b.HasOne("Core.Domain.User.User", "User")
-                        .WithMany("GoogleApp")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Core.Domain.Google.GoogleAuthorizationCode", b =>
-                {
-                    b.HasOne("Core.Domain.Google.GoogleApp", "GoogleApp")
-                        .WithMany("GoogleAuthorizationCode")
-                        .HasForeignKey("GoogleAppId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Core.Domain.User.User", "User")
-                        .WithMany("GoogleAuthorizationCode")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("GoogleApp");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Core.Domain.Meta.MetaAccess", b =>
-                {
-                    b.HasOne("Core.Domain.User.User", "User")
-                        .WithMany("MetaAccess")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Core.Domain.Meta.MetaLongAccess", b =>
                 {
-                    b.HasOne("Core.Domain.Meta.MetaAccess", "MetaAccess")
+                    b.HasOne("Core.Domain.Meta.MetaApp", "MetaApp")
                         .WithMany("MetaLongAccess")
-                        .HasForeignKey("MetaAccessId")
+                        .HasForeignKey("MetaAppId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("MetaAccess");
+                    b.HasOne("Core.Domain.User.User", "User")
+                        .WithMany("MetaLongAccess")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MetaApp");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Core.Domain.User.UserRole", b =>
+                {
+                    b.HasOne("Core.Domain.User.Role", "Role")
+                        .WithMany("UserRole")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Core.Domain.User.User", "User")
+                        .WithMany("UserRole")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Core.Domain.Google.GoogleApp", b =>
                 {
                     b.Navigation("GoogleAccessToken");
-
-                    b.Navigation("GoogleAuthorizationCode");
                 });
 
-            modelBuilder.Entity("Core.Domain.Meta.MetaAccess", b =>
+            modelBuilder.Entity("Core.Domain.Meta.MetaApp", b =>
                 {
                     b.Navigation("MetaLongAccess");
+                });
+
+            modelBuilder.Entity("Core.Domain.User.Role", b =>
+                {
+                    b.Navigation("UserRole");
                 });
 
             modelBuilder.Entity("Core.Domain.User.User", b =>
                 {
                     b.Navigation("GoogleAccessToken");
 
-                    b.Navigation("GoogleApp");
+                    b.Navigation("MetaLongAccess");
 
-                    b.Navigation("GoogleAuthorizationCode");
-
-                    b.Navigation("MetaAccess");
+                    b.Navigation("UserRole");
                 });
 #pragma warning restore 612, 618
         }

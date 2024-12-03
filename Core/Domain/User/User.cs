@@ -11,9 +11,10 @@ namespace Core.Domain.User
     public class User : BaseEntity
     {
         public string Name { get; set; }
-        public virtual ICollection<MetaAccess> MetaAccess { get; set; }
-        public virtual ICollection<GoogleApp> GoogleApp { get; set; }
-        public virtual ICollection<GoogleAuthorizationCode> GoogleAuthorizationCode { get; set; }
+        public string UserName { get; set; }
+        public string Password { get; set; }
         public virtual ICollection<GoogleAccessToken> GoogleAccessToken { get; set; }
+        public virtual ICollection<MetaLongAccess> MetaLongAccess { get; set; }
+        public virtual ICollection<UserRole> UserRole { get; set; }
     }
 }
