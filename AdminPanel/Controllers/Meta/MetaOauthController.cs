@@ -39,13 +39,13 @@ namespace AdminPanel.Controllers.Meta
             var accessToken = _metaData.LongAccessTokenAdmin(app.AppId, app.AppSecret, access_token);
             var metaAccessToken = _metaService.AddLongAccessToken(app.Id, userId, accessToken.AccessToken, accessToken.TokenType, accessToken.ExpiresIn);
 
-            var google = new MetaAccessToken
+            var meta = new MetaAccessToken
             {
                 AccessToken = accessToken.AccessToken,
                 IsSuccess = metaAccessToken != 0
             };
 
-            return Ok(google);
+            return Ok(meta);
         }
 
         [Authorize(Roles = "SuperAdmin")]

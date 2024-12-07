@@ -101,6 +101,7 @@ namespace Service.Implementations.Google
                     GoogleAppId = googleAppId,
                     UserId = userId,
                     InsertedDate = DateTime.UtcNow,
+                    UpdateDate = DateTime.UtcNow,
                     IsActive = true,
                     IsDeleted = false
                 };
@@ -160,11 +161,6 @@ namespace Service.Implementations.Google
         {
             var data = _repository.FilterAsQueryable<GoogleAccessToken>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeGoogleAccessToken().FirstOrDefault();
             return data;
-        }
-
-        public Core.Domain.User.User GetUserById(int id)
-        {
-            return _repository.GetById<Core.Domain.User.User>(id);
         }
 
         #endregion

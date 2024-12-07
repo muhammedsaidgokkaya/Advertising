@@ -11,7 +11,5 @@ namespace Service.Interfaces.User
 {
     interface IUserService
     {
-        IEnumerable<Core.Domain.User.User> GetAll();
-        IPagedList<Core.Domain.User.User> GetPagedList(int pageIndex, int pageSize);
     }
 }

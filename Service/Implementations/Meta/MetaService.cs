@@ -125,11 +125,6 @@ namespace Service.Implementations.Meta
             return data;
         }
 
-        public Core.Domain.User.User GetUserById(int id)
-        {
-            return _repository.GetById<Core.Domain.User.User>(id);
-        }
-
         #endregion
     }
 
