@@ -9,8 +9,12 @@ using Service.Pages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Numerics;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Service.Implementations.User
 {
@@ -23,21 +27,111 @@ namespace Service.Implementations.User
             _repository = new Repository<Context>(new Context());
         }
 
-        #region User
-        public int AddUser(string name, string userName, string password)
+        #region Organization
+        public int AddOrganization(string name, int userCount = 2, string address = "", string zipCode = "", string taskNumber = "", string phone = "")
         {
-            var user = new Core.Domain.User.User
+            var organization = new Organization
             {
                 Name = name,
-                UserName = userName,
-                Password = password,
+                UserCount = userCount,
+                Address = address,
+                ZipCode = zipCode,
+                TaskNumber = taskNumber,
+                Phone = phone,
                 InsertedDate = DateTime.UtcNow,
                 IsActive = true,
                 IsDeleted = false
             };
 
-            _repository.Save(user);
-            return user.Id;
+            _repository.Save(organization);
+            return organization.Id;
+        }
+
+        public int UpdateOrganization(int id, string name, string address, string zipCode, string taskNumber, string phone)
+        {
+            var organization = GetOrganizationById(id);
+            if (organization != null)
+            {
+                organization.Name = name;
+                organization.Address = address;
+                organization.ZipCode = zipCode;
+                organization.TaskNumber = taskNumber;
+                organization.Phone = phone;
+                organization.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(organization);
+                return organization.Id;
+            }
+            return 0;
+        }
+
+        public int IsActiveOrganization(int id)
+        {
+            var organization = GetOrganizationById(id);
+            if (organization != null)
+            {
+                organization.IsActive = !organization.IsActive;
+                organization.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(organization);
+                return organization.Id;
+            }
+            return 0;
+        }
+
+        public int IsDeletedOrganization(int id)
+        {
+            var organization = GetOrganizationById(id);
+            if (organization != null)
+            {
+                organization.IsDeleted = !organization.IsDeleted;
+                organization.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(organization);
+                return organization.Id;
+            }
+            return 0;
+        }
+
+        public Organization GetOrganizationById(int id)
+        {
+            return _repository.GetById<Organization>(id);
+        }
+
+        public IEnumerable<Organization> GetOrganization()
+        {
+            var data = _repository.Filter<Organization>(p => p.IsActive && !p.IsDeleted);
+            return data;
+        }
+        #endregion
+
+        #region User
+        public int AddUser(int organizationId, string name, string userName, string password)
+        {
+            var organization = GetOrganizationById(organizationId);
+            if (organization != null)
+            {
+                var currentUser = GetUser(organizationId).Count();
+
+                if (currentUser >= organization.UserCount)
+                {
+                    return 0;
+                }
+
+                var user = new Core.Domain.User.User
+                {
+                    OrganizationId = organizationId,
+                    UserName = userName,
+                    Password = password,
+                    InsertedDate = DateTime.UtcNow,
+                    IsActive = true,
+                    IsDeleted = false
+                };
+
+                _repository.Save(user);
+                return user.Id;
+            }
+            return 0;
         }
 
         public int UpdateUser(int id, string name, string userName, string password)
@@ -45,7 +139,6 @@ namespace Service.Implementations.User
             var user = GetUserById(id);
             if (user != null)
             {
-                user.Name = name;
                 user.UserName = userName;
                 user.Password = password;
                 user.UpdateDate = DateTime.UtcNow;
@@ -89,21 +182,9 @@ namespace Service.Implementations.User
             return _repository.GetById<Core.Domain.User.User>(id);
         }
 
-        public IEnumerable<Core.Domain.User.User> GetAll()
+        public IEnumerable<Core.Domain.User.User> GetUser(int organizationId)
         {
-            var data = _repository.Filter<Core.Domain.User.User>(p => p.IsActive);
-            return data;
-        }
-
-        public int GetAllCount()
-        {
-            var data = _repository.Filter<Core.Domain.User.User>(p => p.IsActive).ToList();
-            return data.Count();
-        }
-
-        public IEnumerable<Core.Domain.User.User> GetById(int id)
-        {
-            var data = _repository.Filter<Core.Domain.User.User>(p => p.IsActive && p.Id.Equals(id));
+            var data = _repository.FilterAsQueryable<Core.Domain.User.User>(p => p.IsActive && !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeUser();
             return data;
         }
 
@@ -117,7 +198,16 @@ namespace Service.Implementations.User
         #endregion
 
         #region Role
+        public IEnumerable<Role> GetRole()
+        {
+            var data = _repository.Filter<Role>(x => true);
+            return data;
+        }
 
+        public Role GetRoleById(int id)
+        {
+            return _repository.GetById<Role>(id);
+        }
         #endregion
 
         #region UserRole
@@ -135,7 +225,8 @@ namespace Service.Implementations.User
         public static IQueryable<Core.Domain.User.User> IncludeUser(this IQueryable<Core.Domain.User.User> query)
         {
             return query
-                .Include(ma => ma.UserRole);
+                .Include(ma => ma.UserRole)
+                .Include(ma => ma.Organization);
         }
 
         public static IQueryable<UserRole> IncludeUserRole(this IQueryable<UserRole> query)

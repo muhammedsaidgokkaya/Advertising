@@ -37,6 +37,7 @@ namespace Core.Data
             }
         }
 
+        public DbSet<Organization> Organization { get; set; }
         public DbSet<User> User { get; set; }
         public DbSet<Role> Role { get; set; }
         public DbSet<UserRole> UserRole { get; set; }

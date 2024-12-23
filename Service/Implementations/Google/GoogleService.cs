@@ -86,7 +86,7 @@ namespace Service.Implementations.Google
             return 0;
         }
 
-        public int AddGoogleAccessToken(int googleAppId, int userId, string accessToken, string refreshToken, int expiresIn, string scope, string tokenType)
+        public int AddGoogleAccessToken(int googleAppId, int organizationId, string accessToken, string refreshToken, int expiresIn, string scope, string tokenType)
         {
             var googleApp = GetGoogleAppById(googleAppId);
             if (googleApp != null)
@@ -99,7 +99,7 @@ namespace Service.Implementations.Google
                     Scope = scope,
                     TokenType = tokenType,
                     GoogleAppId = googleAppId,
-                    UserId = userId,
+                    OrganizationId = organizationId,
                     InsertedDate = DateTime.UtcNow,
                     UpdateDate = DateTime.UtcNow,
                     IsActive = true,
@@ -149,7 +149,7 @@ namespace Service.Implementations.Google
             var data = _repository.FilterAsQueryable<GoogleAccessToken>(p =>
                     p.IsActive &&
                     !p.IsDeleted &&
-                    p.User.Id.Equals(userId) &&
+                    p.Organization.User.Any(u => u.Id == userId) &&
                     p.UpdateDate.HasValue &&
                     p.UpdateDate.Value.AddSeconds(p.ExpiresIn) > now)
                 .IncludeGoogleAccessToken()
@@ -159,7 +159,7 @@ namespace Service.Implementations.Google
 
         public GoogleAccessToken GetGoogleAccessTokenControl(int userId)
         {
-            var data = _repository.FilterAsQueryable<GoogleAccessToken>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeGoogleAccessToken().FirstOrDefault();
+            var data = _repository.FilterAsQueryable<GoogleAccessToken>(p => p.IsActive && !p.IsDeleted && p.Organization.User.Any(u => u.Id == userId)).IncludeGoogleAccessToken().FirstOrDefault();
             return data;
         }
 
@@ -178,7 +178,8 @@ namespace Service.Implementations.Google
         {
             return query
                 .Include(ma => ma.GoogleApp)
-                .Include(ma => ma.User);
+                .Include(ma => ma.Organization)
+                .Include(ma => ma.Organization.User);
         }
     }
 }

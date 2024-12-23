@@ -28,7 +28,7 @@ namespace Service.Implementations
                 new Claim("userId", user.Id.ToString())
             };
 
-            roles.ForEach(role => claims.Add(new Claim(ClaimTypes.Role, role)));
+            roles.ForEach(role => claims.Add(new Claim("roles", role)));
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],

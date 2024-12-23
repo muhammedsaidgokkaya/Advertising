@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Core.Domain.User;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,7 @@ namespace Core.Domain.Google
         public string TokenType { get; set; }
         public int GoogleAppId { get; set; }
         public virtual GoogleApp GoogleApp { get; set; }
-        public int UserId { get; set; }
-        public virtual Core.Domain.User.User User { get; set; }
+        public int OrganizationId { get; set; }
+        public virtual Organization Organization { get; set; }
     }
 }

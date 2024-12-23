@@ -35,9 +35,10 @@ namespace AdminPanel.Controllers.Meta
         public ActionResult<IEnumerable<MetaAccessToken>> Get(string access_token, string data_access_expiration_time, string expires_in)
         {
             var userId = UserId();
+            var user = _userService.GetUserById(userId);
             var app = _metaService.GetMetaApp();
             var accessToken = _metaData.LongAccessTokenAdmin(app.AppId, app.AppSecret, access_token);
-            var metaAccessToken = _metaService.AddLongAccessToken(app.Id, userId, accessToken.AccessToken, accessToken.TokenType, accessToken.ExpiresIn);
+            var metaAccessToken = _metaService.AddLongAccessToken(app.Id, user.OrganizationId, accessToken.AccessToken, accessToken.TokenType, accessToken.ExpiresIn);
 
             var meta = new MetaAccessToken
             {

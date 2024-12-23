@@ -6,7 +6,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Core.Migrations
 {
-    public partial class mig1 : Migration
+    public partial class mig : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -48,6 +48,27 @@ namespace Core.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Organization",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false),
+                    ZipCode = table.Column<string>(type: "text", nullable: false),
+                    TaskNumber = table.Column<string>(type: "text", nullable: false),
+                    Phone = table.Column<string>(type: "text", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    InsertedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdateDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Organization", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Role",
                 columns: table => new
                 {
@@ -66,9 +87,26 @@ namespace Core.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false),
+                    FirstName = table.Column<string>(type: "text", nullable: false),
+                    LastName = table.Column<string>(type: "text", nullable: false),
+                    Mail = table.Column<string>(type: "text", nullable: false),
+                    Phone = table.Column<string>(type: "text", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    DateOfBirth = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Gender = table.Column<bool>(type: "boolean", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false),
+                    Photo = table.Column<string>(type: "text", nullable: false),
                     UserName = table.Column<string>(type: "text", nullable: false),
                     Password = table.Column<string>(type: "text", nullable: false),
+                    DarkMode = table.Column<string>(type: "text", nullable: false),
+                    Contrast = table.Column<string>(type: "text", nullable: false),
+                    RightToLeft = table.Column<string>(type: "text", nullable: false),
+                    Compact = table.Column<string>(type: "text", nullable: false),
+                    Presets = table.Column<string>(type: "text", nullable: false),
+                    Layout = table.Column<string>(type: "text", nullable: false),
+                    Family = table.Column<string>(type: "text", nullable: false),
+                    Size = table.Column<string>(type: "text", nullable: false),
+                    OrganizationId = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     InsertedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -77,6 +115,12 @@ namespace Core.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_User", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_User_Organization_OrganizationId",
+                        column: x => x.OrganizationId,
+                        principalTable: "Organization",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -91,7 +135,8 @@ namespace Core.Migrations
                     Scope = table.Column<string>(type: "text", nullable: false),
                     TokenType = table.Column<string>(type: "text", nullable: false),
                     GoogleAppId = table.Column<int>(type: "integer", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    OrganizationId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     InsertedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -107,11 +152,16 @@ namespace Core.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_GoogleAccessToken_Organization_OrganizationId",
+                        column: x => x.OrganizationId,
+                        principalTable: "Organization",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_GoogleAccessToken_User_UserId",
                         column: x => x.UserId,
                         principalTable: "User",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -124,7 +174,8 @@ namespace Core.Migrations
                     TokenType = table.Column<string>(type: "text", nullable: false),
                     ExpiresIn = table.Column<int>(type: "integer", nullable: false),
                     MetaAppId = table.Column<int>(type: "integer", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    OrganizationId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     InsertedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -140,11 +191,16 @@ namespace Core.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_MetaLongAccess_Organization_OrganizationId",
+                        column: x => x.OrganizationId,
+                        principalTable: "Organization",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_MetaLongAccess_User_UserId",
                         column: x => x.UserId,
                         principalTable: "User",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -177,6 +233,11 @@ namespace Core.Migrations
                 column: "GoogleAppId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_GoogleAccessToken_OrganizationId",
+                table: "GoogleAccessToken",
+                column: "OrganizationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_GoogleAccessToken_UserId",
                 table: "GoogleAccessToken",
                 column: "UserId");
@@ -187,9 +248,19 @@ namespace Core.Migrations
                 column: "MetaAppId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MetaLongAccess_OrganizationId",
+                table: "MetaLongAccess",
+                column: "OrganizationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MetaLongAccess_UserId",
                 table: "MetaLongAccess",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_User_OrganizationId",
+                table: "User",
+                column: "OrganizationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserRole_RoleId",
@@ -219,6 +290,9 @@ namespace Core.Migrations
 
             migrationBuilder.DropTable(
                 name: "User");
+
+            migrationBuilder.DropTable(
+                name: "Organization");
         }
     }
 }

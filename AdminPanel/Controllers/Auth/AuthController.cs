@@ -21,9 +21,9 @@ namespace AdminPanel.Controllers.Auth
         }
 
         [HttpPost("login")]
-        public IActionResult Login(string userName, string password)
+        public IActionResult Login([FromBody] LoginRequest model)
         {
-            var user = _userService.GetUserLogin(userName, password);
+            var user = _userService.GetUserLogin(model.UserName, model.Password);
 
             if (user == null) return Unauthorized("Invalid credentials");
 
@@ -31,6 +31,12 @@ namespace AdminPanel.Controllers.Auth
             var token = _jwtService.GenerateToken(user, roles);
 
             return Ok(new { Token = token });
+        }
+
+        public class LoginRequest
+        {
+            public string UserName { get; set; }
+            public string Password { get; set; }
         }
     }
 }

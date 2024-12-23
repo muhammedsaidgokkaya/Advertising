@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Core.Domain.User;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +14,7 @@ namespace Core.Domain.Meta
         public int ExpiresIn { get; set; }
         public int MetaAppId { get; set; }
         public virtual MetaApp MetaApp { get; set; }
-        public int UserId { get; set; }
-        public virtual Core.Domain.User.User User { get; set; }
+        public int OrganizationId { get; set; }
+        public virtual Organization Organization { get; set; }
     }
 }

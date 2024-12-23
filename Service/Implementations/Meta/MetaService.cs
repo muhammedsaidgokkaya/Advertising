@@ -96,7 +96,7 @@ namespace Service.Implementations.Meta
             return data;
         }
 
-        public int AddLongAccessToken(int metaAppId, int userId, string accessToken, string tokenType, int expiresIn)
+        public int AddLongAccessToken(int metaAppId, int organizationId, string accessToken, string tokenType, int expiresIn)
         {
             var metaApp = GetMetaAppById(metaAppId);
             if (metaApp != null)
@@ -107,7 +107,7 @@ namespace Service.Implementations.Meta
                     AccessToken = accessToken,
                     TokenType = tokenType,
                     ExpiresIn = expiresIn,
-                    UserId = userId,
+                    OrganizationId = organizationId,
                     InsertedDate = DateTime.UtcNow,
                     IsActive = true,
                     IsDeleted = false
@@ -121,7 +121,7 @@ namespace Service.Implementations.Meta
 
         public MetaLongAccess GetLongAccessToken(int userId)
         {
-            var data = _repository.FilterAsQueryable<MetaLongAccess>(p => p.IsActive && !p.IsDeleted && p.User.Id.Equals(userId)).IncludeMetaLongAccess().FirstOrDefault();
+            var data = _repository.FilterAsQueryable<MetaLongAccess>(p => p.IsActive && !p.IsDeleted && p.Organization.User.Any(u => u.Id == userId)).IncludeMetaLongAccess().FirstOrDefault();
             return data;
         }
 
@@ -140,7 +140,8 @@ namespace Service.Implementations.Meta
         {
             return query
                 .Include(ma => ma.MetaApp)
-                .Include(ma => ma.User);
+                .Include(ma => ma.Organization)
+                .Include(ma => ma.Organization.User);
         }
     }
 }
