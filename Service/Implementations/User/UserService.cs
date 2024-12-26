@@ -47,7 +47,7 @@ namespace Service.Implementations.User
             return organization.Id;
         }
 
-        public int UpdateOrganization(int id, string name, string address, string zipCode, string taskNumber, string phone)
+        public int UpdateOrganization(int id, string name, string address, string zipCode, string taskNumber)
         {
             var organization = GetOrganizationById(id);
             if (organization != null)
@@ -56,7 +56,6 @@ namespace Service.Implementations.User
                 organization.Address = address;
                 organization.ZipCode = zipCode;
                 organization.TaskNumber = taskNumber;
-                organization.Phone = phone;
                 organization.UpdateDate = DateTime.UtcNow;
 
                 _repository.Update(organization);
@@ -141,6 +140,41 @@ namespace Service.Implementations.User
             {
                 user.UserName = userName;
                 user.Password = password;
+                user.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(user);
+                return user.Id;
+            }
+            return 0;
+        }
+
+        public int UpdatePassword(int id, string password)
+        {
+            var user = GetUserById(id);
+            if (user != null)
+            {
+                user.Password = password;
+                user.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(user);
+                return user.Id;
+            }
+            return 0;
+        }
+
+        public int UpdateAdminUser(int id, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address)
+        {
+            var user = GetUserById(id);
+            if (user != null)
+            {
+                user.FirstName = firstName;
+                user.LastName = lastName;
+                user.Mail = mail;
+                user.Phone = phone;
+                user.Title = title;
+                user.DateOfBirth = dateOfBirth;
+                user.Gender = gender;
+                user.Address = address;
                 user.UpdateDate = DateTime.UtcNow;
 
                 _repository.Update(user);

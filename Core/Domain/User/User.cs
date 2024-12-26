@@ -16,7 +16,7 @@ namespace Core.Domain.User
         public string Phone { get; set; }
         public string Title { get; set; }
         public DateTime? DateOfBirth { get; set; }
-        public bool Gender { get; set; }
+        public string Gender { get; set; }
         public string Address { get; set; }
         public string Photo { get; set; }
         public string UserName { get; set; }

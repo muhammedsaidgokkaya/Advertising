@@ -24,7 +24,20 @@ namespace Service.Implementations
             var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim("userName", user.UserName),
+                new Claim("firstName", user.FirstName),
+                new Claim("lastName", user.LastName),
+                new Claim("mail", user.Mail),
+                new Claim("phone", user.Phone),
+                new Claim("title", user.Title),
+                new Claim("darkMode", user.DarkMode),
+                new Claim("contrast", user.Contrast),
+                new Claim("rightToLeft", user.RightToLeft),
+                new Claim("compact", user.Compact),
+                new Claim("presets", user.Presets),
+                new Claim("layout", user.Layout),
+                new Claim("family", user.Family),
+                new Claim("size", user.Size),
                 new Claim("userId", user.Id.ToString())
             };
 
@@ -34,7 +47,7 @@ namespace Service.Implementations
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
+                expires: DateTime.UtcNow.AddHours(24),
                 signingCredentials: new SigningCredentials(
                     new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
             );
