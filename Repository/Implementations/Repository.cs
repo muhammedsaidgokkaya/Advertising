@@ -69,6 +69,11 @@ namespace Repository.Implementations
             }
         }
 
+        public void Delete<T>(T entity) where T : class
+        {
+            _context.Set<T>().Remove(entity);
+        }
+
         public E Find<E>(Expression<Func<E, bool>> expression) where E : class, new()
         {
             return _context.Set<E>().Where(expression).FirstOrDefault();

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +25,36 @@ namespace Utilities.Helper
             result.Add(defaultStartDate);
             result.Add(defaultEndDate);
             return result;
+        }
+
+        public string RemoveDiacritics(string str)
+        {
+            if (string.IsNullOrEmpty(str)) return str;
+
+            str = str.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+
+            foreach (var c in str)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                    sb.Append(c);
+            }
+
+            return sb.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        public string GenerateRandomPassword(int length = 9)
+        {
+            const string validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var password = new char[length];
+            Random _random = new Random();
+
+            for (int i = 0; i < length; i++)
+            {
+                password[i] = validChars[_random.Next(validChars.Length)];
+            }
+
+            return new string(password);
         }
 
         public string GoogleProperty(string property)

@@ -21,14 +21,14 @@ namespace Core.Domain.User
         public string Photo { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }
-        public string DarkMode { get; set; }
-        public string Contrast { get; set; }
-        public string RightToLeft { get; set; }
-        public string Compact { get; set; }
-        public string Presets { get; set; }
-        public string Layout { get; set; }
-        public string Family { get; set; }
-        public string Size { get; set; }
+        public string? DarkMode { get; set; }
+        public string? Contrast { get; set; }
+        public string? RightToLeft { get; set; }
+        public string? Compact { get; set; }
+        public string? Presets { get; set; }
+        public string? Layout { get; set; }
+        public string? Family { get; set; }
+        public string? Size { get; set; }
         public int OrganizationId { get; set; }
         public virtual Organization Organization { get; set; }
         public virtual ICollection<GoogleAccessToken> GoogleAccessToken { get; set; }

@@ -105,7 +105,7 @@ namespace Service.Implementations.User
         #endregion
 
         #region User
-        public int AddUser(int organizationId, string name, string userName, string password)
+        public int AddUser(int organizationId, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address, string photo, string userName, string password)
         {
             var organization = GetOrganizationById(organizationId);
             if (organization != null)
@@ -120,6 +120,15 @@ namespace Service.Implementations.User
                 var user = new Core.Domain.User.User
                 {
                     OrganizationId = organizationId,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Mail = mail,
+                    Phone = phone,
+                    Title = title,
+                    DateOfBirth = dateOfBirth,
+                    Gender = gender,
+                    Address = address,
+                    Photo = photo,
                     UserName = userName,
                     Password = password,
                     InsertedDate = DateTime.UtcNow,
@@ -218,7 +227,18 @@ namespace Service.Implementations.User
 
         public IEnumerable<Core.Domain.User.User> GetUser(int organizationId)
         {
-            var data = _repository.FilterAsQueryable<Core.Domain.User.User>(p => p.IsActive && !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeUser();
+            var data = _repository.FilterAsQueryable<Core.Domain.User.User>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeUser();
+            return data;
+        }
+
+        public IEnumerable<Core.Domain.User.User> GetUsers(int organizationId, int userId)
+        {
+            var data = _repository
+                .FilterAsQueryable<Core.Domain.User.User>(
+                    p => !p.IsDeleted
+                         && p.Organization.Id.Equals(organizationId)
+                         && !p.Id.Equals(userId))
+                .IncludeUser();
             return data;
         }
 
@@ -234,7 +254,7 @@ namespace Service.Implementations.User
         #region Role
         public IEnumerable<Role> GetRole()
         {
-            var data = _repository.Filter<Role>(x => true);
+            var data = _repository.FilterAsQueryable<Role>(x => true);
             return data;
         }
 
@@ -245,6 +265,40 @@ namespace Service.Implementations.User
         #endregion
 
         #region UserRole
+        public int AddUserRole(int userId, int roleId)
+        {
+            var user = GetUserById(userId);
+            if (user != null)
+            {
+                var userRole = new Core.Domain.User.UserRole
+                {
+                    UserId = userId,
+                    RoleId = roleId
+                };
+
+                _repository.Save(userRole);
+                return 1;
+            }
+            return 0;
+        }
+
+        public int RemoveUserRolesByUserId(int userId)
+        {
+            var userRoles = _repository.FilterAsQueryable<UserRole>(ur => ur.UserId == userId).ToList();
+
+            if (userRoles.Any())
+            {
+                foreach (var userRole in userRoles)
+                {
+                    _repository.Delete(userRole);
+                }
+
+                return 1;
+            }
+
+            return 0;
+        }
+
         public IEnumerable<UserRole> GetUserRole(int userId)
         {
             var data = _repository.FilterAsQueryable<UserRole>(p => p.UserId.Equals(userId))

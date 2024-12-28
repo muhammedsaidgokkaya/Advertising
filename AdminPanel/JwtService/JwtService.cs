@@ -30,14 +30,6 @@ namespace Service.Implementations
                 new Claim("mail", user.Mail),
                 new Claim("phone", user.Phone),
                 new Claim("title", user.Title),
-                new Claim("darkMode", user.DarkMode),
-                new Claim("contrast", user.Contrast),
-                new Claim("rightToLeft", user.RightToLeft),
-                new Claim("compact", user.Compact),
-                new Claim("presets", user.Presets),
-                new Claim("layout", user.Layout),
-                new Claim("family", user.Family),
-                new Claim("size", user.Size),
                 new Claim("userId", user.Id.ToString())
             };
 
