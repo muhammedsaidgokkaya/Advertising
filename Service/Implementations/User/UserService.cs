@@ -206,7 +206,7 @@ namespace Service.Implementations.User
             return 0;
         }
 
-        public int IsDeletedMetaApp(int id)
+        public int IsDeletedUser(int id)
         {
             var user = GetUserById(id);
             if (user != null)

@@ -2,7 +2,7 @@
 
 namespace AdminPanel.Models.Organization.User
 {
-    public class Password
+    public class UpdatePassword
     {
         [JsonPropertyName("newPassword")]
         public string NewPassword { get; set; }

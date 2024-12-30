@@ -4,17 +4,20 @@ namespace AdminPanel.Models.Organization.User
 {
     public class UpdateUser
     {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("orgAddress")]
-        public string OrgAddress { get; set; }
+        public string? OrgAddress { get; set; }
 
         [JsonPropertyName("zipCode")]
-        public string ZipCode { get; set; }
+        public string? ZipCode { get; set; }
 
         [JsonPropertyName("taskNumber")]
-        public string TaskNumber { get; set; }
+        public string? TaskNumber { get; set; }
 
         [JsonPropertyName("firstName")]
         public string FirstName { get; set; }
@@ -39,5 +42,8 @@ namespace AdminPanel.Models.Organization.User
 
         [JsonPropertyName("gender")]
         public string Gender { get; set; }
+
+        [JsonPropertyName("roles")]
+        public List<int> Roles { get; set; } = new List<int>();
     }
 }

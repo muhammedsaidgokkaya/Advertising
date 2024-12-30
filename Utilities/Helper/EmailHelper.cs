@@ -10,7 +10,7 @@ namespace Utilities.Helper
 {
     public class EmailHelper
     {
-        public void SendEmail(string toMail, string userName, string password)
+        public void SendEmail(string toMail, string name, string userName, string password)
         {
             try
             {
@@ -24,11 +24,56 @@ namespace Utilities.Helper
                 var mailMessage = new MailMessage
                 {
                     From = new MailAddress(toMail),
-                    Subject = "Merhaba Dijital Uygulamasına Hoşgeldin!",
-                    Body = "Kullanıcı adınız:" + userName + " Parolanız:" + password,
+                    Subject = "Merhaba Dijitals Uygulamasına Hoşgeldin!",
                     IsBodyHtml = true,
                 };
 
+                string htmlBody = $@"
+                    <html>
+                    <head>
+                        <style>
+                            body {{
+                                font-family: Arial, sans-serif;
+                            }}
+                            .container {{
+                                padding: 20px;
+                                border: 1px solid #ddd;
+                                border-radius: 5px;
+                                background-color: #f9f9f9;
+                            }}
+                            .header {{
+                                font-size: 24px;
+                                font-weight: bold;
+                                color: #333;
+                                margin-bottom: 10px;
+                            }}
+                            .content {{
+                                font-size: 16px;
+                                color: #555;
+                            }}
+                            .footer {{
+                                font-size: 12px;
+                                color: #999;
+                                margin-top: 20px;
+                            }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class='container'>
+                            <div class='header'>Merhaba, {name}!</div>
+                            <div class='content'>
+                                <p>Dijitals uygulamasına hoşgeldiniz!</p>
+                                <p><b>Kullanıcı Adınız:</b> {userName}</p>
+                                <p><b>Parolanız:</b> {password}</p>
+                            </div>
+                            <div class='footer'>
+                                Bu e-posta otomatik olarak oluşturulmuştur, lütfen yanıtlamayın.
+                            </div>
+                        </div>
+                    </body>
+                    </html>";
+
+                mailMessage.Body = htmlBody;
                 mailMessage.To.Add(toMail);
 
                 smtpClient.Send(mailMessage);

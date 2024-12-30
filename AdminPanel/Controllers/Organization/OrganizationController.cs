@@ -1,4 +1,5 @@
 ﻿using AdminPanel.Controllers.Google.SearchConsole;
+using AdminPanel.Models.Meta.AdvertisingAccount;
 using AdminPanel.Models.Organization.Role;
 using AdminPanel.Models.Organization.User;
 using Core.Domain.User;
@@ -59,7 +60,7 @@ namespace AdminPanel.Controllers.Organization
         }
 
         [HttpGet("user")]
-        public ActionResult<GetUser> GetUser(int userId = 0)
+        public ActionResult<GetUserAndRole> GetUser(int userId = 0)
         {
             if (userId == 0)
             {
@@ -68,8 +69,9 @@ namespace AdminPanel.Controllers.Organization
             
             var user = _userService.GetUserById(userId);
             var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var role = _userService.GetUserRole(userId);
 
-            var data = new GetUser
+            var data = new GetUserAndRole
             {
                 Name = organization.Name,
                 TaskNumber = organization.TaskNumber,
@@ -82,7 +84,8 @@ namespace AdminPanel.Controllers.Organization
                 Title = user.Title,
                 DateOfBirth = user.DateOfBirth,
                 Gender = user.Gender,
-                Address = user.Address
+                Address = user.Address,
+                Roles = role.Select(q => q.RoleId).ToList()
             };
 
             return Ok(data);
@@ -105,7 +108,7 @@ namespace AdminPanel.Controllers.Organization
         }
 
         [HttpGet("get-add-user")]
-        public ActionResult<GetUser> GetAddUser()
+        public ActionResult<GetUserAndRole> GetAddUser()
         {
             var userId = UserId();
             var user = _userService.GetUserById(userId);
@@ -117,14 +120,14 @@ namespace AdminPanel.Controllers.Organization
                 TaskNumber = organization.TaskNumber,
                 OrgAddress = organization.Address,
                 ZipCode = organization.ZipCode,
-                FirstName = "Ad",
-                LastName = "Soyad",
-                Mail = "mail@example.com",
-                Phone = "+905000000000",
-                Title = "Ünvan",
+                FirstName = "",
+                LastName = "",
+                Mail = "",
+                Phone = "",
+                Title = "",
                 DateOfBirth = DateTime.UtcNow,
                 Gender = "E",
-                Address = "Adres"
+                Address = ""
             };
 
             return Ok(data);
@@ -171,19 +174,58 @@ namespace AdminPanel.Controllers.Organization
                 return BadRequest(new { success = false, message = "User could not be added." });
             }
 
-            _emailHelper.SendEmail(user.Mail, username, password);
+            _emailHelper.SendEmail(user.Mail, user.FirstName, username, password);
 
-            foreach (var item in user.Roles)
+            if (user.Roles.Count != 0 && user.Roles != null)
             {
-                _userService.AddUserRole(newUser, item);
+                foreach (var item in user.Roles)
+                {
+                    _userService.AddUserRole(newUser, item);
+                }
             }
-            
+
+            return Ok(new
+            {
+                id = newUser
+            });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("add-photo")]
+        public IActionResult AddPhoto([FromForm] AddPhoto photo)
+        {
+            if (photo?.Photo != null)
+            {
+                var uploadsDirectory = @"C:\Users\furka\Desktop\project-template\public\user";
+
+                if (!Directory.Exists(uploadsDirectory))
+                {
+                    Directory.CreateDirectory(uploadsDirectory);
+                }
+
+                var fileExtension = Path.GetExtension(photo.Photo.FileName).ToLower();
+
+                if (fileExtension != ".png" && fileExtension != ".jpg" && fileExtension != ".jpeg")
+                {
+                    return BadRequest("Yalnızca .png, .jpg, .jpeg dosya uzantıları kabul edilmektedir.");
+                }
+
+                var fileName = photo.UserId + fileExtension;
+
+                var filePath = Path.Combine(uploadsDirectory, fileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    photo.Photo.CopyTo(fileStream);
+                }
+            }
+
             return Ok(new { success = true });
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("update-user")]
-        public IActionResult UpdateUser([FromBody] UpdateUser user)
+        [HttpPost("update-admin-user")]
+        public IActionResult UpdateAdminUser([FromBody] UpdateUser user)
         {
             var userId = UserId();
             var org = _userService.GetUserById(userId);
@@ -192,9 +234,97 @@ namespace AdminPanel.Controllers.Organization
             {
                 dateOfBirth = parsedDate.ToUniversalTime();
             }
-            var newUser = _userService.UpdateAdminUser(userId, user.FirstName, user.LastName, user.Mail, user.Phone, user.Title, dateOfBirth, user.Gender, user.Address);
-            var newOrganization = _userService.UpdateOrganization(org.OrganizationId, user.Name, user.OrgAddress, user.ZipCode, user.TaskNumber);
-            if (newUser == 0 && newOrganization == 0)
+            var updateUser = _userService.UpdateAdminUser(userId, user.FirstName, user.LastName, user.Mail, user.Phone, user.Title, dateOfBirth, user.Gender, user.Address);
+            var updateOrganization = _userService.UpdateOrganization(org.OrganizationId, user.Name, user.OrgAddress, user.ZipCode, user.TaskNumber);
+            if (updateUser == 0 && updateOrganization == 0)
+            {
+                return BadRequest(new { success = false, message = "User could not be added." });
+            }
+            return Ok(new { success = true });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("update-user")]
+        public IActionResult UpdateUser([FromBody] UpdateUser user)
+        {
+            DateTime? dateOfBirth = null;
+            if (DateTime.TryParse(user.DateOfBirth, out var parsedDate))
+            {
+                dateOfBirth = parsedDate.ToUniversalTime();
+            }
+            var updateUser = _userService.UpdateAdminUser(user.Id, user.FirstName, user.LastName, user.Mail, user.Phone, user.Title, dateOfBirth, user.Gender, user.Address);
+            if (updateUser == 0)
+            {
+                return BadRequest(new { success = false, message = "User could not be added." });
+            }
+
+            _userService.RemoveUserRolesByUserId(updateUser);
+
+            if (user.Roles.Count != 0 && user.Roles != null)
+            {
+                foreach (var item in user.Roles)
+                {
+                    _userService.AddUserRole(updateUser, item);
+                }
+            }
+
+            return Ok(new { success = true });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("update-photo")]
+        public IActionResult UpdatePhoto([FromForm] AddPhoto photo)
+        {
+            if (photo?.Photo != null)
+            {
+                var uploadsDirectory = @"C:\Users\furka\Desktop\project-template\public\user";
+
+                if (!Directory.Exists(uploadsDirectory))
+                {
+                    Directory.CreateDirectory(uploadsDirectory);
+                }
+
+                var fileExtension = Path.GetExtension(photo.Photo.FileName).ToLower();
+
+                if (fileExtension != ".png" && fileExtension != ".jpg" && fileExtension != ".jpeg")
+                {
+                    return BadRequest("Yalnızca .png, .jpg, .jpeg dosya uzantıları kabul edilmektedir.");
+                }
+
+                var fileNameWithoutExtension = photo.UserId.ToString();
+
+                var existingFiles = Directory.GetFiles(uploadsDirectory, fileNameWithoutExtension + ".*");
+                foreach (var existingFile in existingFiles)
+                {
+                    var existingFileExtension = Path.GetExtension(existingFile).ToLower();
+                    if (existingFileExtension == ".png" || existingFileExtension == ".jpg" || existingFileExtension == ".jpeg")
+                    {
+                        System.IO.File.Delete(existingFile);
+                    }
+                }
+
+                var newFileName = fileNameWithoutExtension + fileExtension;
+                var newFilePath = Path.Combine(uploadsDirectory, newFileName);
+
+                using (var fileStream = new FileStream(newFilePath, FileMode.Create))
+                {
+                    photo.Photo.CopyTo(fileStream);
+                }
+
+                return Ok(new { success = true });
+            }
+
+            return BadRequest("Geçerli bir fotoğraf yüklenmedi.");
+        }
+
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("update-user-password")]
+        public IActionResult UpdatePassword([FromBody] UpdatePassword user)
+        {
+            var userId = UserId();
+            var newUser = _userService.UpdatePassword(userId, user.NewPassword);
+            if (newUser == 0)
             {
                 return Ok(new { success = false });
             }
@@ -202,12 +332,38 @@ namespace AdminPanel.Controllers.Organization
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("update-user-password")]
-        public IActionResult UpdatePassword([FromBody] Password user)
+        [HttpPost("delete-user")]
+        public IActionResult DeleteUser(int userId)
         {
-            var userId = UserId();
-            var newUser = _userService.UpdatePassword(userId, user.NewPassword);
-            if (newUser == 0)
+            var user = _userService.IsDeletedUser(userId);
+            if (user == 0)
+            {
+                return Ok(new { success = false });
+            }
+            return Ok(new { success = true });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("delete-users")]
+        public IActionResult DeleteUsers([FromBody] DeleteUsers user)
+        {
+            foreach (var item in user.UserId)
+            {
+                var deleteUser = _userService.IsDeletedUser(item);
+                if (deleteUser == 0)
+                {
+                    return Ok(new { success = false });
+                }
+            }
+            return Ok(new { success = true });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("status-user")]
+        public IActionResult StatusUser(int userId)
+        {
+            var user = _userService.IsActiveUser(userId);
+            if (user == 0)
             {
                 return Ok(new { success = false });
             }
