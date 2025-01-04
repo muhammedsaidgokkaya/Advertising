@@ -8,7 +8,7 @@ def get_facebook_ads(access_token, ad_account_id, start_date, end_date):
     parameters = {
         "access_token": access_token,
         "fields": (
-            "name,configured_status,adset{name,bid_strategy,daily_budget,updated_time},"
+            "id,name,configured_status,adset{name,bid_strategy,daily_budget,updated_time},"
             "insights.time_range({"f"since:'{start_date}', until:'{end_date}'"
             "}){reach,impressions,cpc,cpm,spend,quality_ranking,engagement_rate_ranking,conversion_rate_ranking,date_start,date_stop}"
         )

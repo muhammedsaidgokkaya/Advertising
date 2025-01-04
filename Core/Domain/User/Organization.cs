@@ -14,6 +14,8 @@ namespace Core.Domain.User
         public string ZipCode { get; set; }
         public string TaskNumber { get; set; }
         public string Phone { get; set; }
+        public string MetaAccount { get; set; }
+        public string GoogleAccount { get; set; }
         public virtual ICollection<User> User { get; set; }
     }
 }

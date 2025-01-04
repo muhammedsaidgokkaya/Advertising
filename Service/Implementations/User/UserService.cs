@@ -105,7 +105,7 @@ namespace Service.Implementations.User
         #endregion
 
         #region User
-        public int AddUser(int organizationId, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address, string photo, string userName, string password)
+        public int AddUser(int organizationId, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address, string userName, string password)
         {
             var organization = GetOrganizationById(organizationId);
             if (organization != null)
@@ -128,7 +128,6 @@ namespace Service.Implementations.User
                     DateOfBirth = dateOfBirth,
                     Gender = gender,
                     Address = address,
-                    Photo = photo,
                     UserName = userName,
                     Password = password,
                     InsertedDate = DateTime.UtcNow,
@@ -244,7 +243,7 @@ namespace Service.Implementations.User
 
         public Core.Domain.User.User GetUserLogin(string userName, string password)
         {
-            var data = _repository.FilterAsQueryable<Core.Domain.User.User>(p => p.IsActive)
+            var data = _repository.FilterAsQueryable<Core.Domain.User.User>(p => p.IsActive && !p.IsDeleted)
                 .IncludeUser()
                 .FirstOrDefault(u => u.UserName == userName && u.Password == password); ;
             return data;

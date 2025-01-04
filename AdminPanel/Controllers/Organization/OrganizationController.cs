@@ -166,8 +166,10 @@ namespace AdminPanel.Controllers.Organization
 
             var password = _defaultValues.GenerateRandomPassword();
 
+            var passwordHash = _defaultValues.HashPassword(password);
+
             var newUser = _userService.AddUser(org.OrganizationId, user.FirstName, user.LastName, user.Mail,
-                user.Phone, user.Title, dateOfBirth, user.Gender, user.Address, "photo", username, password);
+                user.Phone, user.Title, dateOfBirth, user.Gender, user.Address, username, passwordHash);
 
             if (newUser == 0)
             {

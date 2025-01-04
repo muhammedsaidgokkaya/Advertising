@@ -3,11 +3,14 @@ using AdminPanel.Models.Meta.AdSet;
 using AdminPanel.Models.Meta.AdvertisingAccount;
 using AdminPanel.Models.Meta.Business;
 using AdminPanel.Models.Meta.Campaign;
+using AdminPanel.Models.Meta.Charts;
 using AdminPanel.Models.Meta.Insight;
 using AdminPanel.Models.Meta.Report;
+using Core.Domain.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
 using Utilities.Helper;
@@ -25,6 +28,7 @@ namespace AdminPanel.Controllers.Meta
         private readonly MetaService _metaService;
         private readonly MetaData _metaData;
         private readonly DefaultValues _defaultValues;
+        private readonly PythonRun _pythonRun;
 
         public MetaController(ILogger<MetaController> logger, MetaService metaService)
         {
@@ -33,6 +37,7 @@ namespace AdminPanel.Controllers.Meta
             _metaService = metaService;
             _metaData = new MetaData();
             _defaultValues = new DefaultValues();
+            _pythonRun = new PythonRun();
         }
 
         [HttpGet("business")]
@@ -72,134 +77,118 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("ads")]
-        public ActionResult<IEnumerable<AdResponse>> GetAds(string accountId, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<Ad>> GetAds(DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var ads = _metaData.AdsAdmin(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
-            var data = new AdResponse
-            {
-                Data = ads.Data?.Select(q => new Ad
-                {
-                    Name = q.Name,
-                    Status = q.Status,
-                    AdSet = new AdSet
-                    {
-                        Name = q.AdSet.Name,
-                        BidStrategy = q.AdSet.BidStrategy,
-                        DailyBudget = q.AdSet.DailyBudget,
-                        UpdateTime = q.AdSet.UpdateTime,
-                    },
-                    Insights = new InsightResponse
-                    {
-                        Data = q.Insights?.Data?.Select(i => new Insight
-                        {
-                            Reach = i.Reach,
-                            Impressions = i.Impressions,
-                            Cpc = i.Cpc,
-                            Cpm = i.Cpm,
-                            Spend = i.Spend,
-                            ConversionRateRanking = i.ConversionRateRanking,
-                            EngagementRateRanking = i.EngagementRateRanking,
-                            QualityRanking = i.QualityRanking,
-                            DateStart = i.DateStart,
-                            DateStop = i.DateStop,
-                            Actions = i.Actions?.Select(action => new AdminPanel.Models.Meta.Action.Action
-                            {
-                                ActionType = action.ActionType,
-                                Value = action.Value
-                            }).ToList() ?? new List<Models.Meta.Action.Action>()
-                        }).ToList() ?? new List<Insight>()
-                    }
-                }).ToList() ?? new List<Ad>()
-            };
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var ads = _metaData.AdsAdmin(accessToken.AccessToken, organization.MetaAccount, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
-            return Ok(new List<AdResponse> { data });
+            var data = ads.Data?.Select(q => new Ad
+            {
+                Id = q.Id,
+                Name = q.Name,
+                Status = q.Status == "ACTIVE" ? "Aktif" : "Pasif",
+                AdSet = new AdSet
+                {
+                    Name = q.AdSet.Name,
+                    BidStrategy = _defaultValues.GetFormattedBidStrategy(q.AdSet.BidStrategy),
+                    DailyBudget = (q.AdSet.DailyBudget / 100),
+                    UpdateTime = q.AdSet.UpdateTime,
+                },
+                Insights = new InsightResponse
+                {
+                    Data = q.Insights?.Data?.Select(i => new Insight
+                    {
+                        Reach = i.Reach,
+                        Impressions = i.Impressions,
+                        Cpc = i.Cpc,
+                        Cpm = i.Cpm,
+                        Spend = i.Spend,
+                        ConversionRateRanking = _defaultValues.FormatRanking(i.ConversionRateRanking),
+                        EngagementRateRanking = _defaultValues.FormatRanking(i.EngagementRateRanking),
+                        QualityRanking = _defaultValues.FormatRanking(i.QualityRanking),
+                        DateStart = i.DateStart,
+                        DateStop = i.DateStop,
+                    }).ToList() ?? new List<Insight>()
+                }
+            }).ToList() ?? new List<Ad>();
+
+            return Ok(data);
         }
 
         [HttpGet("adsets")]
-        public ActionResult<IEnumerable<AdSetResponse>> GetAdSets(string accountId, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<AdSet>> GetAdSets(DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var adSets = _metaData.AdSetsAdmin(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
-            var data = new AdSetResponse
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var adSets = _metaData.AdSetsAdmin(accessToken.AccessToken, organization.MetaAccount, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var data = adSets.Data?.Select(q => new AdSet
             {
-                Data = adSets.Data?.Select(q => new AdSet
+                Id = q.Id,
+                Name = q.Name,
+                Status = q.Status == "ACTIVE" ? "Aktif" : "Pasif",
+                BidStrategy = _defaultValues.GetFormattedBidStrategy(q.BidStrategy),
+                DailyBudget = (q.DailyBudget / 100),
+                LifeTimeBudget = q.LifeTimeBudget,
+                UpdateTime = q.UpdateTime,
+                StartTime = q.StartTime,
+                EndTime = q.EndTime,
+                Insights = new InsightResponse
                 {
-                    Id = q.Id,
-                    Name = q.Name,
-                    Status = q.Status,
-                    BidStrategy = q.BidStrategy,
-                    DailyBudget = q.DailyBudget,
-                    LifeTimeBudget = q.LifeTimeBudget,
-                    UpdateTime = q.UpdateTime,
-                    StartTime = q.StartTime,
-                    EndTime = q.EndTime,
-                    Insights = new InsightResponse
+                    Data = q.Insights?.Data?.Select(i => new Insight
                     {
-                        Data = q.Insights?.Data?.Select(i => new Insight
-                        {
-                            Reach = i.Reach,
-                            Impressions = i.Impressions,
-                            Cpc = i.Cpc,
-                            Cpm = i.Cpm,
-                            Spend = i.Spend,
-                            DateStart = i.DateStart,
-                            DateStop = i.DateStop,
-                            Actions = i.Actions?.Select(action => new AdminPanel.Models.Meta.Action.Action
-                            {
-                                ActionType = action.ActionType,
-                                Value = action.Value
-                            }).ToList() ?? new List<Models.Meta.Action.Action>()
-                        }).ToList() ?? new List<Insight>()
-                    }
-                }).ToList() ?? new List<AdSet>()
-            };
+                        Reach = i.Reach,
+                        Impressions = i.Impressions,
+                        Cpc = i.Cpc,
+                        Cpm = i.Cpm,
+                        Spend = i.Spend,
+                        DateStart = i.DateStart,
+                        DateStop = i.DateStop,
+                    }).ToList() ?? new List<Insight>()
+                }
+            }).ToList() ?? new List<AdSet>();
 
-            return Ok(new List<AdSetResponse> { data });
+            return Ok(data);
         }
 
         [HttpGet("campaigns")]
-        public ActionResult<IEnumerable<CampaignResponse>> GetCampaigns(string accountId, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<Campaign>> GetCampaigns(DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var campaigns = _metaData.CampaignsAdmin(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
-            var data = new CampaignResponse
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var campaigns = _metaData.CampaignsAdmin(accessToken.AccessToken, organization.MetaAccount, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var data = campaigns.Data?.Select(q => new Campaign
             {
-                Data = campaigns.Data?.Select(q => new Campaign
+                Id = q.Id,
+                Name = q.Name,
+                Status = q.Status == "ACTIVE" ? "Aktif" : "Pasif",
+                AccountId = q.AccountId,
+                EndTime = q.EndTime,
+                Insights = new InsightResponse
                 {
-                    Id = q.Id,
-                    Name = q.Name,
-                    Status = q.Status,
-                    AccountId = q.AccountId,
-                    EndTime = q.EndTime,
-                    Insights = new InsightResponse
+                    Data = q.Insights?.Data?.Select(i => new Insight
                     {
-                        Data = q.Insights?.Data?.Select(i => new Insight
-                        {
-                            Reach = i.Reach,
-                            Impressions = i.Impressions,
-                            Cpc = i.Cpc,
-                            Cpm = i.Cpm,
-                            Spend = i.Spend,
-                            DateStart = i.DateStart,
-                            DateStop = i.DateStop,
-                            Actions = i.Actions?.Select(action => new AdminPanel.Models.Meta.Action.Action
-                            {
-                                ActionType = action.ActionType,
-                                Value = action.Value
-                            }).ToList() ?? new List<Models.Meta.Action.Action>()
-                        }).ToList() ?? new List<Insight>()
-                    }
-                }).ToList() ?? new List<Campaign>()
-            };
+                        Reach = i.Reach,
+                        Impressions = i.Impressions,
+                        Cpc = i.Cpc,
+                        Cpm = i.Cpm,
+                        Spend = i.Spend,
+                        DateStart = i.DateStart,
+                        DateStop = i.DateStop,
+                    }).ToList() ?? new List<Insight>()
+                }
+            }).ToList() ?? new List<Campaign>();
 
-            return Ok(new List<CampaignResponse> { data });
+            return Ok(data);
         }
 
         [HttpGet("general-query")]
@@ -324,6 +313,39 @@ namespace AdminPanel.Controllers.Meta
             };
 
             return Ok(new List<ReportFilterResponse> { data });
+        }
+
+        [HttpGet("charts")]
+        public ActionResult<ApiResponse> GetCharts()
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var defaultValues = _defaultValues.DefaultMounth();
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "Charts", "charts.py");
+
+            try
+            {
+                var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, accessToken.AccessToken, organization.MetaAccount, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+
+                var response = JsonConvert.DeserializeObject<ApiResponse>(jsonOutput?.ToString() ?? string.Empty);
+
+                if (response == null)
+                {
+                    throw new Exception("Python scriptinden geçersiz veri döndü.");
+                }
+
+                return response;
+            }
+            catch (JsonSerializationException ex)
+            {
+                throw new Exception("JSON dönüşüm hatası: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Python scriptinden veri alınırken hata oluştu: " + ex.Message);
+            }
         }
 
         private int UserId()

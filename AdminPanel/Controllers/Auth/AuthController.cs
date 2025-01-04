@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Implementations;
 using Service.Implementations.User;
+using Utilities.Helper;
 
 namespace AdminPanel.Controllers.Auth
 {
@@ -13,17 +14,20 @@ namespace AdminPanel.Controllers.Auth
     {
         private readonly JwtService _jwtService;
         private readonly UserService _userService;
+        private readonly DefaultValues _defaultValues;
 
         public AuthController(JwtService jwtService)
         {
             _jwtService = jwtService;
             _userService = new UserService();
+            _defaultValues = new DefaultValues();
         }
 
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest model)
         {
-            var user = _userService.GetUserLogin(model.UserName, model.Password);
+            var passwordHash = _defaultValues.HashPassword(model.Password);
+            var user = _userService.GetUserLogin(model.UserName, passwordHash);
 
             if (user == null) return Unauthorized("Invalid credentials");
 

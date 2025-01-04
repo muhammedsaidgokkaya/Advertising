@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Core.Migrations
 {
     [DbContext(typeof(Context))]
-    [Migration("20241227112309_mig4")]
-    partial class mig4
+    [Migration("20250101134517_mg322")]
+    partial class mg322
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -216,6 +216,10 @@ namespace Core.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("GoogleAccount")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("InsertedDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -224,6 +228,10 @@ namespace Core.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("MetaAccount")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -281,20 +289,8 @@ namespace Core.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Compact")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Contrast")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DarkMode")
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Family")
-                        .HasColumnType("text");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -317,9 +313,6 @@ namespace Core.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Layout")
-                        .HasColumnType("text");
-
                     b.Property<string>("Mail")
                         .IsRequired()
                         .HasColumnType("text");
@@ -333,19 +326,6 @@ namespace Core.Migrations
 
                     b.Property<string>("Phone")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Photo")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Presets")
-                        .HasColumnType("text");
-
-                    b.Property<string>("RightToLeft")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Size")
                         .HasColumnType("text");
 
                     b.Property<string>("Title")

@@ -5,6 +5,8 @@ namespace AdminPanel.Models.Meta.Ad
 {
     public class Ad
     {
+        public string Id { get; set; }
+
         public string Name { get; set; }
 
         public string Status { get; set; }

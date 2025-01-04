@@ -29,7 +29,7 @@ namespace AdminPanel.Controllers.Meta
             _metaData = new MetaData();
         }
 
-        // https://www.facebook.com/v17.0/dialog/oauth?client_id=587025860502952&redirect_uri=https://localhost:7081/api/MetaOauth/call-back&scope=ads_read,ads_management,business_management,read_insights,pages_manage_ads&response_type=token
+        // https://www.facebook.com/v17.0/dialog/oauth?client_id=587025860502952&redirect_uri=https://localhost:44327/api/MetaOauth/call-back&scope=ads_read,ads_management,business_management,read_insights,pages_manage_ads,leads_retrieval&response_type=token
         [Authorize(Roles = "SuperAdmin,Admin")]
         [HttpGet("call-back")]
         public ActionResult<IEnumerable<MetaAccessToken>> Get(string access_token, string data_access_expiration_time, string expires_in)
