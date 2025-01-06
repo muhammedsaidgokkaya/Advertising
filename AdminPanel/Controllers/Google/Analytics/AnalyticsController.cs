@@ -62,81 +62,95 @@ namespace AdminPanel.Controllers.Google.Analytics
         }
 
         [HttpGet("dashboards")]
-        public ActionResult<IEnumerable<DashboardResponse>> GetDashboard(string property, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<DashboardResponse>> GetDashboard(DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
-            var propertyId = _defaultValues.GoogleProperty(property);
-            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 90);
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var propertyId = _defaultValues.GoogleProperty(organization.GoogleAnalytics);
             var dashboard = _googleData.DashboardAdmin(accessTokenControl, propertyId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
-            var dashboards = dashboard.Select(gr => new DashboardResponse
+            var dashboards = dashboard.Select(group => new DashboardResponse
             {
-                ActiveUsers = gr.ActiveUsers,
-                EventCount = gr.EventCount,
-                EngagedSessions = gr.EngagedSessions,
-                NewUsers = gr.NewUsers,
+                Month = group.Month,
+                Data = group.Data != null && group.Data.Any()
+                    ? group.Data.Select(g => new Dashboard
+                    {
+                        ActiveUsers = g.ActiveUsers == 0 ? 0 : g.ActiveUsers,
+                        EventCount = g.EventCount == 0 ? 0 : g.EventCount,
+                        NewUsers = g.NewUsers == 0 ? 0 : g.NewUsers,
+                        EngagedSessions = g.EngagedSessions == 0 ? 0 : g.EngagedSessions
+                    }).ToList()
+                    : new List<Dashboard>
+                    {
+                        new Dashboard
+                        {
+                            ActiveUsers = 0,
+                            EventCount = 0,
+                            NewUsers = 0,
+                            EngagedSessions = 0
+                        }
+                    }
             }).ToList();
 
             return Ok(dashboards);
         }
 
-        [HttpGet("dashboard-dimensions")]
-        public ActionResult<IEnumerable<DashboardDimensionResponse>> GetDashboardDimension(string property, string dimension, string metric, DateTime? startDate = null, DateTime? endDate = null)
+        [HttpGet("dashboard-dimensions-four")]
+        public ActionResult<IEnumerable<DashboardDimensionResponse>> GetDashboardDimensionFour(string dimension, string metric, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
-            var propertyId = _defaultValues.GoogleProperty(property);
-            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 90);
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var propertyId = _defaultValues.GoogleProperty(organization.GoogleAnalytics);
             var dashboardDimension = _googleData.DashboardDimensionAdmin(accessTokenControl, propertyId, dimension, metric, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
-            var dashboardDimensions = dashboardDimension.Select(gr => new DashboardDimensionResponse
+            var dashboardDimensions = dashboardDimension.Take(4).Select(gr => new DashboardDimensionResponse
             {
-                Dimension = gr.Dimension,
+                Dimension = gr.Dimension == "(not set)" ? "Bilinmeyen" : gr.Dimension,
                 Metric = gr.Metric,
             }).ToList();
 
             return Ok(dashboardDimensions);
         }
 
-        [HttpGet("count-query")]
-        public ActionResult<IEnumerable<GeneralCountResponse>> GetGeneralCountQuery(string property, string dimension, DateTime? startDate = null, DateTime? endDate = null)
+        [HttpGet("dashboard-dimensions-ten")]
+        public ActionResult<IEnumerable<DashboardDimensionResponse>> GetDashboardDimensionTen(string dimension, string metric, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
-            var propertyId = _defaultValues.GoogleProperty(property);
-            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 90);
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var generalCountQuery = _googleData.GeneralCountAdmin(accessTokenControl, propertyId, dimension, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var propertyId = _defaultValues.GoogleProperty(organization.GoogleAnalytics);
+            var dashboardDimension = _googleData.DashboardDimensionAdmin(accessTokenControl, propertyId, dimension, metric, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
-            var generalCounts = generalCountQuery.Select(gr => new GeneralCountResponse
+            var dashboardDimensions = dashboardDimension.Take(10).Select(gr => new DashboardDimensionResponse
             {
-                Dimension = gr.Dimension,
-                TotalUsers = gr.TotalUsers,
-                ActiveUsers = gr.ActiveUsers,
-                NewUsers = gr.NewUsers,
-                ScreenPageViews = gr.ScreenPageViews,
-                Sessions = gr.Sessions,
-                EventCount = gr.EventCount,
-                KeyEvents = gr.KeyEvents,
-                TotalRevenue = gr.TotalRevenue,
-                Transactions = gr.Transactions,
+                Dimension = gr.Dimension == "(not set)" ? "Bilinmeyen" : gr.Dimension,
+                Metric = gr.Metric,
             }).ToList();
 
-            return Ok(generalCounts);
+            return Ok(dashboardDimensions);
         }
 
-        [HttpGet("rate-query")]
-        public ActionResult<IEnumerable<GeneralRateResponse>> GetGeneralRateQuery(string property, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        [HttpGet("query")]
+        public ActionResult<IEnumerable<GeneralRateResponse>> GetGeneralRateQuery(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
-            var propertyId = _defaultValues.GoogleProperty(property);
-            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 90);
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var propertyId = _defaultValues.GoogleProperty(organization.GoogleAnalytics);
             var generalRateQuery = _googleData.GeneralRateAdmin(accessTokenControl, propertyId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
-
             var generalRates = generalRateQuery.Select(gr => new GeneralRateResponse
             {
-                Dimension = gr.Dimension,
+                Dimension = gr.Dimension == "(not set)" ? "Bilinmeyen" : gr.Dimension,
                 AverageSessionDuration = gr.AverageSessionDuration,
                 EventsPerSession = gr.EventsPerSession,
                 SessionKeyEventRate = gr.SessionKeyEventRate,
@@ -148,7 +162,54 @@ namespace AdminPanel.Controllers.Google.Analytics
                 UserKeyEventRate = gr.UserKeyEventRate
             }).ToList();
 
-            return Ok(generalRates);
+            var generalCountQuery = _googleData.GeneralCountAdmin(accessTokenControl, propertyId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var generalCounts = generalCountQuery.Select(gc => new GeneralCountResponse
+            {
+                Dimension = gc.Dimension == "(not set)" ? "Bilinmeyen" : gc.Dimension,
+                TotalUsers = gc.TotalUsers,
+                ActiveUsers = gc.ActiveUsers,
+                NewUsers = gc.NewUsers,
+                ScreenPageViews = gc.ScreenPageViews,
+                Sessions = gc.Sessions,
+                EventCount = gc.EventCount,
+                KeyEvents = gc.KeyEvents,
+                TotalRevenue = gc.TotalRevenue,
+                Transactions = gc.Transactions
+            }).ToList();
+
+            var combinedData = (from rate in generalRates
+                                join count in generalCounts
+                                on rate.Dimension equals count.Dimension
+                                select new CombinedRateCountResponse
+                                {
+                                    Dimension = rate.Dimension,
+                                    AverageSessionDuration = rate.AverageSessionDuration,
+                                    EventsPerSession = rate.EventsPerSession,
+                                    SessionKeyEventRate = rate.SessionKeyEventRate,
+                                    ScreenPageViewsPerSession = rate.ScreenPageViewsPerSession,
+                                    EngagementRate = rate.EngagementRate,
+                                    EngagedSessions = rate.EngagedSessions,
+                                    ScreenPageViewsPerUser = rate.ScreenPageViewsPerUser,
+                                    EventCountPerUser = rate.EventCountPerUser,
+                                    UserKeyEventRate = rate.UserKeyEventRate,
+                                    TotalUsers = count.TotalUsers,
+                                    ActiveUsers = count.ActiveUsers,
+                                    NewUsers = count.NewUsers,
+                                    ScreenPageViews = count.ScreenPageViews,
+                                    Sessions = count.Sessions,
+                                    EventCount = count.EventCount,
+                                    KeyEvents = count.KeyEvents,
+                                    TotalRevenue = count.TotalRevenue,
+                                    Transactions = count.Transactions
+                                }).ToList();
+
+            var resultWithIds = combinedData.Select((data, index) =>
+            {
+                data.Id = index + 1;
+                return data;
+            }).ToList();
+
+            return Ok(resultWithIds);
         }
 
         private int UserId()

@@ -16,6 +16,8 @@ namespace Core.Domain.User
         public string Phone { get; set; }
         public string MetaAccount { get; set; }
         public string GoogleAccount { get; set; }
+        public string GoogleAnalytics { get; set; }
+        public string GoogleSearchConsole { get; set; }
         public virtual ICollection<User> User { get; set; }
     }
 }

@@ -332,6 +332,15 @@ namespace Utilities.Utilities.GoogleData
 
         public class DashboardResponse
         {
+            [JsonProperty("month")]
+            public string Month { get; set; }
+
+            [JsonProperty("data")]
+            public List<Dashboard> Data { get; set; }
+        }
+
+        public class Dashboard
+        {
             [JsonProperty("activeUsers")]
             public int ActiveUsers { get; set; }
 

@@ -9,7 +9,8 @@ Dimensions =
     pageTitle: Sayfa Baþlýðý, 
     unifiedScreenClass: Sayfa Baþlýðý ve Ekran Sýnýfý, 
     language: Dil, 
-    city: Þehir
+    city: Þehir,
+    continent: Kýta
 
 Metrics =
     averageSessionDuration: Ortalama oturum süresi,
