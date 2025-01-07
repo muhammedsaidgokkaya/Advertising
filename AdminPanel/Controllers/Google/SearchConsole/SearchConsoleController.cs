@@ -204,12 +204,12 @@ namespace AdminPanel.Controllers.Google.SearchConsole
             var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, organization.GoogleSearchConsole, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = searchConsoleQuery
-                .Select((r, index) => new Row
-                {
-                    Keys = r.Keys,
-                    Clicks = r.Clicks,
-                })
-                .ToList();
+            .Select(r => new Row
+            {
+                Keys = r.Keys,
+                Clicks = r.Clicks,
+            })
+            .ToList();
 
             return Ok(data);
         }
