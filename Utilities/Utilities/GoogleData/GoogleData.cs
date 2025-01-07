@@ -81,14 +81,30 @@ namespace Utilities.Utilities.GoogleData
             }
         }
 
-        public RowResponse SearchConsoleQueryAdmin(string access_token, string site_url, string rows, string dimensions, string start_date, string end_date)
+        public List<Row> SearchConsoleQueryAdmin(string access_token, string site_url, string rows, string dimensions, string start_date, string end_date)
         {
             string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "searchConsoleQuery.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url, rows, dimensions, start_date, end_date);
 
             try
             {
-                var tokenResponse = JsonConvert.DeserializeObject<RowResponse>(jsonOutput.ToString());
+                var tokenResponse = JsonConvert.DeserializeObject<List<Row>>(jsonOutput.ToString());
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
+        public SearchConsole SearchConsoleAdmin(string access_token, string site_url, string start_date, string end_date)
+        {
+            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "searchConsole.py");
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<SearchConsole>(jsonOutput.ToString());
                 return tokenResponse;
             }
             catch (Exception ex)
@@ -268,7 +284,7 @@ namespace Utilities.Utilities.GoogleData
         public class Row
         {
             [JsonProperty("keys")]
-            public List<string> Keys { get; set; }
+            public string Keys { get; set; }
 
             [JsonProperty("clicks")]
             public int Clicks { get; set; }
@@ -290,6 +306,21 @@ namespace Utilities.Utilities.GoogleData
 
             [JsonProperty("responseAggregationType")]
             public string ResponseAggregationType { get; set; }
+        }
+
+        public class SearchConsole
+        {
+            [JsonProperty("total_clicks")]
+            public int TotalClicks { get; set; }
+
+            [JsonProperty("total_impressions")]
+            public int TotalImpressions { get; set; }
+
+            [JsonProperty("average_ctr")]
+            public double AverageCtr { get; set; }
+
+            [JsonProperty("average_position")]
+            public double AveragePosition { get; set; }
         }
         #endregion
 

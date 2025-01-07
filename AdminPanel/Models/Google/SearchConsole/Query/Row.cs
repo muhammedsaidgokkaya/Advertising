@@ -2,7 +2,9 @@
 {
     public class Row
     {
-        public List<string> Keys { get; set; }
+        public int Id { get; set; }
+
+        public string Keys { get; set; }
 
         public int Clicks { get; set; }
 

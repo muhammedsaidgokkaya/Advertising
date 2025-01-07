@@ -88,27 +88,130 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         }
 
         [HttpGet("get-search-console-querys")]
-        public ActionResult<IEnumerable<RowResponse>> GetSearchConsoleQuery(string url, string dimensions, string rows = "10", DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<Row>> GetSearchConsoleQuery(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
-            var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, url, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var rows = "5000";
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, organization.GoogleSearchConsole, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
-            var data = new RowResponse
-            {
-                Rows = searchConsoleQuery.Rows?.Select(s => new Row
+            var data = searchConsoleQuery
+                .Select((r, index) => new Row
                 {
-                    Keys = s.Keys,
-                    Clicks = s.Clicks,
-                    Impressions = s.Impressions,
-                    Ctr = s.Ctr,
-                    Position = s.Position
-                }).ToList() ?? new List<Row>(),
-                ResponseAggregationType = searchConsoleQuery.ResponseAggregationType
+                    Id = index + 1,
+                    Keys = r.Keys,
+                    Clicks = r.Clicks,
+                    Impressions = r.Impressions,
+                    Ctr = r.Ctr,
+                    Position = r.Position,
+                })
+                .ToList();
+
+            return Ok(data);
+        }
+
+        [HttpGet("get-search-console")]
+        public ActionResult<IEnumerable<SearchConsoleDashboard>> GetSearchConsole(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var accessTokenControl = _googleTokenControl.GetControl(userId);
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var searchConsoleQuery = _googleData.SearchConsoleAdmin(accessTokenControl, organization.GoogleSearchConsole, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+
+            var data = new SearchConsoleDashboard
+            {
+                TotalClicks = searchConsoleQuery.TotalClicks,
+                TotalImpressions = searchConsoleQuery.TotalImpressions,
+                AverageCtr = searchConsoleQuery.AverageCtr,
+                AveragePosition = searchConsoleQuery.AveragePosition,
             };
 
-            return Ok(new List<RowResponse> { data });
+            return Ok(new List<SearchConsoleDashboard> { data });
+        }
+
+        //[HttpGet("get-search-console-chart-apex-ten")]
+        //public ActionResult<IEnumerable<Row>> GetSearchConsoleChartApexTen(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        //{
+        //    var userId = UserId();
+        //    var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+        //    var accessTokenControl = _googleTokenControl.GetControl(userId);
+        //    var rows = "5000";
+        //    var user = _userService.GetUserById(userId);
+        //    var organization = _userService.GetOrganizationById(user.OrganizationId);
+
+        //    var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(
+        //        accessTokenControl,
+        //        organization.GoogleSearchConsole,
+        //        rows,
+        //        dimensions,
+        //        defaultValues[0].ToString("yyyy-MM-dd"),
+        //        defaultValues[1].ToString("yyyy-MM-dd")
+        //    );
+
+        //    var data = searchConsoleQuery
+        //        .Select((r, index) => new Row
+        //        {
+        //            Keys = string.Join(", ", r.Keys),
+        //            Clicks = r.Clicks,
+        //            Impressions = r.Impressions,
+        //        }).ToList();
+
+        //    if (dimensions == "date")
+        //    {
+        //        data = data.OrderByDescending(d => d.Keys)
+        //        .Take(10)
+        //        .ToList();
+        //    }
+        //    else
+        //    {
+        //        data = data
+        //        .Take(10)
+        //        .ToList();
+        //    }
+
+        //    var categories = data.Select(d => d.Keys).ToArray();
+        //    var clicksData = data.Select(d => d.Clicks).ToArray();
+        //    var impressionsData = data.Select(d => d.Impressions).ToArray();
+
+        //    return Ok(new
+        //    {
+        //        series = new[]
+        //        {
+        //            new
+        //            {
+        //                name = "Gösterim",
+        //                data = impressionsData,
+        //                categories = categories
+        //            },
+        //        },
+        //    });
+        //}
+
+        [HttpGet("get-search-console-chart-ten")]
+        public ActionResult<IEnumerable<Row>> GetSearchConsoleChartTen(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var accessTokenControl = _googleTokenControl.GetControl(userId);
+            var rows = "10";
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, organization.GoogleSearchConsole, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+
+            var data = searchConsoleQuery
+                .Select((r, index) => new Row
+                {
+                    Keys = r.Keys,
+                    Clicks = r.Clicks,
+                })
+                .ToList();
+
+            return Ok(data);
         }
 
         private int UserId()
