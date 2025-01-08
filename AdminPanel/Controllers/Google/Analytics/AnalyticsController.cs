@@ -139,7 +139,7 @@ namespace AdminPanel.Controllers.Google.Analytics
         }
 
         [HttpGet("query")]
-        public ActionResult<IEnumerable<GeneralRateResponse>> GetGeneralRateQuery(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<GeneralRateResponse>> GetGeneralQuery(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
