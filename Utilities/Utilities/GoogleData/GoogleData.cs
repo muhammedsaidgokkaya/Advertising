@@ -321,6 +321,18 @@ namespace Utilities.Utilities.GoogleData
 
             [JsonProperty("average_position")]
             public double AveragePosition { get; set; }
+
+            [JsonProperty("clicks_change")]
+            public double ClicksChange { get; set; }
+
+            [JsonProperty("impressions_change")]
+            public double ImpressionsChange { get; set; }
+
+            [JsonProperty("ctr_change")]
+            public double CtrChange { get; set; }
+
+            [JsonProperty("position_change")]
+            public double PositionChange { get; set; }
         }
         #endregion
 

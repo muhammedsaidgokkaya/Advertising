@@ -129,6 +129,10 @@ namespace AdminPanel.Controllers.Google.SearchConsole
                 TotalImpressions = searchConsoleQuery.TotalImpressions,
                 AverageCtr = searchConsoleQuery.AverageCtr,
                 AveragePosition = searchConsoleQuery.AveragePosition,
+                ClicksChange = searchConsoleQuery.ClicksChange,
+                ImpressionsChange = searchConsoleQuery.ImpressionsChange,
+                CtrChange = searchConsoleQuery.CtrChange,
+                PositionChange = searchConsoleQuery.PositionChange,
             };
 
             return Ok(new List<SearchConsoleDashboard> { data });
