@@ -325,7 +325,8 @@ namespace AdminPanel.Controllers.Organization
         public IActionResult UpdatePassword([FromBody] UpdatePassword user)
         {
             var userId = UserId();
-            var newUser = _userService.UpdatePassword(userId, user.NewPassword);
+            var passwordHash = _defaultValues.HashPassword(user.NewPassword);
+            var newUser = _userService.UpdatePassword(userId, passwordHash);
             if (newUser == 0)
             {
                 return Ok(new { success = false });

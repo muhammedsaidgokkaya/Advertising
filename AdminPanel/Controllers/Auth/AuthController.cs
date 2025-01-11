@@ -1,5 +1,6 @@
 ﻿using AdminPanel.Models.Auth;
 using Core.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Implementations;
@@ -29,18 +30,46 @@ namespace AdminPanel.Controllers.Auth
             var passwordHash = _defaultValues.HashPassword(model.Password);
             var user = _userService.GetUserLogin(model.UserName, passwordHash);
 
-            if (user == null) return Unauthorized("Invalid credentials");
+            if (user == null) return Ok(new { IsSuccess = false, Message = "Kullanıcı adı veya şifre yanlış!" });
 
             var roles = _userService.GetUserRole(user.Id).Select(ur => ur.Role.Name).ToList();
             var token = _jwtService.GenerateToken(user, roles);
 
-            return Ok(new { Token = token });
+            return Ok(new { IsSuccess = true, Token = token });
+        }
+
+        [Authorize]
+        [HttpGet("control")]
+        public IActionResult Control()
+        {
+            var userId = UserId();
+            if (userId != 0)
+            {
+                var user = _userService.GetUserById(userId);
+                if (user != null)
+                {
+                    userId = user.Id;
+                }
+            }
+            return Ok(userId);
         }
 
         public class LoginRequest
         {
             public string UserName { get; set; }
             public string Password { get; set; }
+        }
+
+        private int UserId()
+        {
+            var userIdClaim = HttpContext.User.FindFirst("userId");
+            if (userIdClaim == null)
+            {
+                return 0;
+            }
+
+            int userId = int.Parse(userIdClaim.Value);
+            return userId;
         }
     }
 }

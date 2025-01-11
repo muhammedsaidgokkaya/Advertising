@@ -138,7 +138,7 @@ namespace AdminPanel.Controllers.Google.SearchConsole
             return Ok(new List<SearchConsoleDashboard> { data });
         }
 
-        [HttpGet("get-search-console-clicks-ten")]
+        [HttpGet("get-search-console-chart-ten")]
         public ActionResult<IEnumerable<Row>> GetSearchConsoleChartTen(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
@@ -153,34 +153,6 @@ namespace AdminPanel.Controllers.Google.SearchConsole
             {
                 Keys = r.Keys,
                 Clicks = r.Clicks,
-            }).Take(10).ToList();
-
-            if (dimensions == "date")
-            {
-                data = searchConsoleQuery.Select(r => new Row
-                {
-                    Keys = r.Keys,
-                    Clicks = r.Clicks,
-                }).OrderByDescending(d => d.Keys).Take(10).ToList();
-            }
-
-            return Ok(data);
-        }
-
-        [HttpGet("get-search-console-impressions-ten")]
-        public ActionResult<IEnumerable<Row>> GetSearchConsoleImpressionTen(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            var userId = UserId();
-            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
-            var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var rows = "5000";
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, organization.GoogleSearchConsole, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
-
-            var data = searchConsoleQuery.Select(r => new Row
-            {
-                Keys = r.Keys,
                 Impressions = r.Impressions,
             }).Take(10).ToList();
 
@@ -189,6 +161,7 @@ namespace AdminPanel.Controllers.Google.SearchConsole
                 data = searchConsoleQuery.Select(r => new Row
                 {
                     Keys = r.Keys,
+                    Clicks = r.Clicks,
                     Impressions = r.Impressions,
                 }).OrderByDescending(d => d.Keys).Take(10).ToList();
             }
@@ -196,7 +169,7 @@ namespace AdminPanel.Controllers.Google.SearchConsole
             return Ok(data);
         }
 
-        [HttpGet("get-search-console-clicks-four")]
+        [HttpGet("get-search-console-chart-four")]
         public ActionResult<IEnumerable<Row>> GetSearchConsoleChartFour(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
@@ -211,34 +184,6 @@ namespace AdminPanel.Controllers.Google.SearchConsole
             {
                 Keys = r.Keys,
                 Clicks = r.Clicks,
-            }).OrderBy(d => d.Keys).Take(4).ToList();
-
-            if (dimensions == "date")
-            {
-                data = searchConsoleQuery.Select(r => new Row
-                {
-                    Keys = r.Keys,
-                    Clicks = r.Clicks,
-                }).OrderByDescending(d => d.Keys).Take(4).ToList();
-            }
-
-            return Ok(data);
-        }
-
-        [HttpGet("get-search-console-impressions-four")]
-        public ActionResult<IEnumerable<Row>> GetSearchConsoleImpressionFour(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            var userId = UserId();
-            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
-            var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var rows = "5000";
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, organization.GoogleSearchConsole, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
-
-            var data = searchConsoleQuery.Select(r => new Row
-            {
-                Keys = r.Keys,
                 Impressions = r.Impressions,
             }).OrderBy(d => d.Keys).Take(4).ToList();
 
@@ -247,6 +192,7 @@ namespace AdminPanel.Controllers.Google.SearchConsole
                 data = searchConsoleQuery.Select(r => new Row
                 {
                     Keys = r.Keys,
+                    Clicks = r.Clicks,
                     Impressions = r.Impressions,
                 }).OrderByDescending(d => d.Keys).Take(4).ToList();
             }
