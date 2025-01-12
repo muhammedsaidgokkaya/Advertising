@@ -25,13 +25,13 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         private readonly GoogleData _googleData;
         private readonly DefaultValues _defaultValues;
 
-        public SearchConsoleController(ILogger<SearchConsoleController> logger, GoogleService googleService)
+        public SearchConsoleController(ILogger<SearchConsoleController> logger, GoogleService googleService, GoogleData googleData)
         {
             _logger = logger;
             _userService = new UserService();
             _googleService = googleService;
-            _googleTokenControl = new GoogleTokenControl(googleService);
-            _googleData = new GoogleData();
+            _googleTokenControl = new GoogleTokenControl(googleService, googleData);
+            _googleData = googleData;
             _defaultValues = new DefaultValues();
         }
 

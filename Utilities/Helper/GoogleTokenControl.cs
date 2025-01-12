@@ -15,22 +15,23 @@ namespace Utilities.Helper
     {
         private readonly UserService _userService;
         private readonly GoogleService _googleService;
+        private readonly GoogleData _googleData;
 
-        public GoogleTokenControl(GoogleService googleService)
+        public GoogleTokenControl(GoogleService googleService, GoogleData googleData)
         {
             _userService = new UserService();
             _googleService = googleService;
+            _googleData = googleData;
         }
 
         public string GetControl(int userId)
         {
             var control = _googleService.GetGoogleAccessToken(userId);
-            GoogleData googleData = new GoogleData();
             if (control == null)
             {
                 var model = _googleService.GetGoogleApp();
                 var accessToken = _googleService.GetGoogleAccessTokenControl(userId);
-                var refreshToken = googleData.RefreshAccessTokenAdmin(model.AppId, model.AppSecret, accessToken.RefreshToken);
+                var refreshToken = _googleData.RefreshAccessTokenAdmin(model.AppId, model.AppSecret, accessToken.RefreshToken);
                 var newAccessToken = _googleService.UpdateGoogleAccessToken(accessToken.Id, refreshToken.AccessToken, refreshToken.ExpiresIn);
                 control = _googleService.GetGoogleAccessToken(userId);
             }

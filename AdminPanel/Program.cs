@@ -7,6 +7,8 @@ using Service.Implementations.Google;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
 using System.Text;
+using Utilities.Utilities.GoogleData;
+using Utilities.Utilities.MetaData;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,8 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddSingleton<MetaData>();
+builder.Services.AddSingleton<GoogleData>();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(connectionString))
 {

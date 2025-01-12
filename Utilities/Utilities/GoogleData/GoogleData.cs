@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Utilities.Helper;
@@ -9,16 +10,24 @@ namespace Utilities.Utilities.GoogleData
     public class GoogleData
     {
         private readonly PythonRun _pythonRun;
+        private readonly IConfiguration _configuration;
 
-        public GoogleData()
+        public GoogleData(IConfiguration configuration)
         {
             _pythonRun = new PythonRun();
+            _configuration = configuration;
+        }
+
+        private string GetPythonScriptPath(string relativePath)
+        {
+            string basePath = _configuration["PythonScriptBasePath"];
+            return Path.Combine(basePath, relativePath);
         }
 
         #region Google
         public AccessTokenResponse AccessTokenAdmin(string client_id, string client_secret, string redirect_uri, string authorization_code)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "AccessToken", "accessTokenAdmin.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/AccessToken/accessTokenAdmin.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, client_id, client_secret, redirect_uri, authorization_code);
 
             try
@@ -34,7 +43,7 @@ namespace Utilities.Utilities.GoogleData
 
         public AccessTokenResponse RefreshAccessTokenAdmin(string client_id, string client_secret, string refresh_token)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "AccessToken", "refreshToken.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/AccessToken/refreshToken.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, client_id, client_secret, refresh_token);
 
             try
@@ -51,7 +60,7 @@ namespace Utilities.Utilities.GoogleData
         #region SearchConsole
         public SiteResponse SiteAdmin(string access_token)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "sites.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/SearchConsole/sites.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
 
             try
@@ -67,7 +76,7 @@ namespace Utilities.Utilities.GoogleData
 
         public SitemapResponse SiteMapAdmin(string access_token, string site_url)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "siteMap.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/SearchConsole/siteMap.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url);
 
             try
@@ -83,7 +92,7 @@ namespace Utilities.Utilities.GoogleData
 
         public List<Row> SearchConsoleQueryAdmin(string access_token, string site_url, string rows, string dimensions, string start_date, string end_date)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "searchConsoleQuery.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/SearchConsole/searchConsoleQuery.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url, rows, dimensions, start_date, end_date);
 
             try
@@ -99,7 +108,7 @@ namespace Utilities.Utilities.GoogleData
 
         public SearchConsole SearchConsoleAdmin(string access_token, string site_url, string start_date, string end_date)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "SearchConsole", "searchConsole.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/SearchConsole/searchConsole.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url, start_date, end_date);
 
             try
@@ -117,7 +126,7 @@ namespace Utilities.Utilities.GoogleData
         #region Analytics
         public AccountSummaryResponse AccountSummaryAdmin(string access_token)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "accountSummary.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/accountSummary.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
 
             try
@@ -131,9 +140,9 @@ namespace Utilities.Utilities.GoogleData
             }
         }
 
-        public List<DashboardResponse> DashboardAdmin(string access_token, string property_id, string start_date, string end_date)
+        public async Task<List<DashboardResponse>> DashboardAdmin(string access_token, string property_id, string start_date, string end_date)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "analyticsDashboard.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/analyticsDashboard.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, start_date, end_date);
 
             try
@@ -147,9 +156,9 @@ namespace Utilities.Utilities.GoogleData
             }
         }
 
-        public List<DashboardDimensionResponse> DashboardDimensionAdmin(string access_token, string property_id, string dimension, string metric, string start_date, string end_date)
+        public async Task<List<DashboardDimensionResponse>> DashboardDimensionAdmin(string access_token, string property_id, string dimension, string metric, string start_date, string end_date)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "analyticsDashboardDimension.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/analyticsDashboardDimension.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, metric, start_date, end_date);
 
             try
@@ -165,7 +174,7 @@ namespace Utilities.Utilities.GoogleData
 
         public List<GeneralCountResponse> GeneralCountAdmin(string access_token, string property_id, string dimension, string start_date, string end_date)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "analyticsGeneralCount.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/analyticsGeneralCount.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, start_date, end_date);
 
             try
@@ -181,7 +190,7 @@ namespace Utilities.Utilities.GoogleData
 
         public List<GeneralRateResponse> GeneralRateAdmin(string access_token, string property_id, string dimension, string start_date, string end_date)
         {
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Google", "Analytics", "analyticsGeneralRate.py");
+            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/analyticsGeneralRate.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, start_date, end_date);
 
             try

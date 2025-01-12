@@ -21,12 +21,12 @@ namespace AdminPanel.Controllers.Meta
         private readonly MetaService _metaService;
         private readonly MetaData _metaData;
 
-        public MetaOauthController(ILogger<MetaOauthController> logger, MetaService metaService)
+        public MetaOauthController(ILogger<MetaOauthController> logger, MetaService metaService, MetaData metaData)
         {
             _logger = logger;
             _userService = new UserService();
             _metaService = metaService;
-            _metaData = new MetaData();
+            _metaData = metaData;
         }
 
         // https://www.facebook.com/v17.0/dialog/oauth?client_id=587025860502952&redirect_uri=https://localhost:44327/api/MetaOauth/call-back&scope=ads_read,ads_management,business_management,read_insights,pages_manage_ads,leads_retrieval&response_type=token

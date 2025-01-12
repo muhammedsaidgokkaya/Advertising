@@ -30,12 +30,12 @@ namespace AdminPanel.Controllers.Meta
         private readonly DefaultValues _defaultValues;
         private readonly PythonRun _pythonRun;
 
-        public MetaController(ILogger<MetaController> logger, MetaService metaService)
+        public MetaController(ILogger<MetaController> logger, MetaService metaService, MetaData metaData)
         {
             _logger = logger;
             _userService = new UserService();
             _metaService = metaService;
-            _metaData = new MetaData();
+            _metaData = metaData;
             _defaultValues = new DefaultValues();
             _pythonRun = new PythonRun();
         }

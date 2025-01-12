@@ -20,12 +20,12 @@ namespace AdminPanel.Controllers.Google
         private readonly GoogleService _googleService;
         private readonly GoogleData _googleData;
 
-        public GoogleOauthController(ILogger<GoogleOauthController> logger, GoogleService googleService)
+        public GoogleOauthController(ILogger<GoogleOauthController> logger, GoogleService googleService, GoogleData googleData)
         {
             _logger = logger;
             _userService = new UserService();
             _googleService = googleService;
-            _googleData = new GoogleData();
+            _googleData = googleData;
         }
 
         // https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=876265473668-dkrg8ouj2qaginhpoamfdacf0f83002j.apps.googleusercontent.com&redirect_uri=https://localhost:7081/api/GoogleOauth/call-back&scope=https://www.googleapis.com/auth/analytics.readonly%20https://www.googleapis.com/auth/analytics.manage.users.readonly%20https://www.googleapis.com/auth/webmasters&access_type=offline
