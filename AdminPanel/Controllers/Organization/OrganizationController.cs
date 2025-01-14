@@ -10,6 +10,7 @@ using Service.Implementations;
 using Service.Implementations.Google;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
+using System.ComponentModel.Design;
 using Utilities.Helper;
 using Utilities.Utilities.GoogleData;
 using Utilities.Utilities.MetaData;
@@ -86,6 +87,21 @@ namespace AdminPanel.Controllers.Organization
                 Gender = user.Gender,
                 Address = user.Address,
                 Roles = role.Select(q => q.RoleId).ToList()
+            };
+
+            return Ok(data);
+        }
+
+        [HttpGet("account-count")]
+        public ActionResult<AccountCount> GetOrganizationAccountCount()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+
+            var data = new AccountCount
+            {
+                AccountCounts = organization.AccountCount
             };
 
             return Ok(data);
@@ -193,39 +209,6 @@ namespace AdminPanel.Controllers.Organization
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("add-photo")]
-        public IActionResult AddPhoto([FromForm] AddPhoto photo)
-        {
-            if (photo?.Photo != null)
-            {
-                var uploadsDirectory = @"C:\Users\furka\Desktop\project-template\public\user";
-
-                if (!Directory.Exists(uploadsDirectory))
-                {
-                    Directory.CreateDirectory(uploadsDirectory);
-                }
-
-                var fileExtension = Path.GetExtension(photo.Photo.FileName).ToLower();
-
-                if (fileExtension != ".png" && fileExtension != ".jpg" && fileExtension != ".jpeg")
-                {
-                    return BadRequest("Yalnızca .png, .jpg, .jpeg dosya uzantıları kabul edilmektedir.");
-                }
-
-                var fileName = photo.UserId + fileExtension;
-
-                var filePath = Path.Combine(uploadsDirectory, fileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    photo.Photo.CopyTo(fileStream);
-                }
-            }
-
-            return Ok(new { success = true });
-        }
-
-        [Authorize(Roles = "Admin")]
         [HttpPost("update-admin-user")]
         public IActionResult UpdateAdminUser([FromBody] UpdateUser user)
         {
@@ -319,6 +302,40 @@ namespace AdminPanel.Controllers.Organization
             return BadRequest("Geçerli bir fotoğraf yüklenmedi.");
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpPost("save-selections")]
+        public IActionResult SaveSelections([FromBody] AddAccountSetting payload)
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+
+            var searchUrl = payload.SelectedSites.ToList();
+            var googleSearchConsole = string.Join(",", searchUrl.Select(site => site.SiteUrl));
+
+            var analyticsList = payload.SelectedAnalytics.ToList();
+            var googleAnalytics = string.Join(",",
+                analyticsList.Select(account =>
+                    $"{account.DisplayName}/{string.Join("/", account.PropertySummaries.Select(property => property.Property))}"
+                )
+            );
+
+            var metaAccounts = payload.SelectedAdvertisingAccount.ToList();
+            var metaAccount = string.Join(",", metaAccounts.Select(account => $"{account.Id}/{account.Name}"));
+
+            if (googleSearchConsole != "" && googleAnalytics != "" && metaAccount != "")
+            {
+                var updateOrganization = _userService.UpdateAccountOrganization(organization.Id, googleSearchConsole, googleAnalytics, metaAccount);
+
+                if (updateOrganization == 0)
+                {
+                    return Ok(new { success = false, message = "Tüm alanlarda seçim yaptığınızdan emin olun!" });
+                }
+
+                return Ok(new { success = true });
+            }
+            return Ok(new { success = false, message = "Tüm alanlarda seçim yaptığınızdan emin olun!" });
+        }
 
         [Authorize(Roles = "Admin")]
         [HttpPost("update-user-password")]

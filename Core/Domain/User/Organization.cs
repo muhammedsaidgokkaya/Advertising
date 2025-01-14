@@ -10,14 +10,15 @@ namespace Core.Domain.User
     {
         public string Name { get; set; }
         public int UserCount { get; set; }
+        public int AccountCount { get; set; }
         public string Address { get; set; }
         public string ZipCode { get; set; }
         public string TaskNumber { get; set; }
         public string Phone { get; set; }
-        public string MetaAccount { get; set; }
-        public string GoogleAccount { get; set; }
-        public string GoogleAnalytics { get; set; }
-        public string GoogleSearchConsole { get; set; }
+        public string? MetaAccount { get; set; }
+        public string? GoogleAccount { get; set; }
+        public string? GoogleAnalytics { get; set; }
+        public string? GoogleSearchConsole { get; set; }
         public virtual ICollection<User> User { get; set; }
     }
 }

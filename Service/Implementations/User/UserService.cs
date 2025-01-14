@@ -28,12 +28,13 @@ namespace Service.Implementations.User
         }
 
         #region Organization
-        public int AddOrganization(string name, int userCount = 2, string address = "", string zipCode = "", string taskNumber = "", string phone = "")
+        public int AddOrganization(string name, int userCount = 5, int accountCount = 2, string address = "", string zipCode = "", string taskNumber = "", string phone = "")
         {
             var organization = new Organization
             {
                 Name = name,
                 UserCount = userCount,
+                AccountCount = accountCount,
                 Address = address,
                 ZipCode = zipCode,
                 TaskNumber = taskNumber,
@@ -56,6 +57,22 @@ namespace Service.Implementations.User
                 organization.Address = address;
                 organization.ZipCode = zipCode;
                 organization.TaskNumber = taskNumber;
+                organization.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(organization);
+                return organization.Id;
+            }
+            return 0;
+        }
+
+        public int UpdateAccountOrganization(int id, string googleSearchConsole, string googleAnalytics, string metaAccount)
+        {
+            var organization = GetOrganizationById(id);
+            if (organization != null)
+            {
+                organization.GoogleSearchConsole = googleSearchConsole;
+                organization.GoogleAnalytics = googleAnalytics;
+                organization.MetaAccount = metaAccount;
                 organization.UpdateDate = DateTime.UtcNow;
 
                 _repository.Update(organization);
@@ -136,6 +153,19 @@ namespace Service.Implementations.User
                 };
 
                 _repository.Save(user);
+                return user.Id;
+            }
+            return 0;
+        }
+
+        public int UpdateUserName(int id, string userName)
+        {
+            var user = GetUserById(id);
+            if (user != null)
+            {
+                user.UserName = userName;
+
+                _repository.Update(user);
                 return user.Id;
             }
             return 0;

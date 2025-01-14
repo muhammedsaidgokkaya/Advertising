@@ -58,8 +58,8 @@ namespace AdminPanel.Controllers.Meta
             return Ok(new List<BusinessResponse> { data });
         }
 
-        [HttpGet("advertising-accounts")]
-        public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccounts(string businessId)
+        [HttpGet("advertising-account")]
+        public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccount(string businessId)
         {
             var userId = UserId();
             var accessToken = _metaService.GetLongAccessToken(userId);
@@ -75,6 +75,35 @@ namespace AdminPanel.Controllers.Meta
 
             return Ok(new List<AdvertisingAccountsResponse> { data });
         }
+
+        [HttpGet("advertising-accounts")]
+        public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccounts([FromQuery] string businessIds)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+
+            var businessIdList = businessIds.Split(',').ToList();
+
+            var allAdvertisingAccounts = new List<AdvertisingAccount>();
+
+            foreach (var businessId in businessIdList)
+            {
+                var advertisingAccount = _metaData.AdvertisingAccountsAdmin(accessToken.AccessToken, businessId);
+                allAdvertisingAccounts.AddRange(advertisingAccount.Data?.Select(q => new AdvertisingAccount
+                {
+                    Id = q.Id,
+                    Name = q.Name
+                }).ToList() ?? new List<AdvertisingAccount>());
+            }
+
+            var data = new AdvertisingAccountsResponse
+            {
+                Data = allAdvertisingAccounts
+            };
+
+            return Ok(new List<AdvertisingAccountsResponse> { data });
+        }
+
 
         [HttpGet("ads")]
         public ActionResult<IEnumerable<Ad>> GetAds(DateTime? startDate = null, DateTime? endDate = null)

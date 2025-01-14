@@ -38,8 +38,19 @@ namespace AdminPanel.Controllers.Meta
             var user = _userService.GetUserById(userId);
             var app = _metaService.GetMetaApp();
             var accessToken = _metaData.LongAccessTokenAdmin(app.AppId, app.AppSecret, access_token);
-            var metaAccessToken = _metaService.AddLongAccessToken(app.Id, user.OrganizationId, accessToken.AccessToken, accessToken.TokenType, accessToken.ExpiresIn);
+            if (accessToken.AccessToken == null)
+            {
+                return Ok(0);
+            }
 
+            var metaTokenControl = _metaService.GetLongAccessToken(userId);
+
+            if (metaTokenControl != null)
+            {
+                return Ok(0);
+            }
+
+            var metaAccessToken = _metaService.AddLongAccessToken(app.Id, user.OrganizationId, accessToken.AccessToken, accessToken.TokenType, accessToken.ExpiresIn);
             var meta = new MetaAccessToken
             {
                 AccessToken = accessToken.AccessToken,
@@ -49,11 +60,9 @@ namespace AdminPanel.Controllers.Meta
             return Ok(meta);
         }
 
-        [Authorize(Roles = "SuperAdmin")]
         [HttpGet("get-meta-app")]
         public ActionResult<MetaApp> GetGoogleApp()
         {
-            var userId = UserId();
             var model = _metaService.GetMetaApp();
             var metaApp = new MetaApp
             {

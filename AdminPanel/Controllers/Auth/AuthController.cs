@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Implementations;
+using Service.Implementations.Google;
+using Service.Implementations.Meta;
 using Service.Implementations.User;
 using Utilities.Helper;
 
@@ -16,12 +18,16 @@ namespace AdminPanel.Controllers.Auth
         private readonly JwtService _jwtService;
         private readonly UserService _userService;
         private readonly DefaultValues _defaultValues;
+        private readonly MetaService _metaService;
+        private readonly GoogleService _googleService;
 
-        public AuthController(JwtService jwtService)
+        public AuthController(JwtService jwtService, MetaService metaService, GoogleService googleService)
         {
             _jwtService = jwtService;
             _userService = new UserService();
             _defaultValues = new DefaultValues();
+            _metaService = metaService;
+            _googleService = googleService;
         }
 
         [HttpPost("login")]
@@ -50,8 +56,61 @@ namespace AdminPanel.Controllers.Auth
                 {
                     userId = user.Id;
                 }
+                else
+                {
+                    userId = 0;
+                }
             }
             return Ok(userId);
+        }
+
+        [Authorize]
+        [HttpGet("meta-token-control")]
+        public IActionResult MetaControl()
+        {
+            var userId = UserId();
+            var meta = _metaService.GetLongAccessToken(userId);
+            if (meta == null)
+            {
+                return Ok(0);
+            }
+            else
+            {
+                return Ok(1);
+            }
+        }
+
+        [Authorize]
+        [HttpGet("google-token-control")]
+        public IActionResult GoogleControl()
+        {
+            var userId = UserId();
+            var google = _googleService.GetGoogleAccessTokenControl(userId);
+            if (google == null)
+            {
+                return Ok(0);
+            }
+            else
+            {
+                return Ok(1);
+            }
+        }
+
+        [Authorize]
+        [HttpGet("organization-control")]
+        public IActionResult OrganizationControl()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            if (organization.GoogleAnalytics == null || organization.GoogleSearchConsole == null || organization.MetaAccount == null)
+            {
+                return Ok(0);
+            }
+            else
+            {
+                return Ok(1);
+            }
         }
 
         public class LoginRequest

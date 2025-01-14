@@ -37,7 +37,11 @@ namespace AdminPanel.Controllers.Google
             var user = _userService.GetUserById(userId);
             var model = _googleService.GetGoogleApp();
             var accessToken = _googleData.AccessTokenAdmin(model.AppId, model.AppSecret, model.RedirectUrl, code);
-            var googleAccessToken = _googleService.AddGoogleAccessToken(model.Id, user.OrganizationId, accessToken.AccessToken, accessToken.RefreshToken, accessToken.ExpiresIn, accessToken.Scope, accessToken.TokenType);
+            if (accessToken.AccessToken == null)
+            {
+                return Ok(0);
+            }
+            var googleAccessToken = _googleService.AddGoogleAccessToken(model.Id, user.OrganizationId, accessToken.AccessToken, "accessToken.RefreshToken", accessToken.ExpiresIn, accessToken.Scope, accessToken.TokenType);
 
             var google = new AdminPanel.Models.Google.AccessToken.GoogleAccesToken
             {
@@ -48,7 +52,6 @@ namespace AdminPanel.Controllers.Google
             return Ok(google);
         }
 
-        [Authorize(Roles = "SuperAdmin")]
         [HttpGet("get-google-app")]
         public ActionResult<GoogleApp> GetGoogleApp()
         {
