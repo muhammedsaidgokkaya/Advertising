@@ -92,6 +92,39 @@ namespace AdminPanel.Controllers.Organization
             return Ok(data);
         }
 
+        [HttpGet("admin-user")]
+        public ActionResult<GetAdminUserAndRole> GetAdminUser(int userId = 0)
+        {
+            if (userId == 0)
+            {
+                userId = UserId();
+            }
+
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var role = _userService.GetUserRole(userId);
+
+            var data = new GetAdminUserAndRole
+            {
+                Name = organization.Name,
+                TaskNumber = organization.TaskNumber,
+                OrgAddress = organization.Address,
+                ZipCode = organization.ZipCode,
+                AccountType = organization.AccountType,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Mail = user.Mail,
+                Phone = user.Phone,
+                Title = user.Title,
+                DateOfBirth = user.DateOfBirth,
+                Gender = user.Gender,
+                Address = user.Address,
+                Roles = role.Select(q => q.RoleId).ToList()
+            };
+
+            return Ok(data);
+        }
+
         [HttpGet("account-count")]
         public ActionResult<AccountCount> GetOrganizationAccountCount()
         {

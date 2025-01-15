@@ -37,11 +37,11 @@ namespace AdminPanel.Controllers.Google
             var user = _userService.GetUserById(userId);
             var model = _googleService.GetGoogleApp();
             var accessToken = _googleData.AccessTokenAdmin(model.AppId, model.AppSecret, model.RedirectUrl, code);
-            if (accessToken.AccessToken == null)
+            if (accessToken.AccessToken == null || accessToken.RefreshToken == null)
             {
                 return Ok(0);
             }
-            var googleAccessToken = _googleService.AddGoogleAccessToken(model.Id, user.OrganizationId, accessToken.AccessToken, "accessToken.RefreshToken", accessToken.ExpiresIn, accessToken.Scope, accessToken.TokenType);
+            var googleAccessToken = _googleService.AddGoogleAccessToken(model.Id, user.OrganizationId, accessToken.AccessToken, accessToken.RefreshToken, accessToken.ExpiresIn, accessToken.Scope, accessToken.TokenType);
 
             var google = new AdminPanel.Models.Google.AccessToken.GoogleAccesToken
             {

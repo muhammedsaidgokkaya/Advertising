@@ -39,5 +39,8 @@ namespace AdminPanel.Models.Organization.User
 
         [JsonPropertyName("gender")]
         public string Gender { get; set; }
+
+        [JsonPropertyName("accountType")]
+        public string AccountType { get; set; }
     }
 }

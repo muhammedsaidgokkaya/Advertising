@@ -28,7 +28,7 @@ namespace Service.Implementations.User
         }
 
         #region Organization
-        public int AddOrganization(string name, int userCount = 5, int accountCount = 2, string address = "", string zipCode = "", string taskNumber = "", string phone = "")
+        public int AddOrganization(string name, int userCount = 5, int accountCount = 2, string accountType = "", string address = "", string zipCode = "", string taskNumber = "", string phone = "")
         {
             var organization = new Organization
             {
@@ -39,6 +39,7 @@ namespace Service.Implementations.User
                 ZipCode = zipCode,
                 TaskNumber = taskNumber,
                 Phone = phone,
+                AccountType = accountType,
                 InsertedDate = DateTime.UtcNow,
                 IsActive = true,
                 IsDeleted = false
