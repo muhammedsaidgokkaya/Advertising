@@ -76,6 +76,28 @@ namespace AdminPanel.Controllers.Meta
             return Ok(new List<AdvertisingAccountsResponse> { data });
         }
 
+        [HttpGet("meta-account")]
+        public ActionResult<IEnumerable<object>> GetOrganizationMetaAccount()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var metaAccount = organization.MetaAccount;
+            var accounts = metaAccount.Split(',')
+            .Select(account =>
+            {
+                var parts = account.Split('/');
+                return new
+                {
+                    AccountId = parts[0].Trim(),
+                    Account = parts.Length > 1 ? parts[1].Trim() : string.Empty
+                };
+            })
+            .ToList();
+
+            return Ok(accounts);
+        }
+
         [HttpGet("advertising-accounts")]
         public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccounts([FromQuery] string businessIds)
         {
@@ -106,14 +128,12 @@ namespace AdminPanel.Controllers.Meta
 
 
         [HttpGet("ads")]
-        public ActionResult<IEnumerable<Ad>> GetAds(DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<Ad>> GetAds(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var ads = _metaData.AdsAdmin(accessToken.AccessToken, organization.MetaAccount, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var ads = _metaData.AdsAdmin(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = ads.Data?.Select(q => new Ad
             {
@@ -149,14 +169,12 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("adsets")]
-        public ActionResult<IEnumerable<AdSet>> GetAdSets(DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<AdSet>> GetAdSets(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var adSets = _metaData.AdSetsAdmin(accessToken.AccessToken, organization.MetaAccount, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var adSets = _metaData.AdSetsAdmin(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var data = adSets.Data?.Select(q => new AdSet
             {
                 Id = q.Id,
@@ -187,14 +205,12 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("campaigns")]
-        public ActionResult<IEnumerable<Campaign>> GetCampaigns(DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<Campaign>> GetCampaigns(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var campaigns = _metaData.CampaignsAdmin(accessToken.AccessToken, organization.MetaAccount, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var campaigns = _metaData.CampaignsAdmin(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var data = campaigns.Data?.Select(q => new Campaign
             {
                 Id = q.Id,
@@ -345,36 +361,13 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("charts")]
-        public ActionResult<ApiResponse> GetCharts()
+        public ActionResult<ApiResponse> GetCharts(string accountId)
         {
             var userId = UserId();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
             var defaultValues = _defaultValues.DefaultMounth();
-            string pythonScriptPath = Path.Combine("C:", "Users", "furka", "Desktop", "Advertising", "Utilities", "Scripts", "Meta", "Charts", "charts.py");
-
-            try
-            {
-                var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, accessToken.AccessToken, organization.MetaAccount, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
-
-                var response = JsonConvert.DeserializeObject<ApiResponse>(jsonOutput?.ToString() ?? string.Empty);
-
-                if (response == null)
-                {
-                    throw new Exception("Python scriptinden geçersiz veri döndü.");
-                }
-
-                return response;
-            }
-            catch (JsonSerializationException ex)
-            {
-                throw new Exception("JSON dönüşüm hatası: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Python scriptinden veri alınırken hata oluştu: " + ex.Message);
-            }
+            var charts = _metaData.Charts(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            return Ok(charts);
         }
 
         private int UserId()

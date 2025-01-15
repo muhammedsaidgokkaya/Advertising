@@ -1,8 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Core.Domain.User;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using Utilities.Helper;
+using Utilities.Utilities.MetaData.MetaModel;
+using static Utilities.Utilities.MetaData.MetaData;
 
 namespace Utilities.Utilities.MetaData
 {
@@ -152,6 +156,21 @@ namespace Utilities.Utilities.MetaData
             }
         }
 
+        public ApiResponse Charts(string access_token, string ad_account_id, string start_date, string end_date)
+        {
+            string pythonScriptPath = GetPythonScriptPath("Meta/Charts/charts.py");
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<ApiResponse>(jsonOutput?.ToString() ?? string.Empty);
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
         #endregion
 
         #region Class

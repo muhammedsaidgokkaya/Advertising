@@ -61,16 +61,36 @@ namespace AdminPanel.Controllers.Google.Analytics
             return Ok(new List<AccountSummaryResponse> { data });
         }
 
+        [HttpGet("analytics-account")]
+        public ActionResult<IEnumerable<object>> GetOrganizationAnalyticsAccount()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var analyticsAccount = organization.GoogleAnalytics;
+            var result = analyticsAccount
+                .Split(',')
+                .Select(accountInfo =>
+                {
+                    var parts = accountInfo.Split('/');
+                    return new
+                    {
+                        account = parts[0],
+                        accountId = parts[2]
+                    };
+                })
+                .ToList();
+
+            return Ok(result);
+        }
+
         [HttpGet("dashboards")]
-        public async Task<ActionResult<IEnumerable<DashboardResponse>>> GetDashboard(DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<ActionResult<IEnumerable<DashboardResponse>>> GetDashboard(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var propertyId = _defaultValues.GoogleProperty(organization.GoogleAnalytics);
-            var dashboard = await _googleData.DashboardAdmin(accessTokenControl, propertyId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var dashboard = await _googleData.DashboardAdmin(accessTokenControl, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var dashboards = dashboard.Select(group => new DashboardResponse
             {
@@ -99,15 +119,12 @@ namespace AdminPanel.Controllers.Google.Analytics
         }
 
         [HttpGet("dashboard-dimensions-four")]
-        public async Task<ActionResult<IEnumerable<DashboardDimensionResponse>>> GetDashboardDimensionFour(string dimension, string metric, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<ActionResult<IEnumerable<DashboardDimensionResponse>>> GetDashboardDimensionFour(string accountId, string dimension, string metric, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var propertyId = _defaultValues.GoogleProperty(organization.GoogleAnalytics);
-            var dashboardDimension = await _googleData.DashboardDimensionAdmin(accessTokenControl, propertyId, dimension, metric, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var dashboardDimension = await _googleData.DashboardDimensionAdmin(accessTokenControl, accountId, dimension, metric, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var dashboardDimensions = dashboardDimension.Take(4).Select(gr => new DashboardDimensionResponse
             {
@@ -119,15 +136,12 @@ namespace AdminPanel.Controllers.Google.Analytics
         }
 
         [HttpGet("dashboard-dimensions-ten")]
-        public async Task<ActionResult<IEnumerable<DashboardDimensionResponse>>> GetDashboardDimensionTen(string dimension, string metric, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<ActionResult<IEnumerable<DashboardDimensionResponse>>> GetDashboardDimensionTen(string accountId, string dimension, string metric, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var propertyId = _defaultValues.GoogleProperty(organization.GoogleAnalytics);
-            var dashboardDimension = await _googleData.DashboardDimensionAdmin(accessTokenControl, propertyId, dimension, metric, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var dashboardDimension = await _googleData.DashboardDimensionAdmin(accessTokenControl, accountId, dimension, metric, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var dashboardDimensions = dashboardDimension.Take(10).Select(gr => new DashboardDimensionResponse
             {
@@ -139,15 +153,12 @@ namespace AdminPanel.Controllers.Google.Analytics
         }
 
         [HttpGet("query")]
-        public ActionResult<IEnumerable<GeneralRateResponse>> GetGeneralQuery(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<GeneralRateResponse>> GetGeneralQuery(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var propertyId = _defaultValues.GoogleProperty(organization.GoogleAnalytics);
-            var generalRateQuery = _googleData.GeneralRateAdmin(accessTokenControl, propertyId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var generalRateQuery = _googleData.GeneralRateAdmin(accessTokenControl, accountId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var generalRates = generalRateQuery.Select(gr => new GeneralRateResponse
             {
                 Dimension = gr.Dimension == "(not set)" ? "Bilinmeyen" : gr.Dimension,
@@ -162,7 +173,7 @@ namespace AdminPanel.Controllers.Google.Analytics
                 UserKeyEventRate = gr.UserKeyEventRate
             }).ToList();
 
-            var generalCountQuery = _googleData.GeneralCountAdmin(accessTokenControl, propertyId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var generalCountQuery = _googleData.GeneralCountAdmin(accessTokenControl, accountId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var generalCounts = generalCountQuery.Select(gc => new GeneralCountResponse
             {
                 Dimension = gc.Dimension == "(not set)" ? "Bilinmeyen" : gc.Dimension,

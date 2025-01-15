@@ -55,6 +55,21 @@ namespace AdminPanel.Controllers.Google.SearchConsole
             return Ok(new List<SiteResponse> { data });
         }
 
+        [HttpGet("search-console-account")]
+        public ActionResult<IEnumerable<object>> GetOrganizationSearchConsoleAccount()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var searchConsoleAccount = organization.GoogleSearchConsole;
+            var result = searchConsoleAccount
+                .Split(',')
+                .Select(url => new { account = url.Trim(), accountId = url.Trim() })
+                .ToList();
+
+            return Ok(result);
+        }
+
         [Authorize(Roles = "Admin,Read")]
         [HttpGet("get-site-maps")]
         public ActionResult<IEnumerable<SitemapResponse>> GetSiteMaps(string url)
@@ -88,15 +103,13 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         }
 
         [HttpGet("get-search-console-querys")]
-        public ActionResult<IEnumerable<Row>> GetSearchConsoleQuery(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<Row>> GetSearchConsoleQuery(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
             var rows = "5000";
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, organization.GoogleSearchConsole, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = searchConsoleQuery
                 .Select((r, index) => new Row
@@ -114,14 +127,12 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         }
 
         [HttpGet("get-search-console")]
-        public ActionResult<IEnumerable<SearchConsoleDashboard>> GetSearchConsole(DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<SearchConsoleDashboard>> GetSearchConsole(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var searchConsoleQuery = _googleData.SearchConsoleAdmin(accessTokenControl, organization.GoogleSearchConsole, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var searchConsoleQuery = _googleData.SearchConsoleAdmin(accessTokenControl, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = new SearchConsoleDashboard
             {
@@ -139,15 +150,13 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         }
 
         [HttpGet("get-search-console-chart-ten")]
-        public ActionResult<IEnumerable<Row>> GetSearchConsoleChartTen(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<Row>> GetSearchConsoleChartTen(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
             var rows = "5000";
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, organization.GoogleSearchConsole, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = searchConsoleQuery.Select(r => new Row
             {
@@ -170,15 +179,13 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         }
 
         [HttpGet("get-search-console-chart-four")]
-        public ActionResult<IEnumerable<Row>> GetSearchConsoleChartFour(string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public ActionResult<IEnumerable<Row>> GetSearchConsoleChartFour(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
             var rows = "5000";
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, organization.GoogleSearchConsole, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = searchConsoleQuery.Select(r => new Row
             {
