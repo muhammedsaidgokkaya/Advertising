@@ -4,6 +4,7 @@ using System.IO;
 using Core.Domain.User;
 using Core.Domain.Meta;
 using Core.Domain.Google;
+using Core.Domain.Report;
 
 namespace Core.Data
 {
@@ -45,6 +46,7 @@ namespace Core.Data
         public DbSet<MetaLongAccess> MetaLongAccess { get; set; }
         public DbSet<GoogleApp> GoogleApp { get; set; }
         public DbSet<GoogleAccessToken> GoogleAccessToken { get; set; }
+        public DbSet<Report> Report { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

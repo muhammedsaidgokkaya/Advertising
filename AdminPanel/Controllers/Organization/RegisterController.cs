@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using OpenAI.API.Completions;
+using OpenAI.API;
 using Service.Implementations.User;
 using Utilities.Helper;
 

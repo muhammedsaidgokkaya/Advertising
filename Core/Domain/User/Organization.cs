@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Core.Domain.Report;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,5 +22,6 @@ namespace Core.Domain.User
         public string? GoogleAnalytics { get; set; }
         public string? GoogleSearchConsole { get; set; }
         public virtual ICollection<User> User { get; set; }
+        public virtual ICollection<Report.Report> Report { get; set; }
     }
 }
