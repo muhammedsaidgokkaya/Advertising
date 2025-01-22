@@ -17,7 +17,7 @@ namespace AdminPanel.Helpers
 
         public async Task<int> GeneralReportAI(string name, string account, string accountId, string typeId, int reportType, int organizationId, string prompt, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var apiKey = _configuration["OpenAI:Key"];
+            var apiKey = _configuration["OpenAI:ApiKey"];
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
 
