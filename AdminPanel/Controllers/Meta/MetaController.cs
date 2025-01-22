@@ -144,7 +144,7 @@ namespace AdminPanel.Controllers.Meta
                 {
                     Name = q.AdSet.Name,
                     BidStrategy = _defaultValues.GetFormattedBidStrategy(q.AdSet.BidStrategy),
-                    DailyBudget = (q.AdSet.DailyBudget / 100),
+                    DailyBudget = q.AdSet.DailyBudget,
                     UpdateTime = q.AdSet.UpdateTime,
                 },
                 Insights = new InsightResponse
@@ -181,7 +181,7 @@ namespace AdminPanel.Controllers.Meta
                 Name = q.Name,
                 Status = q.Status == "ACTIVE" ? "Aktif" : "Pasif",
                 BidStrategy = _defaultValues.GetFormattedBidStrategy(q.BidStrategy),
-                DailyBudget = (q.DailyBudget / 100),
+                DailyBudget = q.DailyBudget,
                 LifeTimeBudget = q.LifeTimeBudget,
                 UpdateTime = q.UpdateTime,
                 StartTime = q.StartTime,

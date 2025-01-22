@@ -19,6 +19,9 @@ using Microsoft.Extensions.Configuration;
 using AdminPanel.Models.Report.OpenAI;
 using System.Xml.Linq;
 using AdminPanel.Helpers;
+using Core.Migrations;
+using Utilities.Utilities.MetaData;
+using Service.Implementations.Meta;
 
 namespace AdminPanel.Controllers.Report
 {
@@ -37,8 +40,10 @@ namespace AdminPanel.Controllers.Report
         private readonly GoogleService _googleService;
         private readonly GoogleTokenControl _googleTokenControl;
         private readonly GoogleData _googleData;
+        private readonly MetaService _metaService;
+        private readonly MetaData _metaData;
 
-        public ReportController(ILogger<ReportController> logger, IConfiguration configuration, GoogleService googleService, GoogleData googleData)
+        public ReportController(ILogger<ReportController> logger, IConfiguration configuration, GoogleService googleService, GoogleData googleData, MetaService metaService, MetaData metaData)
         {
             _logger = logger;
             _configuration = configuration;
@@ -50,6 +55,8 @@ namespace AdminPanel.Controllers.Report
             _googleService = googleService;
             _googleTokenControl = new GoogleTokenControl(googleService, googleData);
             _googleData = googleData;
+            _metaService = metaService;
+            _metaData = metaData;
         }
 
         [HttpGet("reports")]
@@ -146,6 +153,118 @@ namespace AdminPanel.Controllers.Report
                 }
             }
             string jsonData = JsonConvert.SerializeObject(searchConsoleQuery);
+            string prompt = $"Kullanıcıya React projemde görüntüleyebileceği formatta numaralandırarak aşağıdaki veriye dayanarak detaylı bir rapor, performans analizi ve geliştirme önerileri oluştur.\r\n Veri: {jsonData}\r\n Veriyi analiz ederken şu kurallara uymalısın:\r\n\r\n1. **Kalın Yazılar:** `**` işaretlerini HTML `<b></b>` formatında kalın yazıya dönüştür.\r\n2. **Başlıkları Kaldır:** `##` gibi Markdown başlık işaretlerini kaldır. Ancak içerik düzenini koru.\r\n3. **Numaralandırılmış Liste:** Sonuçları numaralandırılmış şekilde ver.\r\n4. **Detay Seviyeleri:** Analizde ilk 3 madde detaylı, diğerleri kısa ve öz olsun.\r\n\r\nVeri: \r\n{{jsonData}}\r\n\r\nYanıtı şu formatta döndür:\r\n1. Genel Performans:\r\n2. Hesap Verileri Analizi (ilk 3 tanesi detaylı diğerleri tek cümle olacak şekilde):\r\n3. Genel Öneriler (en detaylı olacak kısım):\r\nBu 3 başlık dışında hiçbir şey yazma. Sadece ve sadece 3 başlığı doldur.";
+            var reportResult = await _reportHelpers.GeneralReportAI(name, account, accountId, typeId, reportType, user.OrganizationId, prompt, defaultValues[0].ToUniversalTime(), defaultValues[1].ToUniversalTime());
+
+            if (reportResult == 1)
+            {
+                return Ok(new { success = true, message = "Rapor başarıyla oluşturuldu." });
+            }
+            else
+            {
+                return BadRequest(new { success = false, message = "Rapor oluşturulamadı." });
+            }
+        }
+
+        [HttpPost]
+        [Route("chatgpt-prompt-analytics")]
+        public async Task<IActionResult> GeneratePromptAnalytics(string name, string account, string accountId, string typeId, int reportType, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var accessTokenControl = _googleTokenControl.GetControl(userId);
+            object analyticsQuery = null;
+
+            if (typeId == "Genel")
+            {
+                analyticsQuery = await _googleData.DashboardAdmin(accessTokenControl, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            }
+            else
+            {
+                var queryType = new Dictionary<string, string>
+                {
+                    { "Kanal Grubu", "sessionDefaultChannelGroup" },
+                    { "Açılış Sayfası", "landingPage" },
+                    { "Ülke", "country" },
+                    { "Kitle", "audienceName" },
+                    { "Sayfa Yolu ve Ekran Sınıfı", "unifiedPagePathScreen" },
+                    { "Etkinlik Adı", "eventName" },
+                    { "Tarayıcı", "browser" },
+                    { "Sayfa Başlığı", "pageTitle" },
+                    { "Sayfa Başlığı ve Ekran Sınıfı", "unifiedScreenClass" },
+                    { "Dil", "language" },
+                    { "Şehir", "city" },
+                    { "Kıta", "continent" },
+                };
+
+                if (queryType.ContainsKey(typeId))
+                {
+                    var typeValue = queryType[typeId];
+
+                    var generalRateQuery = _googleData.GeneralRateAdmin(
+                        accessTokenControl,
+                        accountId,
+                        typeValue,
+                        defaultValues[0].ToString("yyyy-MM-dd"),
+                        defaultValues[1].ToString("yyyy-MM-dd")
+                    );
+
+                    var generalCountQuery = _googleData.GeneralCountAdmin(
+                        accessTokenControl,
+                        accountId,
+                        typeValue,
+                        defaultValues[0].ToString("yyyy-MM-dd"),
+                        defaultValues[1].ToString("yyyy-MM-dd")
+                    );
+
+                    analyticsQuery = new
+                    {
+                        RateData = generalRateQuery,
+                        CountData = generalCountQuery
+                    };
+                }
+            }
+            string jsonData = JsonConvert.SerializeObject(analyticsQuery);
+            string prompt = $"Kullanıcıya React projemde görüntüleyebileceği formatta numaralandırarak aşağıdaki veriye dayanarak detaylı bir rapor, performans analizi ve geliştirme önerileri oluştur.\r\n Veri: {jsonData}\r\n Veriyi analiz ederken şu kurallara uymalısın:\r\n\r\n1. **Kalın Yazılar:** `**` işaretlerini HTML `<b></b>` formatında kalın yazıya dönüştür.\r\n2. **Başlıkları Kaldır:** `##` gibi Markdown başlık işaretlerini kaldır. Ancak içerik düzenini koru.\r\n3. **Numaralandırılmış Liste:** Sonuçları numaralandırılmış şekilde ver.\r\n4. **Detay Seviyeleri:** Analizde ilk 3 madde detaylı, diğerleri kısa ve öz olsun.\r\n\r\nVeri: \r\n{{jsonData}}\r\n\r\nYanıtı şu formatta döndür:\r\n1. Genel Performans:\r\n2. Hesap Verileri Analizi (ilk 3 tanesi detaylı diğerleri tek cümle olacak şekilde):\r\n3. Genel Öneriler (en detaylı olacak kısım):\r\nBu 3 başlık dışında hiçbir şey yazma. Sadece ve sadece 3 başlığı doldur.";
+            var reportResult = await _reportHelpers.GeneralReportAI(name, account, accountId, typeId, reportType, user.OrganizationId, prompt, defaultValues[0].ToUniversalTime(), defaultValues[1].ToUniversalTime());
+
+            if (reportResult == 1)
+            {
+                return Ok(new { success = true, message = "Rapor başarıyla oluşturuldu." });
+            }
+            else
+            {
+                return BadRequest(new { success = false, message = "Rapor oluşturulamadı." });
+            }
+        }
+        
+        [HttpPost]
+        [Route("chatgpt-prompt-meta")]
+        public async Task<IActionResult> GeneratePromptMeta(string name, string account, string accountId, string typeId, int reportType, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var metaQueryMap = new Dictionary<string, Func<string, string, string, string, object>>()
+            {
+                { "Genel", (token, accId, start, end) => _metaData.InsightsAdmin(token, accId, start, end) },
+                { "Kampanya", (token, accId, start, end) => _metaData.CampaignsAdmin(token, accId, start, end) },
+                { "Reklam Seti", (token, accId, start, end) => _metaData.AdSetsAdmin(token, accId, start, end) },
+                { "Reklam", (token, accId, start, end) => _metaData.AdsAdmin(token, accId, start, end) }
+            };
+
+            metaQueryMap.TryGetValue(typeId, out var queryMethod);
+
+            if (queryMethod == null)
+            {
+                return BadRequest(new { success = false, message = "Geçersiz typeId." });
+            }
+
+            var metaQuery = queryMethod(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+
+            string jsonData = JsonConvert.SerializeObject(metaQuery);
             string prompt = $"Kullanıcıya React projemde görüntüleyebileceği formatta numaralandırarak aşağıdaki veriye dayanarak detaylı bir rapor, performans analizi ve geliştirme önerileri oluştur.\r\n Veri: {jsonData}\r\n Veriyi analiz ederken şu kurallara uymalısın:\r\n\r\n1. **Kalın Yazılar:** `**` işaretlerini HTML `<b></b>` formatında kalın yazıya dönüştür.\r\n2. **Başlıkları Kaldır:** `##` gibi Markdown başlık işaretlerini kaldır. Ancak içerik düzenini koru.\r\n3. **Numaralandırılmış Liste:** Sonuçları numaralandırılmış şekilde ver.\r\n4. **Detay Seviyeleri:** Analizde ilk 3 madde detaylı, diğerleri kısa ve öz olsun.\r\n\r\nVeri: \r\n{{jsonData}}\r\n\r\nYanıtı şu formatta döndür:\r\n1. Genel Performans:\r\n2. Hesap Verileri Analizi (ilk 3 tanesi detaylı diğerleri tek cümle olacak şekilde):\r\n3. Genel Öneriler (en detaylı olacak kısım):\r\nBu 3 başlık dışında hiçbir şey yazma. Sadece ve sadece 3 başlığı doldur.";
             var reportResult = await _reportHelpers.GeneralReportAI(name, account, accountId, typeId, reportType, user.OrganizationId, prompt, defaultValues[0].ToUniversalTime(), defaultValues[1].ToUniversalTime());
 

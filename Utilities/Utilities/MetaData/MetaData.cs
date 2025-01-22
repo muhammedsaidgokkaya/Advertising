@@ -100,6 +100,13 @@ namespace Utilities.Utilities.MetaData
             try
             {
                 var tokenResponse = JsonConvert.DeserializeObject<AdSetResponse>(jsonOutput.ToString());
+                if (tokenResponse?.Data != null)
+                {
+                    foreach (var adSet in tokenResponse.Data)
+                    {
+                        adSet.DailyBudget /= 100;
+                    }
+                }
                 return tokenResponse;
             }
             catch (Exception ex)
@@ -116,6 +123,13 @@ namespace Utilities.Utilities.MetaData
             try
             {
                 var tokenResponse = JsonConvert.DeserializeObject<AdResponse>(jsonOutput.ToString());
+                if (tokenResponse?.Data != null)
+                {
+                    foreach (var adSet in tokenResponse.Data)
+                    {
+                        adSet.AdSet.DailyBudget /= 100;
+                    }
+                }
                 return tokenResponse;
             }
             catch (Exception ex)
