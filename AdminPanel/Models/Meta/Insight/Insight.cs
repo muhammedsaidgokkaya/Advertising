@@ -18,6 +18,10 @@
 
         public string ConversionRateRanking { get; set; }
 
+        public string ResultString { get; set; }
+
+        public double ResultDouble { get; set; }
+
         public DateTime DateStart { get; set; }
 
         public DateTime DateStop { get; set; }

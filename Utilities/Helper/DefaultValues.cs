@@ -141,6 +141,105 @@ namespace Utilities.Helper
             }
         }
 
+        public string ProcessResults(string objective, IEnumerable<Action> actions)
+        {
+            if (actions == null || !actions.Any())
+                return "Sonuç bulunamadı.";
+
+            var result = objective switch
+            {
+                "OUTCOME_ENGAGEMENT" => GenerateResultString(actions, new Dictionary<string, string>
+                {
+                    { "onsite_conversion.messaging_conversation_started_7d", "Mesajlaşma konuşması başlatma" }
+                }),
+                    "OUTCOME_TRAFFIC" => GenerateResultString(actions, new Dictionary<string, string>
+                {
+                    { "page_engagement", "Sayfa Etkileşimleri" }
+                }),
+                    "OUTCOME_LEADS" => GenerateResultString(actions, new Dictionary<string, string>
+                {
+                    { "lead", "Oluşturulan Leadler" }
+                }),
+                    "OUTCOME_APP_PROMOTION" => GenerateResultString(actions, new Dictionary<string, string>
+                {
+                    { "app_install", "Uygulama Kurulumları" }
+                }),
+                    "OUTCOME_AWARENESS" => GenerateResultString(actions, new Dictionary<string, string>
+                {
+                    { "post_reaction", "Gönderi Reaksiyonları" }
+                }),
+                    "OUTCOME_SALES" => GenerateResultString(actions, new Dictionary<string, string>
+                {
+                    { "purchase", "Satın Alımlar" }
+                }),
+                _ => "Hedef için sonuçlar tanımlı değil."
+            };
+
+            return result;
+        }
+
+        private string GenerateResultString(IEnumerable<Action> actions, Dictionary<string, string> actionDescriptions)
+        {
+            var resultStrings = actionDescriptions.Select(desc =>
+            {
+                var count = actions.FirstOrDefault(a => a.ActionType == desc.Key)?.Value ?? 0;
+                return $"{desc.Value}";
+            });
+
+            return string.Join(", ", resultStrings);
+        }
+
+        public double ProcessResultsInt(string objective, IEnumerable<Action> actions)
+        {
+            if (actions == null || !actions.Any())
+                return 0;
+
+            var result = objective switch
+            {
+                "OUTCOME_ENGAGEMENT" => GenerateResultInt(actions, new Dictionary<string, string>
+                {
+                    { "onsite_conversion.messaging_conversation_started_7d", "Mesajlaşma konuşması başlatma" }
+                }),
+                        "OUTCOME_TRAFFIC" => GenerateResultInt(actions, new Dictionary<string, string>
+                {
+                    { "page_engagement", "Sayfa Etkileşimleri" }
+                }),
+                        "OUTCOME_LEADS" => GenerateResultInt(actions, new Dictionary<string, string>
+                {
+                    { "lead", "Oluşturulan Leadler" }
+                }),
+                        "OUTCOME_APP_PROMOTION" => GenerateResultInt(actions, new Dictionary<string, string>
+                {
+                    { "app_install", "Uygulama Kurulumları" }
+                }),
+                        "OUTCOME_AWARENESS" => GenerateResultInt(actions, new Dictionary<string, string>
+                {
+                    { "post_reaction", "Gönderi Reaksiyonları" }
+                }),
+                        "OUTCOME_SALES" => GenerateResultInt(actions, new Dictionary<string, string>
+                {
+                    { "purchase", "Satın Alımlar" }
+                }),
+                _ => 0
+            };
+
+            return result;
+        }
+
+        private double GenerateResultInt(IEnumerable<Action> actions, Dictionary<string, string> actionDescriptions)
+        {
+            return actionDescriptions
+                .Select(desc => actions.FirstOrDefault(a => a.ActionType == desc.Key)?.Value ?? 0)
+                .Sum();
+        }
+
+        public class Action
+        {
+            public string ActionType { get; set; }
+
+            public double Value { get; set; }
+        }
+
         public string GoogleProperty(string property)
         {
             var propertyId = property.Split('/').Last().TrimEnd('\"');

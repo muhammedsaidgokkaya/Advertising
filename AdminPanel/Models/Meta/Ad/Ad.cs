@@ -11,6 +11,8 @@ namespace AdminPanel.Models.Meta.Ad
 
         public string Status { get; set; }
 
+        public string Img { get; set; }
+
         public AdSet.AdSet AdSet { get; set; }
 
         public InsightResponse Insights { get; set; }

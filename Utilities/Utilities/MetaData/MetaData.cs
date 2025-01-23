@@ -244,6 +244,9 @@ namespace Utilities.Utilities.MetaData
             [JsonProperty("name")]
             public string Name { get; set; }
 
+            [JsonProperty("objective")]
+            public string Objective { get; set; }
+
             [JsonProperty("status")]
             public string Status { get; set; }
 
@@ -283,6 +286,9 @@ namespace Utilities.Utilities.MetaData
             [JsonProperty("lifetime_budget")]
             public int LifeTimeBudget { get; set; }
 
+            [JsonProperty("campaign")]
+            public Campaign Campaign { get; set; }
+
             [JsonProperty("updated_time")]
             public DateTime? UpdateTime { get; set; }
 
@@ -316,8 +322,20 @@ namespace Utilities.Utilities.MetaData
             [JsonProperty("adset")]
             public AdSet AdSet { get; set; }
 
+            [JsonProperty("campaign")]
+            public Campaign Campaign { get; set; }
+
+            [JsonProperty("creative")]
+            public Creative Creative { get; set; }
+
             [JsonProperty("insights")]
             public InsightResponse Insights { get; set; }
+        }
+
+        public class Creative
+        {
+            [JsonProperty("thumbnail_url")]
+            public string ThumbnailUrl { get; set; }
         }
 
         public class InsightResponse

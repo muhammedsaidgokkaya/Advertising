@@ -126,7 +126,6 @@ namespace AdminPanel.Controllers.Meta
             return Ok(new List<AdvertisingAccountsResponse> { data });
         }
 
-
         [HttpGet("ads")]
         public ActionResult<IEnumerable<Ad>> GetAds(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
@@ -140,6 +139,7 @@ namespace AdminPanel.Controllers.Meta
                 Id = q.Id,
                 Name = q.Name,
                 Status = q.Status == "ACTIVE" ? "Aktif" : "Pasif",
+                Img = q.Creative.ThumbnailUrl,
                 AdSet = new AdSet
                 {
                     Name = q.AdSet.Name,
@@ -161,6 +161,22 @@ namespace AdminPanel.Controllers.Meta
                         QualityRanking = _defaultValues.FormatRanking(i.QualityRanking),
                         DateStart = i.DateStart,
                         DateStop = i.DateStop,
+                        ResultString = _defaultValues.ProcessResults(
+                            q.Campaign.Objective,
+                            i.Actions.Select(a => new Utilities.Helper.DefaultValues.Action
+                            {
+                                ActionType = a.ActionType,
+                                Value = a.Value
+                            })
+                        ),
+                        ResultDouble = _defaultValues.ProcessResultsInt(
+                            q.Campaign.Objective,
+                            i.Actions.Select(a => new Utilities.Helper.DefaultValues.Action
+                            {
+                                ActionType = a.ActionType,
+                                Value = a.Value
+                            })
+                        )
                     }).ToList() ?? new List<Insight>()
                 }
             }).ToList() ?? new List<Ad>();
@@ -197,6 +213,22 @@ namespace AdminPanel.Controllers.Meta
                         Spend = i.Spend,
                         DateStart = i.DateStart,
                         DateStop = i.DateStop,
+                        ResultString = _defaultValues.ProcessResults(
+                            q.Campaign.Objective,
+                            i.Actions.Select(a => new Utilities.Helper.DefaultValues.Action
+                            {
+                                ActionType = a.ActionType,
+                                Value = a.Value
+                            })
+                        ),
+                        ResultDouble = _defaultValues.ProcessResultsInt(
+                            q.Campaign.Objective,
+                            i.Actions.Select(a => new Utilities.Helper.DefaultValues.Action
+                            {
+                                ActionType = a.ActionType,
+                                Value = a.Value
+                            })
+                        )
                     }).ToList() ?? new List<Insight>()
                 }
             }).ToList() ?? new List<AdSet>();
@@ -229,6 +261,22 @@ namespace AdminPanel.Controllers.Meta
                         Spend = i.Spend,
                         DateStart = i.DateStart,
                         DateStop = i.DateStop,
+                        ResultString = _defaultValues.ProcessResults(
+                            q.Objective,
+                            i.Actions.Select(a => new Utilities.Helper.DefaultValues.Action
+                            {
+                                ActionType = a.ActionType,
+                                Value = a.Value
+                            })
+                        ),
+                        ResultDouble = _defaultValues.ProcessResultsInt(
+                            q.Objective,
+                            i.Actions.Select(a => new Utilities.Helper.DefaultValues.Action
+                            {
+                                ActionType = a.ActionType,
+                                Value = a.Value
+                            })
+                        ),
                     }).ToList() ?? new List<Insight>()
                 }
             }).ToList() ?? new List<Campaign>();
