@@ -27,14 +27,20 @@ namespace Utilities.Helper
 
                 using (Process process = Process.Start(startInfo))
                 {
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    process.WaitForExit();
-                    if (!string.IsNullOrWhiteSpace(error))
+                    using (StreamReader outputReader = new StreamReader(process.StandardOutput.BaseStream, Encoding.GetEncoding("utf-8")))
+                    using (StreamReader errorReader = new StreamReader(process.StandardError.BaseStream, Encoding.GetEncoding("utf-8")))
                     {
-                        return new { error };
+                        string output = outputReader.ReadToEnd();
+                        string error = errorReader.ReadToEnd();
+                        process.WaitForExit();
+
+                        if (!string.IsNullOrWhiteSpace(error))
+                        {
+                            return new { error };
+                        }
+
+                        return output;
                     }
-                    return output;
                 }
             }
             catch (Exception ex)

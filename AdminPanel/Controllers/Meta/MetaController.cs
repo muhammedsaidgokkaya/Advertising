@@ -1,6 +1,7 @@
 ﻿using AdminPanel.Models.Meta.Ad;
 using AdminPanel.Models.Meta.AdSet;
 using AdminPanel.Models.Meta.AdvertisingAccount;
+using AdminPanel.Models.Meta.Audience;
 using AdminPanel.Models.Meta.Business;
 using AdminPanel.Models.Meta.Campaign;
 using AdminPanel.Models.Meta.Charts;
@@ -416,6 +417,55 @@ namespace AdminPanel.Controllers.Meta
             var defaultValues = _defaultValues.DefaultMounth();
             var charts = _metaData.Charts(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             return Ok(charts);
+        }
+
+        [HttpGet("audiences")]
+        public async Task<ActionResult<ApiResponse>> GetAudiences(string accountId)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var audiencesTask = _metaData.Audiences(accessToken.AccessToken, accountId);
+            var savedAudiencesTask = _metaData.SavedAudiences(accessToken.AccessToken, accountId);
+
+            await Task.WhenAll(audiencesTask, savedAudiencesTask);
+
+            var audiences = audiencesTask.Result;
+            var savedAudiences = savedAudiencesTask.Result;
+            var allAudiences = audiences.Select(a => new Audience
+            {
+                Id = a.Id,
+                Name = a.Name,
+                ApproximateCountUpperBound = a.ApproximateCountUpperBound,
+                ApproximateCountLowerBound = a.ApproximateCountLowerBound,
+                TargetAudienceSize = _defaultValues.GetTargetAudienceSize(a.ApproximateCountUpperBound, a.ApproximateCountLowerBound),
+                AudienceType = a.AudienceType,
+                AudienceTypeText = _defaultValues.GetAudienceTypeText(a.AudienceType),
+                TimeCreated = a.TimeCreated,
+                TimeUpdated = a.TimeUpdated,
+                Gender = "—",
+                AgeRange = "—",
+                Countries = "—"
+            }).ToList();
+
+            var allSavedAudiences = savedAudiences.Select(s => new Audience
+            {
+                Id = s.Id,
+                Name = s.Name,
+                ApproximateCountUpperBound = s.ApproximateCountUpperBound,
+                ApproximateCountLowerBound = s.ApproximateCountLowerBound,
+                TargetAudienceSize = _defaultValues.GetTargetAudienceSize(s.ApproximateCountUpperBound, s.ApproximateCountLowerBound),
+                AudienceType = s.AudienceType,
+                AudienceTypeText = _defaultValues.GetAudienceTypeText(s.AudienceType),
+                TimeCreated = DateTime.Parse(s.TimeCreated),
+                TimeUpdated = DateTime.Parse(s.TimeUpdated),
+                Gender = s.Targeting?.Genders != null ? string.Join(", ", s.Targeting.Genders.Select(gender => _defaultValues.GetGenderString(gender))) : "—",
+                AgeRange = s.Targeting?.AgeRange != null ? _defaultValues.GetAgeRangeString(s.Targeting.AgeRange[0], s.Targeting.AgeRange[1]) : "—",
+                Countries = s.Targeting?.GeoLocations?.Cities != null ? string.Join(", ", s.Targeting.GeoLocations.Cities.Select(c => _defaultValues.GetCountryNameFormat(c.Country, c.Name))) : "—",
+            }).ToList();
+
+            allAudiences.AddRange(allSavedAudiences);
+
+            return Ok(allAudiences);
         }
 
         private int UserId()

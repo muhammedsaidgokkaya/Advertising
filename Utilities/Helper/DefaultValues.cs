@@ -240,6 +240,57 @@ namespace Utilities.Helper
             public double Value { get; set; }
         }
 
+        public string GetGenderString(int genderValue)
+        {
+            return genderValue switch
+            {
+                0 => "Tümü",
+                1 => "Erkek",
+                2 => "Kadın",
+                _ => "—"
+            };
+        }
+
+        public string GetAgeRangeString(int? ageFrom, int? ageTo)
+        {
+            if (ageFrom.HasValue && ageTo.HasValue)
+            {
+                return $"{ageFrom.Value} - {ageTo.Value}";
+            }
+            return "—";
+        }
+
+        public string GetCountryNameFormat(string country, string cityName)
+        {
+            return string.IsNullOrEmpty(country) || string.IsNullOrEmpty(cityName) ? "—" : $"{country}/{cityName}";
+        }
+
+        public string GetTargetAudienceSize(int upperBound, int lowerBound)
+        {
+            string upperBoundFormatted = upperBound.ToString("N0");
+            string lowerBoundFormatted = lowerBound.ToString("N0");
+
+            if (upperBound == lowerBound)
+            {
+                return $"{upperBoundFormatted}'den az";
+            }
+            else
+            {
+                return $"{Math.Min(upperBound, lowerBound):N0} - {Math.Max(upperBound, lowerBound):N0}";
+            }
+        }
+
+        public string GetAudienceTypeText(string audienceType)
+        {
+            return audienceType switch
+            {
+                "saved" => "Kaydedilen Hedef Kitle",
+                "custom" => "Özel Hedef Kitle",
+                "lookalike" => "Benzer Hedef Kitle",
+                _ => "—"
+            };
+        }
+
         public string GoogleProperty(string property)
         {
             var propertyId = property.Split('/').Last().TrimEnd('\"');

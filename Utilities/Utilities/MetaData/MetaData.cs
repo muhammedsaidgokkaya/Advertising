@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net.NetworkInformation;
 using Utilities.Helper;
 using Utilities.Utilities.MetaData.MetaModel;
+using static Utilities.Utilities.GoogleData.GoogleData;
 using static Utilities.Utilities.MetaData.MetaData;
 
 namespace Utilities.Utilities.MetaData
@@ -183,6 +184,36 @@ namespace Utilities.Utilities.MetaData
             catch (Exception ex)
             {
                 throw new Exception("Hata.");
+            }
+        }
+
+        public async Task<List<Audience>> Audiences(string access_token, string ad_account_id)
+        {
+            string pythonScriptPath = GetPythonScriptPath("Meta/AdvertisingManager/audience.py");
+            var jsonOutput = await Task.Run(() => _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id));
+
+            try
+            {
+                return JsonConvert.DeserializeObject<List<Audience>>(jsonOutput?.ToString() ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.", ex);
+            }
+        }
+
+        public async Task<List<SavedAudience>> SavedAudiences(string access_token, string ad_account_id)
+        {
+            string pythonScriptPath = GetPythonScriptPath("Meta/AdvertisingManager/savedAudience.py");
+            var jsonOutput = await Task.Run(() => _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id));
+
+            try
+            {
+                return JsonConvert.DeserializeObject<List<SavedAudience>>(jsonOutput?.ToString() ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.", ex);
             }
         }
         #endregion
@@ -640,6 +671,183 @@ namespace Utilities.Utilities.MetaData
             [JsonProperty("value")]
             public double Value { get; set; }
         }
+
+        #region Audience
+        public class LookalikeSpec
+        {
+            [JsonProperty("country")]
+            public string Country { get; set; }
+
+            [JsonProperty("origin")]
+            public List<Origin> Origin { get; set; }
+
+            [JsonProperty("ratio")]
+            public double Ratio { get; set; }
+
+            [JsonProperty("type")]
+            public string Type { get; set; }
+        }
+
+        public class Origin
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("type")]
+            public string Type { get; set; }
+        }
+
+        public class Audience
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("approximate_count_upper_bound")]
+            public int ApproximateCountUpperBound { get; set; }
+
+            [JsonProperty("approximate_count_lower_bound")]
+            public int ApproximateCountLowerBound { get; set; }
+
+            [JsonProperty("lookalike_spec")]
+            public LookalikeSpec LookalikeSpec { get; set; }
+
+            [JsonProperty("time_created")]
+            public long TimeCreatedUnix { get; set; }
+
+            [JsonProperty("time_updated")]
+            public long TimeUpdatedUnix { get; set; }
+
+            [JsonProperty("audienceType")]
+            public string AudienceType { get; set; }
+
+            public DateTime TimeCreated => DateTimeOffset.FromUnixTimeSeconds(TimeCreatedUnix).DateTime;
+            public DateTime TimeUpdated => DateTimeOffset.FromUnixTimeSeconds(TimeUpdatedUnix).DateTime;
+        }
+        #endregion
+        #region SavedAudience
+        public class Targeting
+        {
+            [JsonProperty("age_max")]
+            public int AgeMax { get; set; }
+
+            [JsonProperty("age_min")]
+            public int AgeMin { get; set; }
+
+            [JsonProperty("age_range")]
+            public List<int> AgeRange { get; set; }
+
+            [JsonProperty("flexible_spec")]
+            public List<FlexibleSpec> FlexibleSpec { get; set; }
+
+            [JsonProperty("genders")]
+            public List<int> Genders { get; set; }
+
+            [JsonProperty("geo_locations")]
+            public GeoLocations GeoLocations { get; set; }
+
+            [JsonProperty("targeting_automation")]
+            public TargetingAutomation TargetingAutomation { get; set; }
+
+            [JsonProperty("custom_audiences")]
+            public List<CustomAudience> CustomAudiences { get; set; }
+        }
+
+        public class FlexibleSpec
+        {
+            [JsonProperty("interests")]
+            public List<Interest> Interests { get; set; }
+        }
+
+        public class Interest
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+        }
+
+        public class GeoLocations
+        {
+            [JsonProperty("cities")]
+            public List<City> Cities { get; set; }
+
+            [JsonProperty("location_types")]
+            public List<string> LocationTypes { get; set; }
+        }
+
+        public class City
+        {
+            [JsonProperty("country")]
+            public string Country { get; set; }
+
+            [JsonProperty("distance_unit")]
+            public string DistanceUnit { get; set; }
+
+            [JsonProperty("key")]
+            public string Key { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("radius")]
+            public int Radius { get; set; }
+
+            [JsonProperty("region")]
+            public string Region { get; set; }
+
+            [JsonProperty("region_id")]
+            public string RegionId { get; set; }
+        }
+
+        public class TargetingAutomation
+        {
+            [JsonProperty("advantage_audience")]
+            public int AdvantageAudience { get; set; }
+        }
+
+        public class CustomAudience
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+        }
+
+        public class SavedAudience
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("approximate_count_upper_bound")]
+            public int ApproximateCountUpperBound { get; set; }
+
+            [JsonProperty("approximate_count_lower_bound")]
+            public int ApproximateCountLowerBound { get; set; }
+
+            [JsonProperty("time_created")]
+            public string TimeCreated { get; set; }
+
+            [JsonProperty("time_updated")]
+            public string TimeUpdated { get; set; }
+
+            [JsonProperty("targeting")]
+            public Targeting Targeting { get; set; }
+
+            [JsonProperty("audienceType")]
+            public string AudienceType { get; set; }
+        }
+        #endregion
         #endregion
     }
 }
