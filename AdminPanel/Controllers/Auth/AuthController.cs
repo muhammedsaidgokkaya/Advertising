@@ -8,6 +8,7 @@ using Service.Implementations.Google;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
 using Utilities.Helper;
+using Utilities.Utilities.GoogleData;
 
 namespace AdminPanel.Controllers.Auth
 {
@@ -44,7 +45,7 @@ namespace AdminPanel.Controllers.Auth
             return Ok(new { IsSuccess = true, Token = token });
         }
 
-        [Authorize]
+		[Authorize]
         [HttpGet("control")]
         public IActionResult Control()
         {

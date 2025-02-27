@@ -1,8 +1,13 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.SearchConsole.v1.Data;
+using Google.Apis.SearchConsole.v1;
+using Google.Apis.Services;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Utilities.Helper;
+using Utilities.Utilities.GoogleData.SearchConsole;
 using static Utilities.Utilities.GoogleData.GoogleData;
 
 namespace Utilities.Utilities.GoogleData
@@ -11,12 +16,14 @@ namespace Utilities.Utilities.GoogleData
     {
         private readonly PythonRun _pythonRun;
         private readonly IConfiguration _configuration;
+        private readonly Utilities.GoogleData.SearchConsole.SearchConsole _searchConsole;
 
         public GoogleData(IConfiguration configuration)
         {
             _pythonRun = new PythonRun();
             _configuration = configuration;
-        }
+			_searchConsole = new Utilities.GoogleData.SearchConsole.SearchConsole();
+		}
 
         private string GetPythonScriptPath(string relativePath)
         {
@@ -58,73 +65,93 @@ namespace Utilities.Utilities.GoogleData
         }
 
         #region SearchConsole
-        public SiteResponse SiteAdmin(string access_token)
-        {
-            string pythonScriptPath = GetPythonScriptPath("Google/SearchConsole/sites.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
+		public async Task<SiteResponse> GetSiteDataAsync(string accessToken)
+		{
+			var url = "https://www.googleapis.com/webmasters/v3/sites";
 
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<SiteResponse>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
+			using (var client = new HttpClient())
+			{
+				client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
 
-        public SitemapResponse SiteMapAdmin(string access_token, string site_url)
-        {
-            string pythonScriptPath = GetPythonScriptPath("Google/SearchConsole/siteMap.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url);
+				var response = await client.GetAsync(url);
 
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<SitemapResponse>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
+				if (response.IsSuccessStatusCode)
+				{
+					var content = await response.Content.ReadAsStringAsync();
 
-        public List<Row> SearchConsoleQueryAdmin(string access_token, string site_url, string rows, string dimensions, string start_date, string end_date)
-        {
-            string pythonScriptPath = GetPythonScriptPath("Google/SearchConsole/searchConsoleQuery.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url, rows, dimensions, start_date, end_date);
+					var siteResponse = JsonConvert.DeserializeObject<SiteResponse>(content);
 
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<List<Row>>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
+					return siteResponse;
+				}
+				else
+				{
+					throw new Exception($"API çağrısı başarısız oldu. Durum Kodu: {response.StatusCode}");
+				}
+			}
+		}
 
-        public SearchConsole SearchConsoleAdmin(string access_token, string site_url, string start_date, string end_date)
-        {
-            string pythonScriptPath = GetPythonScriptPath("Google/SearchConsole/searchConsole.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, site_url, start_date, end_date);
+		public async Task<List<Row>> GetSearchConsoleDataAsync(string access_token, string site_url, string rows, string dimensions, string start_date, string end_date)
+		{
+			var credential = GoogleCredential.FromAccessToken(access_token);
 
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<SearchConsole>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
-        #endregion
+			var service = new SearchConsoleService(new BaseClientService.Initializer
+			{
+				HttpClientInitializer = credential,
+				ApplicationName = "Google Search Console API Sample",
+			});
 
-        #region Analytics
-        public AccountSummaryResponse AccountSummaryAdmin(string access_token)
+			var request = service.Searchanalytics.Query(new SearchAnalyticsQueryRequest
+			{
+				StartDate = start_date,
+				EndDate = end_date,
+				Dimensions = new List<string> { dimensions },
+				RowLimit = 5000
+			}, site_url);
+
+			var response = await request.ExecuteAsync();
+
+			var formattedResponse = new List<Row>();
+
+			if (response.Rows != null)
+			{
+				foreach (var row in response.Rows)
+				{
+					formattedResponse.Add(new Row
+					{
+						Keys = row.Keys[0],
+						Clicks = row.Clicks ?? 0.0,
+						Impressions = row.Impressions ?? 0.0,
+						Ctr = row.Ctr ?? 0.0,
+						Position = row.Position ?? 0.0
+					});
+				}
+			}
+
+			return formattedResponse;
+		}
+
+		public SearchConsole SearchConsoleAdmin(string access_token, string site_url, string start_date, string end_date)
+		{
+			var metrics = _searchConsole.GetSearchConsoleMetrics(access_token, site_url, start_date, end_date);
+
+			var result = new SearchConsole
+			{
+				TotalClicks = metrics.TotalClicks,
+				TotalImpressions = metrics.TotalImpressions,
+				AverageCtr = metrics.AverageCtr,
+				AveragePosition = metrics.AveragePosition,
+				ClicksChange = metrics.ClicksChange,
+				ImpressionsChange = metrics.ImpressionsChange,
+				CtrChange = metrics.CtrChange,
+				PositionChange = metrics.PositionChange
+			};
+
+			return result;
+		}
+		#endregion
+
+		#region Analytics
+		public AccountSummaryResponse AccountSummaryAdmin(string access_token)
         {
             string pythonScriptPath = GetPythonScriptPath("Google/Analytics/accountSummary.py");
             var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
@@ -296,10 +323,10 @@ namespace Utilities.Utilities.GoogleData
             public string Keys { get; set; }
 
             [JsonProperty("clicks")]
-            public int Clicks { get; set; }
+            public double Clicks { get; set; }
 
             [JsonProperty("impressions")]
-            public int Impressions { get; set; }
+            public double Impressions { get; set; }
 
             [JsonProperty("ctr")]
             public double Ctr { get; set; }

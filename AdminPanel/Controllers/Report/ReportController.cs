@@ -142,7 +142,7 @@ namespace AdminPanel.Controllers.Report
                 if (queryType.ContainsKey(typeId))
                 {
                     var typeValue = queryType[typeId];
-                    searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(
+                    searchConsoleQuery = await _googleData.GetSearchConsoleDataAsync(
                         accessTokenControl,
                         accountId,
                         "50",

@@ -6,9 +6,9 @@
 
         public string Keys { get; set; }
 
-        public int? Clicks { get; set; }
+        public double Clicks { get; set; }
 
-        public int? Impressions { get; set; }
+        public double Impressions { get; set; }
 
         public double Ctr { get; set; }
 

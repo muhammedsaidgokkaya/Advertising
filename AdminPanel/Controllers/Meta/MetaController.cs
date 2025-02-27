@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
+using System.Net.Http;
+using System.Text;
 using Utilities.Helper;
 using Utilities.Utilities.MetaData;
 
@@ -30,15 +32,17 @@ namespace AdminPanel.Controllers.Meta
         private readonly MetaData _metaData;
         private readonly DefaultValues _defaultValues;
         private readonly PythonRun _pythonRun;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public MetaController(ILogger<MetaController> logger, MetaService metaService, MetaData metaData)
+        public MetaController(ILogger<MetaController> logger, MetaService metaService, MetaData metaData, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _userService = new UserService();
             _metaService = metaService;
             _metaData = metaData;
             _defaultValues = new DefaultValues();
-            _pythonRun = new PythonRun();
+            _pythonRun = new PythonRun(); 
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet("business")]
@@ -467,6 +471,84 @@ namespace AdminPanel.Controllers.Meta
 
             return Ok(allAudiences);
         }
+
+        [HttpGet("selected-audiences")]
+        public async Task<ActionResult<ApiResponse>> GetSelectedAudiences(string accountId)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var audiencesTask = _metaData.Audiences(accessToken.AccessToken, accountId);
+            var savedAudiencesTask = _metaData.SavedAudiences(accessToken.AccessToken, accountId);
+
+            await Task.WhenAll(audiencesTask, savedAudiencesTask);
+
+            var audiences = audiencesTask.Result;
+            var savedAudiences = savedAudiencesTask.Result;
+            var allAudiences = audiences.Select(a => new Audience
+            {
+                Id = a.Id,
+                Name = a.Name,
+            }).ToList();
+
+            var allSavedAudiences = savedAudiences.Select(s => new Audience
+            {
+                Id = s.Id,
+                Name = s.Name,
+            }).ToList();
+
+            allAudiences.AddRange(allSavedAudiences);
+
+            return Ok(allAudiences);
+        }
+
+        //[HttpPost("create-lookalike")]
+        //public async Task<IActionResult> CreateLookalikeAudience([FromQuery] string selectedAccount, [FromQuery] string selectedCountries, [FromQuery] string ratios, [FromQuery] string selectedAudience)
+        //{
+        //    var userId = UserId();
+        //    var accessToken = _metaService.GetLongAccessToken(userId);
+        //    var client = _httpClientFactory.CreateClient();
+        //    var apiUrl = "https://graph.facebook.com/v21.0/" + selectedAccount + "/customaudiences";
+
+        //    var countriesList = selectedCountries.Split(',')
+        //                                         .Select(country => country.Trim())
+        //                                         .ToList();
+
+        //    var validRatios = ratios.Split(',')
+        //                            .Select(r => Convert.ToDecimal(r.Trim().Replace(',', '.')))
+        //                            .Where(r => r >= 0.01m && r <= 0.20m)
+        //                            .Select(r => r / 100)
+        //                            .ToArray();
+
+        //    var lookalikeSpec = new
+        //    {
+        //        country = countriesList.FirstOrDefault(),
+        //        location_spec = countriesList.Any() ? new { geo_locations = new { countries = countriesList } } : null,
+        //        ratio = validRatios.Select(r => r.ToString("F2")).ToArray()
+        //    };
+
+        //    string lookalikeSpecJson = JsonConvert.SerializeObject(lookalikeSpec);
+
+        //    var parameters = new Dictionary<string, string>
+        //    {
+        //        { "access_token", accessToken.AccessToken },
+        //        { "subtype", "LOOKALIKE" },
+        //        { "origin_audience_id", selectedAudience },
+        //        { "customer_file_source", "USER_PROVIDED_ONLY" },
+        //        { "lookalike_spec", lookalikeSpecJson }
+        //    };
+
+        //    var content = new FormUrlEncodedContent(parameters);
+
+        //    var response = await client.PostAsync(apiUrl, content);
+        //    if (!response.IsSuccessStatusCode)
+        //    {
+        //        var errorResponse = await response.Content.ReadAsStringAsync();
+        //        return StatusCode((int)response.StatusCode, $"Meta API'ye hedef kitle oluşturulamadı: {errorResponse}");
+        //    }
+
+        //    var responseData = await response.Content.ReadAsStringAsync();
+        //    return Ok(responseData);
+        //}
 
         private int UserId()
         {

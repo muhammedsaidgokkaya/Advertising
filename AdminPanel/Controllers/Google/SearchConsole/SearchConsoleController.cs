@@ -37,11 +37,11 @@ namespace AdminPanel.Controllers.Google.SearchConsole
 
         [Authorize(Roles = "Admin")]
         [HttpGet("get-sites")]
-        public ActionResult<IEnumerable<SiteResponse>> GetSites()
+        public async Task<ActionResult<IEnumerable<SiteResponse>>> GetSites()
         {
             var userId = UserId();
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var sites = _googleData.SiteAdmin(accessTokenControl);
+            var sites = await _googleData.GetSiteDataAsync(accessTokenControl);
 
             var data = new SiteResponse
             {
@@ -70,46 +70,14 @@ namespace AdminPanel.Controllers.Google.SearchConsole
             return Ok(result);
         }
 
-        [Authorize(Roles = "Admin,Read")]
-        [HttpGet("get-site-maps")]
-        public ActionResult<IEnumerable<SitemapResponse>> GetSiteMaps(string url)
-        {
-            var userId = UserId();
-            var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var siteMaps = _googleData.SiteMapAdmin(accessTokenControl, url);
-
-            var data = new SitemapResponse
-            {
-                Sitemap = siteMaps.Sitemap?.Select(s => new Sitemap
-                {
-                    Path = s.Path,
-                    LastSubmitted = s.LastSubmitted,
-                    IsPending = s.IsPending,
-                    IsSitemapsIndex = s.IsSitemapsIndex,
-                    Type = s.Type,
-                    LastDownloaded = s.LastDownloaded,
-                    Warnings = s.Warnings,
-                    Errors = s.Errors,
-                    Contents = s.Contents?.Select(c => new Content
-                    {
-                        Type = c.Type,
-                        Submitted = c.Submitted,
-                        Indexed = c.Indexed
-                    }).ToList() ?? new List<Content>()
-                }).ToList() ?? new List<Sitemap>()
-            };
-
-            return Ok(new List<SitemapResponse> { data });
-        }
-
         [HttpGet("get-search-console-querys")]
-        public ActionResult<IEnumerable<Row>> GetSearchConsoleQuery(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<ActionResult<IEnumerable<Row>>> GetSearchConsoleQuery(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
             var rows = "5000";
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var searchConsoleQuery = await _googleData.GetSearchConsoleDataAsync(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = searchConsoleQuery
                 .Select((r, index) => new Row
@@ -150,13 +118,13 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         }
 
         [HttpGet("get-search-console-chart-ten")]
-        public ActionResult<IEnumerable<Row>> GetSearchConsoleChartTen(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<ActionResult<IEnumerable<Row>>> GetSearchConsoleChartTen(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
             var rows = "5000";
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var searchConsoleQuery = await _googleData.GetSearchConsoleDataAsync(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = searchConsoleQuery.Select(r => new Row
             {
@@ -179,13 +147,13 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         }
 
         [HttpGet("get-search-console-chart-four")]
-        public ActionResult<IEnumerable<Row>> GetSearchConsoleChartFour(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<ActionResult<IEnumerable<Row>>> GetSearchConsoleChartFour(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
             var rows = "5000";
-            var searchConsoleQuery = _googleData.SearchConsoleQueryAdmin(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var searchConsoleQuery = await _googleData.GetSearchConsoleDataAsync(accessTokenControl, accountId, rows, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             var data = searchConsoleQuery.Select(r => new Row
             {
