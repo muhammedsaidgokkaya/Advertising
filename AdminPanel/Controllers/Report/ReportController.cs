@@ -156,6 +156,31 @@ namespace AdminPanel.Controllers.Report
             string prompt = $"Kullanıcıya React projemde görüntüleyebileceği formatta numaralandırarak aşağıdaki veriye dayanarak detaylı bir rapor, performans analizi ve geliştirme önerileri oluştur.\r\n Veri: {jsonData}\r\n Veriyi analiz ederken şu kurallara uymalısın:\r\n\r\n1. **Kalın Yazılar:** `**` işaretlerini HTML `<b></b>` formatında kalın yazıya dönüştür.\r\n2. **Başlıkları Kaldır:** `##` gibi Markdown başlık işaretlerini kaldır. Ancak içerik düzenini koru.\r\n3. **Numaralandırılmış Liste:** Sonuçları numaralandırılmış şekilde ver.\r\n4. **Detay Seviyeleri:** Analizde ilk 3 madde detaylı, diğerleri kısa ve öz olsun.\r\n\r\nVeri: \r\n{{jsonData}}\r\n\r\nYanıtı şu formatta döndür:\r\n1. Genel Performans:\r\n2. Hesap Verileri Analizi (ilk 3 tanesi detaylı diğerleri tek cümle olacak şekilde):\r\n3. Genel Öneriler (en detaylı olacak kısım):\r\nBu 3 başlık dışında hiçbir şey yazma. Sadece ve sadece 3 başlığı doldur.";
             var reportResult = await _reportHelpers.GeneralReportAI(name, account, accountId, typeId, reportType, user.OrganizationId, prompt, defaultValues[0].ToUniversalTime(), defaultValues[1].ToUniversalTime());
 
+			//string chartPrompt = $@"Aşağıdaki verileri React bileşenine uygun bir grafik formatına dönüştür:
+
+   //             {jsonData}
+
+   //             Çıktı formatı şu şekilde olmalı:
+
+   //             <ComponentName
+   //                 title=""
+   //                 chart={{
+   //                   series: [
+   //                     {{label: '', value: }},
+   //                   ],
+   //                 }}
+   //               />
+
+   //             Dikkat et:
+   //             - **Sadece yukarıdaki gibi JSX kodunu döndür.**
+   //             - **Başına veya sonuna ekstra açıklama, kod bloğu, ``` işaretleri koyma.**
+   //             - **JSX içinde kaçış karakteri (\\) veya \n gibi şeyler olmamalı.**
+   //             - **Bileşen adını ""PerformanceStatistics"" olarak kullan.**
+   //             - **Tüm değerleri verilen {jsonData} verisine göre oluştur.**
+   //             ";
+
+			//var chartResult = await _reportHelpers.GeneralReportChartAI(name, account, accountId, typeId, reportType, user.OrganizationId, chartPrompt, defaultValues[0].ToUniversalTime(), defaultValues[1].ToUniversalTime());
+
             if (reportResult == 1)
             {
                 return Ok(new { success = true, message = "Rapor başarıyla oluşturuldu." });
