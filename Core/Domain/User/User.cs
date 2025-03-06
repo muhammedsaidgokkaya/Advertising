@@ -1,5 +1,6 @@
 ﻿using Core.Domain.Google;
 using Core.Domain.Meta;
+using Core.Domain.Task;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,5 +26,6 @@ namespace Core.Domain.User
         public virtual ICollection<GoogleAccessToken> GoogleAccessToken { get; set; }
         public virtual ICollection<MetaLongAccess> MetaLongAccess { get; set; }
         public virtual ICollection<UserRole> UserRole { get; set; }
-    }
+		public virtual ICollection<TaskUser> TaskUser { get; set; }
+	}
 }

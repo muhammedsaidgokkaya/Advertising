@@ -19,7 +19,6 @@ using Microsoft.Extensions.Configuration;
 using AdminPanel.Models.Report.OpenAI;
 using System.Xml.Linq;
 using AdminPanel.Helpers;
-using Core.Migrations;
 using Utilities.Utilities.MetaData;
 using Service.Implementations.Meta;
 

@@ -5,6 +5,7 @@ using Core.Domain.User;
 using Core.Domain.Meta;
 using Core.Domain.Google;
 using Core.Domain.Report;
+using Core.Domain.Task;
 
 namespace Core.Data
 {
@@ -47,6 +48,10 @@ namespace Core.Data
         public DbSet<GoogleApp> GoogleApp { get; set; }
         public DbSet<GoogleAccessToken> GoogleAccessToken { get; set; }
         public DbSet<Report> Report { get; set; }
+        public DbSet<Core.Domain.Task.Task> Task { get; set; }
+        public DbSet<TaskUser> TaskUser { get; set; }
+        public DbSet<TaskTemplate> TaskTemplate { get; set; }
+        public DbSet<TaskTemplateTask> TaskTemplateTask { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

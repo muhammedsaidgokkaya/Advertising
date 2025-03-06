@@ -23,5 +23,7 @@ namespace Core.Domain.User
         public string? GoogleSearchConsole { get; set; }
         public virtual ICollection<User> User { get; set; }
         public virtual ICollection<Report.Report> Report { get; set; }
+        public virtual ICollection<Core.Domain.Task.Task> Task { get; set; }
+        public virtual ICollection<Core.Domain.Task.TaskTemplate> TaskTemplate { get; set; }
     }
 }
