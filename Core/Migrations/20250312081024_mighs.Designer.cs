@@ -3,6 +3,7 @@ using System;
 using Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Core.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20250312081024_mighs")]
+    partial class mighs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -726,7 +728,7 @@ namespace Core.Migrations
             modelBuilder.Entity("Core.Domain.Task.TaskTemplateTask", b =>
                 {
                     b.HasOne("Core.Domain.Task.Task", "Task")
-                        .WithMany("TaskTemplateTask")
+                        .WithMany()
                         .HasForeignKey("TaskId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -804,8 +806,6 @@ namespace Core.Migrations
             modelBuilder.Entity("Core.Domain.Task.Task", b =>
                 {
                     b.Navigation("TaskComment");
-
-                    b.Navigation("TaskTemplateTask");
 
                     b.Navigation("TaskUser");
                 });

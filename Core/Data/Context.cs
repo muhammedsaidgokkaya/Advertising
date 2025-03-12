@@ -52,6 +52,7 @@ namespace Core.Data
         public DbSet<TaskUser> TaskUser { get; set; }
         public DbSet<TaskTemplate> TaskTemplate { get; set; }
         public DbSet<TaskTemplateTask> TaskTemplateTask { get; set; }
+        public DbSet<TaskComment> TaskComment { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

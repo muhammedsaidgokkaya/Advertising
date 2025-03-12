@@ -27,5 +27,6 @@ namespace Core.Domain.User
         public virtual ICollection<MetaLongAccess> MetaLongAccess { get; set; }
         public virtual ICollection<UserRole> UserRole { get; set; }
 		public virtual ICollection<TaskUser> TaskUser { get; set; }
+		public virtual ICollection<TaskComment> TaskComment { get; set; }
 	}
 }

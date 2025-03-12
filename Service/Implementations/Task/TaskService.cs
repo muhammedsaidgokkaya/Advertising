@@ -131,11 +131,12 @@ namespace Service.Implementations.Task
 
 	public static class TaskExtensions
 	{
-		public static IQueryable<Core.Domain.User.User> IncludeUser(this IQueryable<Core.Domain.User.User> query)
+		public static IQueryable<Core.Domain.Task.Task> IncludeTask(this IQueryable<Core.Domain.Task.Task> query)
 		{
 			return query
 				.Include(ma => ma.TaskUser)
-				.Include(ma => ma.Organization);
+				.Include(ma => ma.TaskTemplateTask)
+				.Include(ma => ma.TaskComment);
 		}
 
 		public static IQueryable<TaskUser> IncludeTaskUser(this IQueryable<TaskUser> query)
@@ -145,10 +146,32 @@ namespace Service.Implementations.Task
 				.Include(ma => ma.Task);
 		}
 
-		public static IQueryable<Core.Domain.Task.Task> IncludeTask(this IQueryable<Core.Domain.Task.Task> query)
+		public static IQueryable<TaskComment> IncludeTaskComment(this IQueryable<TaskComment> query)
 		{
 			return query
-				.Include(ma => ma.TaskUser);
+				.Include(ma => ma.User)
+				.Include(ma => ma.Task);
+		}
+
+		public static IQueryable<TaskTemplate> IncludeTaskTemplate(this IQueryable<TaskTemplate> query)
+		{
+			return query
+				.Include(ma => ma.Organization);
+		}
+
+		public static IQueryable<TaskTemplateTask> IncludeTaskTemplateTask(this IQueryable<TaskTemplateTask> query)
+		{
+			return query
+				.Include(ma => ma.Task)
+				.Include(ma => ma.TaskTemplate);
+		}
+
+		public static IQueryable<Core.Domain.User.User> IncludeUser(this IQueryable<Core.Domain.User.User> query)
+		{
+			return query
+				.Include(ma => ma.TaskUser)
+				.Include(ma => ma.TaskComment)
+				.Include(ma => ma.Organization);
 		}
 	}
 }
