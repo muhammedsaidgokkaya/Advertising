@@ -21,41 +21,20 @@ namespace Service.Implementations.Task
 			_repository = new Repository<Context>(new Context());
 		}
 
-		//public int AddUser(int organizationId, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address, string userName, string password)
-		//{
-		//	var organization = GetOrganizationById(organizationId);
-		//	if (organization != null)
-		//	{
-		//		var currentUser = GetUser(organizationId).Count();
+		public int AddTaskTemplate(int organizationId, string name)
+		{
+			var taskTemplate = new TaskTemplate
+			{
+				KeyName = name,
+				OrganizationId = organizationId,
+				InsertedDate = DateTime.UtcNow,
+				IsActive = true,
+				IsDeleted = false
+			};
 
-		//		if (currentUser >= organization.UserCount)
-		//		{
-		//			return 0;
-		//		}
-
-		//		var user = new Core.Domain.User.User
-		//		{
-		//			OrganizationId = organizationId,
-		//			FirstName = firstName,
-		//			LastName = lastName,
-		//			Mail = mail,
-		//			Phone = phone,
-		//			Title = title,
-		//			DateOfBirth = dateOfBirth,
-		//			Gender = gender,
-		//			Address = address,
-		//			UserName = userName,
-		//			Password = password,
-		//			InsertedDate = DateTime.UtcNow,
-		//			IsActive = true,
-		//			IsDeleted = false
-		//		};
-
-		//		_repository.Save(user);
-		//		return user.Id;
-		//	}
-		//	return 0;
-		//}
+			_repository.Save(taskTemplate);
+			return taskTemplate.Id;
+		}
 
 		//public int UpdateAdminUser(int id, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address)
 		//{
@@ -92,30 +71,30 @@ namespace Service.Implementations.Task
 		//	return 0;
 		//}
 
-		//public int IsDeletedUser(int id)
-		//{
-		//	var user = GetUserById(id);
-		//	if (user != null)
-		//	{
-		//		user.IsDeleted = !user.IsDeleted;
-		//		user.UpdateDate = DateTime.UtcNow;
+		public int IsDeletedTaskTemplate(int id)
+		{
+			var taskTemplate = GetTaskTemplateById(id);
+			if (taskTemplate != null)
+			{
+				taskTemplate.IsDeleted = !taskTemplate.IsDeleted;
+				taskTemplate.UpdateDate = DateTime.UtcNow;
 
-		//		_repository.Update(user);
-		//		return user.Id;
-		//	}
-		//	return 0;
-		//}
+				_repository.Update(taskTemplate);
+				return taskTemplate.Id;
+			}
+			return 0;
+		}
 
-		//public Core.Domain.User.User GetUserById(int id)
-		//{
-		//	return _repository.GetById<Core.Domain.User.User>(id);
-		//}
+		public TaskTemplate GetTaskTemplateById(int id)
+		{
+			return _repository.GetById<TaskTemplate>(id);
+		}
 
-		//public IEnumerable<Core.Domain.User.User> GetUser(int organizationId)
-		//{
-		//	var data = _repository.FilterAsQueryable<Core.Domain.User.User>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeUser();
-		//	return data;
-		//}
+		public async Task<IEnumerable<TaskTemplate>> GetTaskTemplate(int organizationId)
+		{
+			var data = _repository.FilterAsQueryable<TaskTemplate>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeTaskTemplate();
+			return data;
+		}
 
 		//public IEnumerable<Core.Domain.User.User> GetUsers(int organizationId, int userId)
 		//{

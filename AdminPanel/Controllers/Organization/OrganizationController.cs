@@ -196,7 +196,16 @@ namespace AdminPanel.Controllers.Organization
             return Ok(roleList);
         }
 
-        [Authorize(Roles = "Admin")]
+		[HttpGet("departments")]
+		public ActionResult<IEnumerable<Users>> GetOrgamizationDepartments()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var users = _userService.GetUserTitles(user.OrganizationId, userId);
+			return Ok(users);
+		}
+
+		[Authorize(Roles = "Admin")]
         [HttpPost("add-user")]
         public IActionResult AddUser([FromBody] AddUser user)
         {

@@ -431,7 +431,7 @@ namespace AdminPanel.Controllers.Meta
             var audiencesTask = _metaData.Audiences(accessToken.AccessToken, accountId);
             var savedAudiencesTask = _metaData.SavedAudiences(accessToken.AccessToken, accountId);
 
-            await Task.WhenAll(audiencesTask, savedAudiencesTask);
+            await System.Threading.Tasks.Task.WhenAll(audiencesTask, savedAudiencesTask);
 
             var audiences = audiencesTask.Result;
             var savedAudiences = savedAudiencesTask.Result;
@@ -480,7 +480,7 @@ namespace AdminPanel.Controllers.Meta
             var audiencesTask = _metaData.Audiences(accessToken.AccessToken, accountId);
             var savedAudiencesTask = _metaData.SavedAudiences(accessToken.AccessToken, accountId);
 
-            await Task.WhenAll(audiencesTask, savedAudiencesTask);
+            await System.Threading.Tasks.Task.WhenAll(audiencesTask, savedAudiencesTask);
 
             var audiences = audiencesTask.Result;
             var savedAudiences = savedAudiencesTask.Result;

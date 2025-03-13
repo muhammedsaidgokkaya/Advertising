@@ -279,10 +279,24 @@ namespace Service.Implementations.User
                 .FirstOrDefault(u => u.UserName == userName && u.Password == password); ;
             return data;
         }
-        #endregion
 
-        #region Role
-        public IEnumerable<Role> GetRole()
+		public IEnumerable<string> GetUserTitles(int organizationId, int userId)
+		{
+            var titles = _repository
+                .FilterAsQueryable<Core.Domain.User.User>(p =>
+                    !p.IsDeleted &&
+                    p.Organization.Id.Equals(organizationId) &&
+                    !p.Id.Equals(userId))
+                .Select(p => p.Title)
+                .Distinct()
+                .ToList();
+
+			return titles;
+		}
+		#endregion
+
+		#region Role
+		public IEnumerable<Role> GetRole()
         {
             var data = _repository.FilterAsQueryable<Role>(x => true);
             return data;
