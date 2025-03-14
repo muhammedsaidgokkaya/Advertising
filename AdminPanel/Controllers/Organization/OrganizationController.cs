@@ -197,12 +197,36 @@ namespace AdminPanel.Controllers.Organization
         }
 
 		[HttpGet("departments")]
-		public ActionResult<IEnumerable<Users>> GetOrgamizationDepartments()
+		public ActionResult<IEnumerable<Users>> GetOrganizationDepartments()
 		{
 			var userId = UserId();
 			var user = _userService.GetUserById(userId);
 			var users = _userService.GetUserTitles(user.OrganizationId, userId);
 			return Ok(users);
+		}
+
+		[HttpGet("department-users")]
+		public ActionResult<IEnumerable<Users>> GetDepartmentUsers([FromQuery] List<string> department)
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+            var departmentUsers = _userService.GetDepartmentUsers(user.OrganizationId, userId, department);
+
+			var userList = departmentUsers.Select(user => new Users
+			{
+				Id = user.Id,
+				Name = user.FirstName + " " + user.LastName,
+				Mail = user.Mail,
+				Phone = user.Phone,
+				Title = user.Title,
+				DateOfBirth = user.DateOfBirth.HasValue
+				? user.DateOfBirth.Value.ToString("yyyy-MM-dd")
+				: "Belirtilmemiş",
+				Gender = user.Gender == "E" ? "Erkek" : user.Gender == "K" ? "Kız" : "Belirtilmemiş",
+				IsActive = user.IsActive ? "Aktif" : "Pasif",
+			}).ToList();
+
+			return Ok(userList);
 		}
 
 		[Authorize(Roles = "Admin")]

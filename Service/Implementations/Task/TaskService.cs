@@ -36,40 +36,56 @@ namespace Service.Implementations.Task
 			return taskTemplate.Id;
 		}
 
-		//public int UpdateAdminUser(int id, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address)
-		//{
-		//	var user = GetUserById(id);
-		//	if (user != null)
-		//	{
-		//		user.FirstName = firstName;
-		//		user.LastName = lastName;
-		//		user.Mail = mail;
-		//		user.Phone = phone;
-		//		user.Title = title;
-		//		user.DateOfBirth = dateOfBirth;
-		//		user.Gender = gender;
-		//		user.Address = address;
-		//		user.UpdateDate = DateTime.UtcNow;
+		public int AddTask(int createdUser, int organizationId, string name, string content, DateTime duration, string departmans)
+		{
+			var task = new Core.Domain.Task.Task
+			{
+				TaskName = name,
+				Description = content,
+				Deadline = duration,
+				Departments = departmans,
+				OrganizationId = organizationId,
+				CreatedUser = createdUser,
+				State = 0,
+				InsertedDate = DateTime.UtcNow,
+				IsActive = true,
+				IsDeleted = false
+			};
 
-		//		_repository.Update(user);
-		//		return user.Id;
-		//	}
-		//	return 0;
-		//}
+			_repository.Save(task);
+			return task.Id;
+		}
 
-		//public int IsActiveUser(int id)
-		//{
-		//	var user = GetUserById(id);
-		//	if (user != null)
-		//	{
-		//		user.IsActive = !user.IsActive;
-		//		user.UpdateDate = DateTime.UtcNow;
+		public int AddTaskUser(int userId, int taskId)
+		{
+			var taskUser = new TaskUser
+			{
+				UserId = userId,
+				TaskId = taskId,
+				InsertedDate = DateTime.UtcNow,
+				IsActive = true,
+				IsDeleted = false
+			};
 
-		//		_repository.Update(user);
-		//		return user.Id;
-		//	}
-		//	return 0;
-		//}
+			_repository.Save(taskUser);
+			return 1;
+		}
+
+		public int AddTaskTemplateTask(int taskTemplateId, int taskId)
+		{
+			var taskTemplate = new TaskTemplateTask
+			{
+				TaskTemplateId = taskTemplateId,
+				TaskId = taskId,
+				IsFinished = false,
+				InsertedDate = DateTime.UtcNow,
+				IsActive = true,
+				IsDeleted = false
+			};
+
+			_repository.Save(taskTemplate);
+			return 1;
+		}
 
 		public int IsDeletedTaskTemplate(int id)
 		{
@@ -96,16 +112,11 @@ namespace Service.Implementations.Task
 			return data;
 		}
 
-		//public IEnumerable<Core.Domain.User.User> GetUsers(int organizationId, int userId)
-		//{
-		//	var data = _repository
-		//		.FilterAsQueryable<Core.Domain.User.User>(
-		//			p => !p.IsDeleted
-		//				 && p.Organization.Id.Equals(organizationId)
-		//				 && !p.Id.Equals(userId))
-		//		.IncludeUser();
-		//	return data;
-		//}
+		public async Task<IEnumerable<Core.Domain.Task.Task>> GetTask(int organizationId)
+		{
+			var data = _repository.FilterAsQueryable<Core.Domain.Task.Task>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeTask();
+			return data;
+		}
 	}
 
 	public static class TaskExtensions

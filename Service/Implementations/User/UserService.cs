@@ -293,6 +293,18 @@ namespace Service.Implementations.User
 
 			return titles;
 		}
+
+		public IEnumerable<Core.Domain.User.User> GetDepartmentUsers(int organizationId, int userId, List<string> department)
+		{
+			var data = _repository
+				.FilterAsQueryable<Core.Domain.User.User>(
+					p => !p.IsDeleted
+						 && p.Organization.Id.Equals(organizationId)
+						 && !p.Id.Equals(userId)
+				         && department.Contains(p.Title))
+				.IncludeUser();
+			return data;
+		}
 		#endregion
 
 		#region Role

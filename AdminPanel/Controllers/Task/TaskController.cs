@@ -1,5 +1,6 @@
 ﻿using AdminPanel.Controllers.Organization;
 using AdminPanel.Models.Organization.User;
+using AdminPanel.Models.Task.Task;
 using AdminPanel.Models.Task.TaskTemplate;
 using Core.Domain.Task;
 using Core.Domain.User;
@@ -33,7 +34,7 @@ namespace AdminPanel.Controllers.Task
 			_emailHelper = new EmailHelper();
 		}
 
-		[HttpGet("schema")]
+		[HttpGet("schemas")]
 		public async Task<ActionResult<IEnumerable<Models.Task.TaskTemplate.TaskTemplate>>> GetSchemas()
 		{
 			var userId = UserId();
@@ -47,6 +48,31 @@ namespace AdminPanel.Controllers.Task
 			}).ToList();
 
 			return Ok(schemasList);
+		}
+
+		[HttpGet("tasks")]
+		public async Task<ActionResult<IEnumerable<Models.Task.Task.Tasks>>> GetTasks()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var tasks = await _taskService.GetTask(user.OrganizationId);
+
+			var taskList = tasks.Select(task =>
+			{
+				var createdUser = _userService.GetUserById(task.CreatedUser);
+				return new Models.Task.Task.Tasks
+				{
+					Id = task.Id,
+					CreatedDate = task.InsertedDate ?? DateTime.MinValue,
+					Name = task.TaskName,
+					State = task.State,
+					CreatedUser = createdUser != null ? $"{createdUser.FirstName} {createdUser.LastName}" : "Bilinmiyor",
+					Duration = task.Deadline ?? DateTime.MinValue,
+					Team = task.TaskUser.Count,
+				};
+			}).ToList();
+
+			return Ok(taskList);
 		}
 
 		[HttpPost]
@@ -77,6 +103,42 @@ namespace AdminPanel.Controllers.Task
 			}
 
 			return Ok(1);
+		}
+
+		[HttpPost]
+		[Route("add-task")]
+		public async Task<IActionResult> AddTask([FromBody] AddTask request)
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			string departman = string.Join(", ", request.Departments);
+
+			var addTask = _taskService.AddTask(userId, user.OrganizationId, request.Name, request.Content, request.Durations.ToUniversalTime(), departman);
+            
+			if (addTask == 0)
+            {
+				return Ok(0);
+            }
+
+            if (request.Users != null || request.Users.Count != 0 )
+            {
+				foreach (var item in request.Users)
+				{
+					_taskService.AddTaskUser(item, addTask);
+
+				}
+			}
+
+            if (request.Services != null || request.Services.Count != 0 )
+            {
+				foreach (var item in request.Services)
+				{
+					_taskService.AddTaskTemplateTask(item, addTask);
+
+				}
+			}
+            
+            return Ok(1);
 		}
 
 		private int UserId()
