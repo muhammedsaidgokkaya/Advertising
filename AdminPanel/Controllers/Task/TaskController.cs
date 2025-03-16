@@ -144,6 +144,36 @@ namespace AdminPanel.Controllers.Task
 			return Ok(data);
 		}
 
+		[HttpGet("get-update-task")]
+		public async Task<ActionResult<UpdateTask>> GetUpdateTask(int taskId)
+		{
+			var task = _taskService.GetTaskById(taskId);
+			var createdUser = _userService.GetUserById(task.CreatedUser);
+			var taskUsers = await _taskService.GetTaskUser(taskId);
+			var taskServices = await _taskService.GetTaskTemplateTask(taskId);
+
+			var data = new UpdateTask
+			{
+				Id = task.Id,
+				Name = task.TaskName,
+				Content = task.Description,
+				Durations = task.Deadline ?? DateTime.MinValue,
+				Departments = task.Departments?.Split(',').Select(d => d.Trim()).ToArray() ?? Array.Empty<string>(),
+				Users = taskUsers.Select(tu => new UserDto
+				{
+					Id = tu.UserId,
+					Name = tu.User.FirstName + " " + tu.User.LastName,
+				}).ToList(),
+				Services = taskServices.Select(tu => new ServiceDto
+				{
+					Id = tu.TaskTemplateId,
+					Name = tu.TaskTemplate.KeyName
+				}).ToList(),
+			};
+
+			return Ok(data);
+		}
+
 		[HttpPost]
 		[Route("add-schema")]
 		public async Task<IActionResult> AddSchema([FromBody] AddSchema request)
@@ -224,6 +254,62 @@ namespace AdminPanel.Controllers.Task
 		}
 
 		[HttpPost]
+		[Route("update-task")]
+		public async Task<IActionResult> UpdateTask([FromBody] UpdateTaskContent request)
+		{
+			string departman = string.Join(", ", request.Departments);
+
+			var addTask = _taskService.UpdateTask(request.Id, request.Name, request.Content, request.Durations.ToUniversalTime(), departman);
+
+			if (addTask == 0)
+			{
+				return Ok(0);
+			}
+
+			#region Users
+			var existingUsers = (await _taskService.GetTaskUser(request.Id))
+						.Select(tu => tu.UserId)
+						.ToList();
+
+			var usersToAdd = request.Users.Except(existingUsers).ToList();
+
+			var usersToRemove = existingUsers.Except(request.Users).ToList();
+
+			foreach (var userId in usersToAdd)
+			{
+				_taskService.AddTaskUser(userId, request.Id);
+			}
+
+			foreach (var userId in usersToRemove)
+			{
+				_taskService.IsDeletedTaskUser(request.Id, userId);
+			}
+			#endregion
+
+			#region Services
+			var existingServices = (await _taskService.GetTaskTemplateTask(request.Id))
+						.Select(tu => tu.TaskTemplateId)
+						.ToList();
+
+			var servicesToAdd = request.Services.Except(existingServices).ToList();
+
+			var servicesToRemove = existingServices.Except(request.Services).ToList();
+
+			foreach (var serviceId in servicesToAdd)
+			{
+				_taskService.AddTaskTemplateTask(serviceId, request.Id);
+			}
+
+			foreach (var serviceId in servicesToRemove)
+			{
+				_taskService.IsDeletedTaskUser(request.Id, serviceId);
+			}
+			#endregion
+
+			return Ok(1);
+		}
+
+		[HttpPost]
 		[Route("update-task-state")]
 		public async Task<IActionResult> UpdateTaskState(int taskId, int state)
 		{
@@ -243,6 +329,18 @@ namespace AdminPanel.Controllers.Task
 		{
 			var updateState = _taskService.UpdateTaskTemplateTask(taskTemplateTaskId);
             if (updateState == 0)
+            {
+				return Ok(0);
+            }
+            return Ok(1);
+		}
+
+		[HttpPost]
+		[Route("delete-task")]
+		public async Task<IActionResult> DeleteTask(int taskId)
+		{
+			var deleteTask = _taskService.IsDeletedTask(taskId);
+            if (deleteTask == 0)
             {
 				return Ok(0);
             }

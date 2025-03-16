@@ -104,6 +104,23 @@ namespace Service.Implementations.Task
 			return 1;
 		}
 
+		public int UpdateTask(int id, string name, string content, DateTime duration, string departmans)
+		{
+			var task = GetTaskById(id);
+			if (task != null)
+			{
+				task.TaskName = name;
+				task.Description = content;
+				task.Deadline = duration;
+				task.Departments = departmans;
+				task.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(task);
+				return task.Id;
+			}
+			return 0;
+		}
+
 		public int IsDeletedTaskTemplate(int id)
 		{
 			var taskTemplate = GetTaskTemplateById(id);
@@ -115,6 +132,80 @@ namespace Service.Implementations.Task
 				_repository.Update(taskTemplate);
 				return taskTemplate.Id;
 			}
+			return 0;
+		}
+
+		public int IsDeletedTaskTemplateTask(int id)
+		{
+			var taskTemplateTask = GetTaskTemplateTaskById(id);
+			if (taskTemplateTask != null)
+			{
+				taskTemplateTask.IsDeleted = !taskTemplateTask.IsDeleted;
+				taskTemplateTask.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(taskTemplateTask);
+				return taskTemplateTask.Id;
+			}
+			return 0;
+		}
+
+		public int IsDeletedTask(int id)
+		{
+			var task = GetTaskById(id);
+			if (task != null)
+			{
+				task.IsDeleted = !task.IsDeleted;
+				task.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(task);
+				return task.Id;
+			}
+			return 0;
+		}
+
+		public int IsDeletedTaskUser(int id)
+		{
+			var taskUser = GetTaskUserById(id);
+			if (taskUser != null)
+			{
+				taskUser.IsDeleted = !taskUser.IsDeleted;
+				taskUser.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(taskUser);
+				return taskUser.Id;
+			}
+			return 0;
+		}
+
+		public int IsDeletedTaskUser(int taskId, int userId)
+		{
+			var taskUser = _repository.Find<TaskUser>(tu => tu.TaskId == taskId && tu.UserId == userId);
+
+			if (taskUser != null)
+			{
+				taskUser.IsDeleted = !taskUser.IsDeleted;
+				taskUser.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(taskUser);
+				return taskUser.Id;
+			}
+
+			return 0;
+		}
+
+		public int IsDeletedTaskTemplateTask(int taskId, int taskTemplateId)
+		{
+			var taskTemplateTask = _repository.Find<TaskTemplateTask>(tu => tu.TaskId == taskId && tu.TaskTemplateId == taskTemplateId);
+
+			if (taskTemplateTask != null)
+			{
+				taskTemplateTask.IsDeleted = !taskTemplateTask.IsDeleted;
+				taskTemplateTask.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(taskTemplateTask);
+				return taskTemplateTask.Id;
+			}
+
 			return 0;
 		}
 
@@ -159,6 +250,11 @@ namespace Service.Implementations.Task
 		public Core.Domain.Task.Task GetTaskById(int id)
 		{
 			return _repository.GetById<Core.Domain.Task.Task>(id);
+		}
+
+		public Core.Domain.Task.TaskUser GetTaskUserById(int id)
+		{
+			return _repository.GetById<Core.Domain.Task.TaskUser>(id);
 		}
 
 		public async Task<IEnumerable<TaskTemplate>> GetTaskTemplate(int organizationId)
