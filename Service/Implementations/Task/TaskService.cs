@@ -3,6 +3,7 @@ using Core.Domain.Task;
 using Core.Domain.User;
 using Microsoft.EntityFrameworkCore;
 using Repository.Implementations;
+using Service.Implementations.User;
 using Service.Interfaces.Task;
 using System;
 using System.Collections.Generic;
@@ -56,6 +57,22 @@ namespace Service.Implementations.Task
 			return task.Id;
 		}
 
+		public int AddComment(int createdUser, int taskId, string comment)
+		{
+			var taskComment = new Core.Domain.Task.TaskComment
+			{
+				UserId = createdUser,
+				TaskId = taskId,
+				Comment = comment,
+				InsertedDate = DateTime.UtcNow,
+				IsActive = true,
+				IsDeleted = false
+			};
+
+			_repository.Save(taskComment);
+			return taskComment.Id;
+		}
+
 		public int AddTaskUser(int userId, int taskId)
 		{
 			var taskUser = new TaskUser
@@ -101,9 +118,47 @@ namespace Service.Implementations.Task
 			return 0;
 		}
 
+		public int UpdateTask(int id, int state)
+		{
+			var task = GetTaskById(id);
+			if (task != null)
+			{
+				task.State = state;
+				task.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(task);
+				return task.Id;
+			}
+			return 0;
+		}
+
+		public int UpdateTaskTemplateTask(int id)
+		{
+			var taskTemplateTask = GetTaskTemplateTaskById(id);
+			if (taskTemplateTask != null)
+			{
+				taskTemplateTask.IsFinished = !taskTemplateTask.IsFinished;
+				taskTemplateTask.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(taskTemplateTask);
+				return taskTemplateTask.Id;
+			}
+			return 0;
+		}
+
 		public TaskTemplate GetTaskTemplateById(int id)
 		{
 			return _repository.GetById<TaskTemplate>(id);
+		}
+
+		public TaskTemplateTask GetTaskTemplateTaskById(int id)
+		{
+			return _repository.GetById<TaskTemplateTask>(id);
+		}
+
+		public Core.Domain.Task.Task GetTaskById(int id)
+		{
+			return _repository.GetById<Core.Domain.Task.Task>(id);
 		}
 
 		public async Task<IEnumerable<TaskTemplate>> GetTaskTemplate(int organizationId)
@@ -112,7 +167,25 @@ namespace Service.Implementations.Task
 			return data;
 		}
 
-		public async Task<IEnumerable<Core.Domain.Task.Task>> GetTask(int organizationId)
+		public async Task<IEnumerable<TaskTemplateTask>> GetTaskTemplateTask(int taskId)
+		{
+			var data = _repository.FilterAsQueryable<TaskTemplateTask>(p => !p.IsDeleted && p.Task.Id.Equals(taskId)).IncludeTaskTemplateTask();
+			return data;
+		}
+
+		public async Task<IEnumerable<TaskUser>> GetTaskUser(int taskId)
+		{
+			var data = _repository.FilterAsQueryable<TaskUser>(p => !p.IsDeleted && p.Task.Id.Equals(taskId)).IncludeTaskUser();
+			return data;
+		}
+
+		public async Task<IEnumerable<TaskComment>> GetTaskComment(int taskId)
+		{
+			var data = _repository.FilterAsQueryable<TaskComment>(p => !p.IsDeleted && p.Task.Id.Equals(taskId)).IncludeTaskComment();
+			return data;
+		}
+
+		public async Task<IEnumerable<Core.Domain.Task.Task>> GetTasks(int organizationId)
 		{
 			var data = _repository.FilterAsQueryable<Core.Domain.Task.Task>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeTask();
 			return data;
