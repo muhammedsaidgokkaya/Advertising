@@ -3,6 +3,7 @@ using System;
 using Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Core.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20250318004121_mjaki")]
+    partial class mjaki
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,57 +23,6 @@ namespace Core.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Core.Domain.Calendar.Calendar", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("AllDay")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("End")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("InsertedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("OrganizationId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("Start")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdateDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrganizationId");
-
-                    b.ToTable("Calendar");
-                });
 
             modelBuilder.Entity("Core.Domain.Google.GoogleAccessToken", b =>
                 {
@@ -345,9 +296,6 @@ namespace Core.Migrations
                     b.Property<int>("OrganizationId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
                     b.Property<int>("State")
                         .HasColumnType("integer");
 
@@ -414,9 +362,6 @@ namespace Core.Migrations
 
                     b.Property<int?>("CommentId")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime>("InsertedDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Process")
                         .HasColumnType("integer");
@@ -716,17 +661,6 @@ namespace Core.Migrations
                     b.ToTable("UserRole");
                 });
 
-            modelBuilder.Entity("Core.Domain.Calendar.Calendar", b =>
-                {
-                    b.HasOne("Core.Domain.User.Organization", "Organization")
-                        .WithMany("Calendar")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Organization");
-                });
-
             modelBuilder.Entity("Core.Domain.Google.GoogleAccessToken", b =>
                 {
                     b.HasOne("Core.Domain.Google.GoogleApp", "GoogleApp")
@@ -914,8 +848,6 @@ namespace Core.Migrations
 
             modelBuilder.Entity("Core.Domain.User.Organization", b =>
                 {
-                    b.Navigation("Calendar");
-
                     b.Navigation("Report");
 
                     b.Navigation("Task");

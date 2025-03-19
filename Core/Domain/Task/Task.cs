@@ -15,7 +15,8 @@ namespace Core.Domain.Task
         public string? Departments { get; set; }
         public DateTime? Deadline { get; set; }
         public int State { get; set; }
-		public int OrganizationId { get; set; }
+        public int Priority { get; set; }
+        public int OrganizationId { get; set; }
 		public virtual Organization Organization { get; set; }
 		public virtual ICollection<TaskComment> TaskComment { get; set; }
 		public virtual ICollection<TaskTemplateTask> TaskTemplateTask { get; set; }

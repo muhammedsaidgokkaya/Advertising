@@ -6,7 +6,8 @@
 		public DateTime CreatedDate { get; set; }
 		public string Name { get; set; }
 		public int State { get; set; }
-		public string CreatedUser { get; set; }
+        public int Priority { get; set; }
+        public string CreatedUser { get; set; }
 		public DateTime Duration { get; set; }
 		public string Content { get; set; }
         public string Department { get; set; }

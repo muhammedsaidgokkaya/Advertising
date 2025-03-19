@@ -37,7 +37,7 @@ namespace Service.Implementations.Task
 			return taskTemplate.Id;
 		}
 
-		public int AddTask(int createdUser, int organizationId, string name, string content, DateTime duration, string departmans)
+		public int AddTask(int createdUser, int organizationId, string name, string content, DateTime duration, string departmans, int priority)
 		{
 			var task = new Core.Domain.Task.Task
 			{
@@ -47,6 +47,7 @@ namespace Service.Implementations.Task
 				Departments = departmans,
 				OrganizationId = organizationId,
 				CreatedUser = createdUser,
+				Priority = priority,
 				State = 0,
 				InsertedDate = DateTime.UtcNow,
 				IsActive = true,
@@ -104,7 +105,7 @@ namespace Service.Implementations.Task
 			return 1;
 		}
 
-		public int UpdateTask(int id, string name, string content, DateTime duration, string departmans)
+		public int UpdateTask(int id, string name, string content, DateTime duration, string departmans, int priority)
 		{
 			var task = GetTaskById(id);
 			if (task != null)
@@ -113,6 +114,7 @@ namespace Service.Implementations.Task
 				task.Description = content;
 				task.Deadline = duration;
 				task.Departments = departmans;
+				task.Priority = priority;
 				task.UpdateDate = DateTime.UtcNow;
 
 				_repository.Update(task);
@@ -223,7 +225,7 @@ namespace Service.Implementations.Task
 			return 0;
 		}
 
-		public int UpdateTaskTemplateTask(int id)
+		public bool UpdateTaskTemplateTask(int id)
 		{
 			var taskTemplateTask = GetTaskTemplateTaskById(id);
 			if (taskTemplateTask != null)
@@ -232,9 +234,9 @@ namespace Service.Implementations.Task
 				taskTemplateTask.UpdateDate = DateTime.UtcNow;
 
 				_repository.Update(taskTemplateTask);
-				return taskTemplateTask.Id;
+				return taskTemplateTask.IsFinished;
 			}
-			return 0;
+			return false;
 		}
 
 		public TaskTemplate GetTaskTemplateById(int id)
@@ -265,7 +267,15 @@ namespace Service.Implementations.Task
 
 		public async Task<IEnumerable<TaskTemplateTask>> GetTaskTemplateTask(int taskId)
 		{
-			var data = _repository.FilterAsQueryable<TaskTemplateTask>(p => !p.IsDeleted && p.Task.Id.Equals(taskId)).IncludeTaskTemplateTask();
+			var data = _repository.FilterAsQueryable<TaskTemplateTask>(p => !p.IsDeleted && !p.TaskTemplate.IsDeleted && p.Task.Id.Equals(taskId)).IncludeTaskTemplateTask();
+			return data;
+		}
+
+		public TaskTemplateTask GetTaskTemplateTaskTask(int taskTemplateTaskId)
+		{
+			var data = _repository.FilterAsQueryable<TaskTemplateTask>(p => !p.IsDeleted && p.Id.Equals(taskTemplateTaskId))
+								  .IncludeTaskTemplateTask()
+								  .FirstOrDefault();
 			return data;
 		}
 

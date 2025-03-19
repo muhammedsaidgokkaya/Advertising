@@ -6,6 +6,7 @@
         public string Name { get; set; }
         public string Content { get; set; }
         public DateTime Durations { get; set; }
+        public int Priority { get; set; }
         public string[] Departments { get; set; }
         public List<UserDto> Users { get; set; }
         public List<ServiceDto> Services { get; set; }

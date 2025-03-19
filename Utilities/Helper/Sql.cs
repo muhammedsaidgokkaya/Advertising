@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -18,76 +19,81 @@ namespace Utilities.Helper
             _connectionString = connectionString;
         }
 
-        public static DataTable GetQueryResult(string query)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(query) || string.IsNullOrEmpty(_connectionString))
-                {
-                    return null;
-                }
-                else
-                {
-                    var connection = new SqlConnection(_connectionString);
-                    var command = new SqlCommand(query, connection) { Connection = connection, CommandText = query, CommandTimeout = 600 };
-                    if (connection.State == ConnectionState.Closed)
-                    {
-                        connection.Open();
-                    }
-                    var dataReader = command.ExecuteReader();
-                    var dataTable = new DataTable();
-                    dataTable.Load(dataReader);
-                    connection.Close();
-                    return dataTable;
-                }
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        //Kullanım
+		//DataTable result = Sql.GetQueryResult("SELECT * FROM public.\"Task\"");
 
-        public static DataTable GetStoredProcedure(string procedureName, string[] parameters, object[] values)
-        {
-            try
-            {
-                var dataTable = new DataTable();
-                if (parameters.Length.Equals(values.Length))
-                {
-                    var connection = new SqlConnection(_connectionString);
-                    var command = new SqlCommand(procedureName, connection) { CommandType = CommandType.StoredProcedure, CommandTimeout = 600 };
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        var value = values[i].GetType();
-                        var type = SqlDbType.Int;
-                        switch (value.Name)
-                        {
-                            case "Int32":
-                                type = SqlDbType.Int;
-                                break;
-                            case "String":
-                                type = SqlDbType.NVarChar;
-                                break;
-                            case "DateTime":
-                                type = SqlDbType.DateTime;
-                                break;
-                            case "Double":
-                                type = SqlDbType.Float;
-                                break;
-                        }
-                        command.Parameters.Add("@" + parameters[i] + "", type).Value = values[i];
-                    }
-                    var dataAdapter = new SqlDataAdapter(command);
-                    dataAdapter.Fill(dataTable);
-                    connection.Close();
-                    return dataTable;
-                }
-                return dataTable;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-    }
+		//if (result != null)
+		//{
+		//	foreach (DataRow row in result.Rows)
+		//	{
+		//		Console.WriteLine($"Task ID: {row["id"]}, Task Name: {row["name"]}");
+		//	}
+		//}
+
+		public static DataTable GetQueryResult(string query)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(query) || string.IsNullOrEmpty(_connectionString))
+				{
+					return null;
+				}
+
+				using (var connection = new NpgsqlConnection(_connectionString))
+				{
+					using (var command = new NpgsqlCommand(query, connection))
+					{
+						command.CommandTimeout = 600;
+						connection.Open();
+						using (var dataReader = command.ExecuteReader())
+						{
+							var dataTable = new DataTable();
+							dataTable.Load(dataReader);
+							return dataTable;
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Hata: {ex.Message}");
+				return null;
+			}
+		}
+
+		public static DataTable GetStoredProcedure(string procedureName, string[] parameters, object[] values)
+		{
+			try
+			{
+				if (parameters.Length != values.Length)
+					return null;
+
+				using (var connection = new NpgsqlConnection(_connectionString))
+				{
+					using (var command = new NpgsqlCommand(procedureName, connection))
+					{
+						command.CommandType = CommandType.StoredProcedure;
+						command.CommandTimeout = 600;
+
+						for (int i = 0; i < parameters.Length; i++)
+						{
+							command.Parameters.AddWithValue(parameters[i], values[i]);
+						}
+
+						var dataTable = new DataTable();
+						using (var dataAdapter = new NpgsqlDataAdapter(command))
+						{
+							dataAdapter.Fill(dataTable);
+						}
+						return dataTable;
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Hata: {ex.Message}");
+				return null;
+			}
+		}
+	}
 }

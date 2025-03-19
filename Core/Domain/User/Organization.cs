@@ -25,5 +25,6 @@ namespace Core.Domain.User
         public virtual ICollection<Report.Report> Report { get; set; }
         public virtual ICollection<Core.Domain.Task.Task> Task { get; set; }
         public virtual ICollection<Core.Domain.Task.TaskTemplate> TaskTemplate { get; set; }
-    }
+		public virtual ICollection<Calendar.Calendar> Calendar { get; set; }
+	}
 }
