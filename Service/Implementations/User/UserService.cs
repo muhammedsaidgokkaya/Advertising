@@ -28,11 +28,12 @@ namespace Service.Implementations.User
         }
 
         #region Organization
-        public int AddOrganization(string name, int userCount = 5, int accountCount = 2, string accountType = "", string address = "", string zipCode = "", string taskNumber = "", string phone = "")
+        public int AddOrganization(string name, string hashCode, int userCount = 5, int accountCount = 2, string accountType = "", string address = "", string zipCode = "", string taskNumber = "", string phone = "")
         {
             var organization = new Organization
             {
                 Name = name,
+                OrganizationHashCode = hashCode,
                 UserCount = userCount,
                 AccountCount = accountCount,
                 Address = address,
@@ -120,10 +121,16 @@ namespace Service.Implementations.User
             var data = _repository.Filter<Organization>(p => p.IsActive && !p.IsDeleted);
             return data;
         }
-        #endregion
 
-        #region User
-        public int AddUser(int organizationId, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address, string userName, string password)
+		public Organization GetOrganizationHashCode(string code)
+		{
+			var data = _repository.Filter<Organization>(p => p.IsActive && !p.IsDeleted && p.OrganizationHashCode == code);
+			return data.SingleOrDefault();
+		}
+		#endregion
+
+		#region User
+		public int AddUser(int organizationId, string firstName, string lastName, string mail, string phone, string title, DateTime? dateOfBirth, string gender, string address, string userName, string password)
         {
             var organization = GetOrganizationById(organizationId);
             if (organization != null)

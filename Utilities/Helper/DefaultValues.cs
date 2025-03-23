@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -76,7 +77,18 @@ namespace Utilities.Helper
             return new string(password);
         }
 
-        public string HashPassword(string password)
+		public string GenerateUniqueCode(string accountName)
+		{
+			string input = accountName + DateTime.UtcNow.Ticks;
+			using (SHA256 sha256 = SHA256.Create())
+			{
+				byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+				string hashString = BitConverter.ToString(hashBytes).Replace("-", "").Substring(0, 30);
+				return hashString;
+			}
+		}
+
+		public string HashPassword(string password)
         {
             using (var hasher = new System.Security.Cryptography.SHA256Managed())
             {

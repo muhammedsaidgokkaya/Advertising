@@ -229,6 +229,21 @@ namespace AdminPanel.Controllers.Organization
 			return Ok(userList);
 		}
 
+		[HttpGet("hash-code")]
+		public ActionResult<OrganizationHashCode> GetHashCode()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+
+			var data = new OrganizationHashCode
+			{
+				HashCode = organization.OrganizationHashCode,
+			};
+
+			return Ok(data);
+		}
+
 		[Authorize(Roles = "Admin")]
         [HttpPost("add-user")]
         public IActionResult AddUser([FromBody] AddUser user)

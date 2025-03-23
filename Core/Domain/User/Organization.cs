@@ -21,6 +21,7 @@ namespace Core.Domain.User
         public string? GoogleAccount { get; set; }
         public string? GoogleAnalytics { get; set; }
         public string? GoogleSearchConsole { get; set; }
+        public string? OrganizationHashCode { get; set; }
         public virtual ICollection<User> User { get; set; }
         public virtual ICollection<Report.Report> Report { get; set; }
         public virtual ICollection<Core.Domain.Task.Task> Task { get; set; }

@@ -29,7 +29,9 @@ namespace AdminPanel.Controllers.Organization
         [HttpPost("add-account")]
         public IActionResult AddAccount([FromBody] AddAccount account)
         {
-            var organization = _userService.AddOrganization(account.Name, 5, 2, account.AccountType, account.OrgAddress, account.ZipCode, account.TaskNumber, account.Phone);
+            var hashCode = _defaultValues.GenerateUniqueCode(account.Name);
+
+			var organization = _userService.AddOrganization(account.Name, hashCode, 5, 2, account.AccountType, account.OrgAddress, account.ZipCode, account.TaskNumber, account.Phone);
             
             DateTime? dateOfBirth = null;
             if (DateTime.TryParse(account.DateOfBirth, out var parsedDate))

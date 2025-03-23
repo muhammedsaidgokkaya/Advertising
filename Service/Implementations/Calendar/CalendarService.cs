@@ -78,6 +78,12 @@ namespace Service.Implementations.Calendar
 			var data = _repository.FilterAsQueryable<Core.Domain.Calendar.Calendar>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeCalendar();
 			return data;
 		}
+
+		public async Task<IEnumerable<Core.Domain.Calendar.Calendar>> GetCalendersHashCode(string organization)
+		{
+			var data = _repository.FilterAsQueryable<Core.Domain.Calendar.Calendar>(p => !p.IsDeleted && p.Organization.OrganizationHashCode.Equals(organization)).IncludeCalendar();
+			return data;
+		}
 	}
 
 	public static class CalendarExtensions
