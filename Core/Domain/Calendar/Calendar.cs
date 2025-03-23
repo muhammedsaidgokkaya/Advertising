@@ -1,4 +1,5 @@
-﻿using Core.Domain.User;
+﻿using Core.Domain.Task;
+using Core.Domain.User;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -18,5 +19,6 @@ namespace Core.Domain.Calendar
 		public DateTime End { get; set; }
 		public int OrganizationId { get; set; }
 		public virtual Organization Organization { get; set; }
+		public virtual ICollection<CalendarTemplateCalendar> CalendarTemplateCalendar { get; set; }
 	}
 }

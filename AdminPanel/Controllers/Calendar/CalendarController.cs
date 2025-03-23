@@ -1,6 +1,7 @@
 ﻿using AdminPanel.Controllers.Task;
 using AdminPanel.Models.Calendar;
 using AdminPanel.Models.Task.Task;
+using AdminPanel.Models.Task.TaskTemplate;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +32,22 @@ namespace AdminPanel.Controllers.Calendar
 			_emailHelper = new EmailHelper();
 		}
 
+		[HttpGet("schemas")]
+		public async Task<ActionResult<IEnumerable<Models.Calendar.CalendarTemplate>>> GetSchemas()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var schemas = await _calendarService.GetCalendarTemplate(user.OrganizationId);
+
+			var schemasList = schemas.Select(schema => new Models.Calendar.CalendarTemplate
+			{
+				Id = schema.Id,
+				Name = schema.KeyName
+			}).ToList();
+
+			return Ok(schemasList);
+		}
+
 		[HttpGet("calendars")]
 		public async Task<ActionResult<IEnumerable<Models.Calendar.GetCalendars>>> GetCalendars()
 		{
@@ -50,6 +67,36 @@ namespace AdminPanel.Controllers.Calendar
 			}).ToList();
 
 			return Ok(calendarsList);
+		}
+
+		[HttpPost]
+		[Route("add-schema")]
+		public async Task<IActionResult> AddSchema([FromBody] AddSchemaCalendar request)
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var existingTemplates = await _calendarService.GetCalendarTemplate(user.OrganizationId);
+
+			var existingTemplateNames = existingTemplates.Select(t => t.KeyName).ToList();
+
+			var templatesToAdd = request.Name.Except(existingTemplateNames).ToList();
+			var templatesToRemoveNames = existingTemplateNames.Except(request.Name).ToList();
+			var templatesToRemove = existingTemplates
+				.Where(t => templatesToRemoveNames.Contains(t.KeyName))
+				.Select(t => t.Id)
+				.ToList();
+
+			foreach (var template in templatesToAdd)
+			{
+				var addTemplate = _calendarService.AddCalendarTemplate(user.OrganizationId, template);
+			}
+
+			foreach (var template in templatesToRemove)
+			{
+				var deleteTemplate = _calendarService.IsDeletedCalendarTemplate(template);
+			}
+
+			return Ok(1);
 		}
 
 		[HttpPost]

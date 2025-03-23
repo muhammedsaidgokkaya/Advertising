@@ -1,4 +1,6 @@
 ﻿using Core.Data;
+using Core.Domain.Calendar;
+using Core.Domain.Task;
 using Microsoft.EntityFrameworkCore;
 using Repository.Implementations;
 using Service.Implementations.Task;
@@ -13,6 +15,21 @@ namespace Service.Implementations.Calendar
 		public CalendarService()
 		{
 			_repository = new Repository<Context>(new Context());
+		}
+
+		public int AddCalendarTemplate(int organizationId, string name)
+		{
+			var calendarTemplate = new CalendarTemplate
+			{
+				KeyName = name,
+				OrganizationId = organizationId,
+				InsertedDate = DateTime.UtcNow,
+				IsActive = true,
+				IsDeleted = false
+			};
+
+			_repository.Save(calendarTemplate);
+			return calendarTemplate.Id;
 		}
 
 		public int AddCalendar(int organizationId, string title, string description, string color, bool allDay, DateTime start, DateTime end)
@@ -54,6 +71,20 @@ namespace Service.Implementations.Calendar
 			return 0;
 		}
 
+		public int IsDeletedCalendarTemplate(int id)
+		{
+			var calendarTemplate = GetCalendarTemplateById(id);
+			if (calendarTemplate != null)
+			{
+				calendarTemplate.IsDeleted = !calendarTemplate.IsDeleted;
+				calendarTemplate.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(calendarTemplate);
+				return calendarTemplate.Id;
+			}
+			return 0;
+		}
+
 		public int IsDeletedCalendar(int id)
 		{
 			var calendar = GetCalendarById(id);
@@ -71,6 +102,17 @@ namespace Service.Implementations.Calendar
 		public Core.Domain.Calendar.Calendar GetCalendarById(int id)
 		{
 			return _repository.GetById<Core.Domain.Calendar.Calendar>(id);
+		}
+
+		public Core.Domain.Calendar.CalendarTemplate GetCalendarTemplateById(int id)
+		{
+			return _repository.GetById<Core.Domain.Calendar.CalendarTemplate>(id);
+		}
+
+		public async Task<IEnumerable<CalendarTemplate>> GetCalendarTemplate(int organizationId)
+		{
+			var data = _repository.FilterAsQueryable<CalendarTemplate>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeCalendarTemplate();
+			return data;
 		}
 
 		public async Task<IEnumerable<Core.Domain.Calendar.Calendar>> GetCalenders(int organizationId)
@@ -92,6 +134,19 @@ namespace Service.Implementations.Calendar
 		{
 			return query
 				.Include(ma => ma.Organization);
+		}
+
+		public static IQueryable<CalendarTemplate> IncludeCalendarTemplate(this IQueryable<CalendarTemplate> query)
+		{
+			return query
+				.Include(ma => ma.Organization);
+		}
+
+		public static IQueryable<CalendarTemplateCalendar> IncludeCalendarTemplateTask(this IQueryable<CalendarTemplateCalendar> query)
+		{
+			return query
+				.Include(ma => ma.Calendar)
+				.Include(ma => ma.CalendarTemplate);
 		}
 	}
 }

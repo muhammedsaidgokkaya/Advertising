@@ -7,6 +7,7 @@ using Core.Domain.Google;
 using Core.Domain.Report;
 using Core.Domain.Task;
 using System.Globalization;
+using Core.Domain.Calendar;
 
 namespace Core.Data
 {
@@ -56,6 +57,8 @@ namespace Core.Data
         public DbSet<TaskComment> TaskComment { get; set; }
         public DbSet<TaskLog> TaskLog { get; set; }
         public DbSet<Core.Domain.Calendar.Calendar> Calendar { get; set; }
+        public DbSet<CalendarTemplate> CalendarTemplate { get; set; }
+        public DbSet<CalendarTemplateCalendar> CalendarTemplateCalendar { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
