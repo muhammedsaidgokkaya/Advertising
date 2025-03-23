@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Repository.Implementations;
 using Service.Implementations.Task;
 using Service.Interfaces.Calendar;
+using System.Numerics;
 
 namespace Service.Implementations.Calendar
 {
@@ -32,13 +33,17 @@ namespace Service.Implementations.Calendar
 			return calendarTemplate.Id;
 		}
 
-		public int AddCalendar(int organizationId, string title, string description, string color, bool allDay, DateTime start, DateTime end)
+		public int AddCalendar(int organizationId, string title, string description, string color, bool allDay, DateTime start, DateTime end, string mail, string phone, string firstName, string lastName)
 		{
 			var calendar = new Core.Domain.Calendar.Calendar
 			{
 				Title = title,
 				Description = description,
 				Color = color,
+				Mail = mail,
+				Phone = phone,
+				FirstName = firstName,
+				LastName = lastName,
 				AllDay = allDay,
 				Start = start.ToUniversalTime(),
 				End = end.ToUniversalTime(),
@@ -52,7 +57,7 @@ namespace Service.Implementations.Calendar
 			return calendar.Id;
 		}
 
-		public int UpdateCalendar(int id, string title, string description, string color, bool allDay, DateTime start, DateTime end)
+		public int UpdateCalendar(int id, string title, string description, string color, bool allDay, DateTime start, DateTime end, string mail, string phone, string firstName, string lastName)
 		{
 			var calendar = GetCalendarById(id);
 			if (calendar != null)
@@ -60,6 +65,10 @@ namespace Service.Implementations.Calendar
 				calendar.Title = title;
 				calendar.Description = description;
 				calendar.Color = color;
+				calendar.Mail = mail;
+				calendar.Phone = phone;
+				calendar.FirstName = firstName;
+				calendar.LastName = lastName;
 				calendar.AllDay = allDay;
 				calendar.Start = start.ToUniversalTime();
 				calendar.End = end.ToUniversalTime();

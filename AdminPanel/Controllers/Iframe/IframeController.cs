@@ -53,7 +53,7 @@ namespace AdminPanel.Controllers.Iframe
 			var org = _userService.GetOrganizationHashCode(organization);
 			if (request.Id == 0)
 			{
-				var addCalendar = _calendarService.AddCalendar(org.Id, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End);
+				var addCalendar = _calendarService.AddCalendar(org.Id, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End, request.Mail, request.Phone, request.FirstName, request.LastName);
 			}
 			return Ok(1);
 		}
