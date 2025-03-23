@@ -33,7 +33,7 @@ namespace Service.Implementations.Calendar
 			return calendarTemplate.Id;
 		}
 
-		public int AddCalendar(int organizationId, string title, string description, string color, bool allDay, DateTime start, DateTime end, string mail, string phone, string firstName, string lastName)
+		public int AddCalendar(int organizationId, string title, string description, string color, bool allDay, DateTime start, DateTime end, string mail, string phone, string firstName, string lastName, bool isConfirmation)
 		{
 			var calendar = new Core.Domain.Calendar.Calendar
 			{
@@ -45,6 +45,7 @@ namespace Service.Implementations.Calendar
 				FirstName = firstName,
 				LastName = lastName,
 				AllDay = allDay,
+				IsConfirmation = isConfirmation,
 				Start = start.ToUniversalTime(),
 				End = end.ToUniversalTime(),
 				OrganizationId = organizationId,
@@ -57,7 +58,7 @@ namespace Service.Implementations.Calendar
 			return calendar.Id;
 		}
 
-		public int UpdateCalendar(int id, string title, string description, string color, bool allDay, DateTime start, DateTime end, string mail, string phone, string firstName, string lastName)
+		public int UpdateCalendar(int id, string title, string description, string color, bool allDay, DateTime start, DateTime end, string mail, string phone, string firstName, string lastName, bool isConfirmation)
 		{
 			var calendar = GetCalendarById(id);
 			if (calendar != null)
@@ -69,6 +70,7 @@ namespace Service.Implementations.Calendar
 				calendar.Phone = phone;
 				calendar.FirstName = firstName;
 				calendar.LastName = lastName;
+				calendar.IsConfirmation = isConfirmation;
 				calendar.AllDay = allDay;
 				calendar.Start = start.ToUniversalTime();
 				calendar.End = end.ToUniversalTime();

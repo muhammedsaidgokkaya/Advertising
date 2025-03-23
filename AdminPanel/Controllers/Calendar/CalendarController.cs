@@ -65,6 +65,7 @@ namespace AdminPanel.Controllers.Calendar
 				Phone = calendar.Phone,
 				FirstName = calendar.FirstName,
 				LastName = calendar.LastName,
+				IsConfirmation = calendar.IsConfirmation,
 				AllDay = calendar.AllDay,
 				Start = calendar.Start,
 				End = calendar.End,
@@ -111,11 +112,11 @@ namespace AdminPanel.Controllers.Calendar
 			var user = _userService.GetUserById(userId);
             if (request.Id == 0)
             {
-				var addCalendar = _calendarService.AddCalendar(user.OrganizationId, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End, request.Mail, request.Phone, request.FirstName, request.LastName);
+				var addCalendar = _calendarService.AddCalendar(user.OrganizationId, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End, request.Mail, request.Phone, request.FirstName, request.LastName, request.IsConfirmation);
 			}
             else
             {
-				var updateCalendar = _calendarService.UpdateCalendar(request.Id, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End, request.Mail, request.Phone, request.FirstName, request.LastName);
+				var updateCalendar = _calendarService.UpdateCalendar(request.Id, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End, request.Mail, request.Phone, request.FirstName, request.LastName, request.IsConfirmation);
 			}
             return Ok(1);
 		}

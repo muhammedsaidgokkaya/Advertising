@@ -10,7 +10,8 @@
 		public string? Phone { get; set; }
 		public string? FirstName { get; set; }
 		public string? LastName { get; set; }
-		public bool AllDay { get; set; }
+        public bool IsConfirmation { get; set; }
+        public bool AllDay { get; set; }
 		public DateTime Start { get; set; }
 		public DateTime End { get; set; }
 	}
