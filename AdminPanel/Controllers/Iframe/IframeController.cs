@@ -27,6 +27,21 @@ namespace AdminPanel.Controllers.Iframe
 			_emailHelper = new EmailHelper();
 		}
 
+		[HttpGet("schemas")]
+		public async Task<ActionResult<IEnumerable<Models.Calendar.CalendarTemplate>>> GetSchemas(string organization)
+		{
+			var org = _userService.GetOrganizationHashCode(organization);
+			var schemas = await _calendarService.GetCalendarTemplate(org.Id);
+
+			var schemasList = schemas.Select(schema => new Models.Calendar.CalendarTemplate
+			{
+				Id = schema.Id,
+				Name = schema.KeyName
+			}).ToList();
+
+			return Ok(schemasList);
+		}
+
 		[HttpGet("calendars")]
 		public async Task<ActionResult<IEnumerable<Models.Calendar.GetCalendars>>> GetCalendars(string organization)
 		{
@@ -54,6 +69,13 @@ namespace AdminPanel.Controllers.Iframe
 			if (request.Id == 0)
 			{
 				var addCalendar = _calendarService.AddCalendar(org.Id, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End, request.Mail, request.Phone, request.FirstName, request.LastName, request.IsConfirmation);
+				if (request.SelectedOptions != null || request.SelectedOptions.Count != 0)
+				{
+					foreach (var item in request.SelectedOptions)
+					{
+						_calendarService.AddCalendarTemplateCalendar(item, addCalendar);
+					}
+				}
 			}
 			return Ok(1);
 		}

@@ -14,5 +14,6 @@
         public bool AllDay { get; set; }
 		public DateTime Start { get; set; }
 		public DateTime End { get; set; }
+		public List<int> SelectedOptions { get; set; }
 	}
 }

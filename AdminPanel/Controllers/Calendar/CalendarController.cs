@@ -48,6 +48,20 @@ namespace AdminPanel.Controllers.Calendar
 			return Ok(schemasList);
 		}
 
+		[HttpGet("set-schemas")]
+		public async Task<ActionResult<IEnumerable<Models.Calendar.CalendarTemplate>>> GetSetSchemas(int id)
+		{
+			var schemas = await _calendarService.GetCalendarTemplateCalendar(id);
+
+			var schemasList = schemas.Select(schema => new Models.Calendar.CalendarTemplate
+			{
+				Id = schema.CalendarTemplate.Id,
+				Name = schema.CalendarTemplate.KeyName
+			}).ToList();
+
+			return Ok(schemasList);
+		}
+
 		[HttpGet("calendars")]
 		public async Task<ActionResult<IEnumerable<Models.Calendar.GetCalendars>>> GetCalendars()
 		{
@@ -113,10 +127,34 @@ namespace AdminPanel.Controllers.Calendar
             if (request.Id == 0)
             {
 				var addCalendar = _calendarService.AddCalendar(user.OrganizationId, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End, request.Mail, request.Phone, request.FirstName, request.LastName, request.IsConfirmation);
+				if (request.SelectedOptions != null || request.SelectedOptions.Count != 0)
+				{
+					foreach (var item in request.SelectedOptions)
+					{
+						_calendarService.AddCalendarTemplateCalendar(item, addCalendar);
+					}
+				}
 			}
             else
             {
 				var updateCalendar = _calendarService.UpdateCalendar(request.Id, request.Title, request.Description, request.Color, request.AllDay, request.Start, request.End, request.Mail, request.Phone, request.FirstName, request.LastName, request.IsConfirmation);
+				var existingTemplates = (await _calendarService.GetCalendarTemplateCalendar(request.Id))
+						.Select(tu => tu.CalendarTemplateId)
+						.ToList();
+
+				var templatesToAdd = request.SelectedOptions.Except(existingTemplates).ToList();
+
+				var templatesToRemove = existingTemplates.Except(request.SelectedOptions).ToList();
+
+				foreach (var item in templatesToAdd)
+				{
+					_calendarService.AddCalendarTemplateCalendar(item, request.Id);
+				}
+
+				foreach (var item in templatesToRemove)
+				{
+					_calendarService.IsDeletedCalendarTemplateCalendar(request.Id, item);
+				}
 			}
             return Ok(1);
 		}

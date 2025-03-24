@@ -33,6 +33,21 @@ namespace Service.Implementations.Calendar
 			return calendarTemplate.Id;
 		}
 
+		public int AddCalendarTemplateCalendar(int templateId, int calendarId)
+		{
+			var calendarTemplateCalendar = new CalendarTemplateCalendar
+			{
+				CalendarId = calendarId,
+				CalendarTemplateId = templateId,
+				InsertedDate = DateTime.UtcNow,
+				IsActive = true,
+				IsDeleted = false
+			};
+
+			_repository.Save(calendarTemplateCalendar);
+			return 1;
+		}
+
 		public int AddCalendar(int organizationId, string title, string description, string color, bool allDay, DateTime start, DateTime end, string mail, string phone, string firstName, string lastName, bool isConfirmation)
 		{
 			var calendar = new Core.Domain.Calendar.Calendar
@@ -96,6 +111,22 @@ namespace Service.Implementations.Calendar
 			return 0;
 		}
 
+		public int IsDeletedCalendarTemplateCalendar(int calendarId, int templateId)
+		{
+			var calendarTemplateCalendar = _repository.Find<CalendarTemplateCalendar>(tu => tu.CalendarId == calendarId && tu.CalendarTemplateId == templateId);
+
+			if (calendarTemplateCalendar != null)
+			{
+				calendarTemplateCalendar.IsDeleted = !calendarTemplateCalendar.IsDeleted;
+				calendarTemplateCalendar.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(calendarTemplateCalendar);
+				return calendarTemplateCalendar.Id;
+			}
+
+			return 0;
+		}
+
 		public int IsDeletedCalendar(int id)
 		{
 			var calendar = GetCalendarById(id);
@@ -126,6 +157,12 @@ namespace Service.Implementations.Calendar
 			return data;
 		}
 
+		public async Task<IEnumerable<CalendarTemplateCalendar>> GetCalendarTemplateCalendar(int calendarId)
+		{
+			var data = _repository.FilterAsQueryable<CalendarTemplateCalendar>(p => !p.IsDeleted && p.Calendar.Id.Equals(calendarId)).IncludeCalendarTemplateCalendar();
+			return data;
+		}
+
 		public async Task<IEnumerable<Core.Domain.Calendar.Calendar>> GetCalenders(int organizationId)
 		{
 			var data = _repository.FilterAsQueryable<Core.Domain.Calendar.Calendar>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeCalendar();
@@ -134,7 +171,7 @@ namespace Service.Implementations.Calendar
 
 		public async Task<IEnumerable<Core.Domain.Calendar.Calendar>> GetCalendersHashCode(string organization)
 		{
-			var data = _repository.FilterAsQueryable<Core.Domain.Calendar.Calendar>(p => !p.IsDeleted && p.Organization.OrganizationHashCode.Equals(organization)).IncludeCalendar();
+			var data = _repository.FilterAsQueryable<Core.Domain.Calendar.Calendar>(p => !p.IsDeleted && p.IsConfirmation && p.Organization.OrganizationHashCode.Equals(organization)).IncludeCalendar();
 			return data;
 		}
 	}
@@ -153,7 +190,7 @@ namespace Service.Implementations.Calendar
 				.Include(ma => ma.Organization);
 		}
 
-		public static IQueryable<CalendarTemplateCalendar> IncludeCalendarTemplateTask(this IQueryable<CalendarTemplateCalendar> query)
+		public static IQueryable<CalendarTemplateCalendar> IncludeCalendarTemplateCalendar(this IQueryable<CalendarTemplateCalendar> query)
 		{
 			return query
 				.Include(ma => ma.Calendar)
