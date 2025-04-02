@@ -279,11 +279,11 @@ namespace Service.Implementations.User
             return data;
         }
 
-        public Core.Domain.User.User GetUserLogin(string userName, string password)
+        public Core.Domain.User.User GetUserLogin(string mail, string password)
         {
             var data = _repository.FilterAsQueryable<Core.Domain.User.User>(p => p.IsActive && !p.IsDeleted)
                 .IncludeUser()
-                .FirstOrDefault(u => u.UserName == userName && u.Password == password); ;
+                .FirstOrDefault(u => u.Mail == mail && u.Password == password); ;
             return data;
         }
 

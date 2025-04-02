@@ -154,9 +154,26 @@ namespace AdminPanel.Controllers.Organization
             };
 
             return Ok(data);
-        }
+		}
 
-        [HttpGet("get-add-user")]
+		[HttpGet("workspace")]
+		public ActionResult<GetOrganization> GetWorkspace()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+
+			var data = new GetOrganization
+			{
+				Id = organization.Id,
+				Name = organization.Name,
+				Plan = organization.AccountType == "individual" ? "Bireysel" : "Kurumsal"
+			};
+
+			return Ok(data);
+		}
+
+		[HttpGet("get-add-user")]
         public ActionResult<GetUserAndRole> GetAddUser()
         {
             var userId = UserId();

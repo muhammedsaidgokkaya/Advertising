@@ -17,6 +17,7 @@ namespace Core.Domain.Task
 		public int? TransactionUser { get; set; }
         public int? CommentId { get; set; }
         public DateTime InsertedDate { get; set; }
+        public int OrganizationId { get; set; }
     }
 
 	//Process
@@ -38,5 +39,5 @@ namespace Core.Domain.Task
 	//15.Eklendi
 	//16.Güncellendi
 	//
-	//INSERT INTO public."TaskLog"("UserPerformingTheTransaction", "TaskId", "Process", "TemplateId", "TransactionUser", "CommentId") VALUES ( ?, ?, ?, ?, ?, ?);
+	//INSERT INTO public."TaskLog"("UserPerformingTheTransaction", "TaskId", "Process", "TemplateId", "TransactionUser", "CommentId", "OrganizationId") VALUES ( ?, ?, ?, ?, ?, ?, ?);
 }

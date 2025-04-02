@@ -35,7 +35,7 @@ namespace AdminPanel.Controllers.Auth
         public IActionResult Login([FromBody] LoginRequest model)
         {
             var passwordHash = _defaultValues.HashPassword(model.Password);
-            var user = _userService.GetUserLogin(model.UserName, passwordHash);
+            var user = _userService.GetUserLogin(model.Email, passwordHash);
 
             if (user == null) return Ok(new { IsSuccess = false, Message = "Kullanıcı adı veya şifre yanlış!" });
 
@@ -116,7 +116,7 @@ namespace AdminPanel.Controllers.Auth
 
         public class LoginRequest
         {
-            public string UserName { get; set; }
+            public string Email { get; set; }
             public string Password { get; set; }
         }
 

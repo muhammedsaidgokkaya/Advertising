@@ -201,7 +201,7 @@ namespace AdminPanel.Controllers.Task
 				var addTemplate = _taskService.AddTaskTemplate(user.OrganizationId, template);
                 if (addTemplate != 0)
                 {
-					Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"Process\", \"TaskTemplateId\", \"InsertedDate\") VALUES (" + userId + ", 11, " + addTemplate + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+					Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"Process\", \"TaskTemplateId\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + ", 11, " + addTemplate + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
                 }
             }
 
@@ -210,7 +210,7 @@ namespace AdminPanel.Controllers.Task
 				var deleteTemplate = _taskService.IsDeletedTaskTemplate(template);
 				if (deleteTemplate != 0)
 				{
-					Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"Process\", \"TaskTemplateId\", \"InsertedDate\") VALUES (" + userId + ", 12, " + deleteTemplate + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+					Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"Process\", \"TaskTemplateId\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + ", 12, " + deleteTemplate + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 				}
 			}
 
@@ -222,10 +222,11 @@ namespace AdminPanel.Controllers.Task
 		public async Task<IActionResult> AddComment(int taskId, string comment)
 		{
 			var userId = UserId();
+			var user = _userService.GetUserById(userId);
 			var addComment = _taskService.AddComment(userId, taskId, comment);
             if (addComment != 0)
             {
-				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"CommentId\", \"InsertedDate\") VALUES (" + userId + " , " + taskId + ", 13, " + addComment + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"CommentId\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + " , " + taskId + ", 13, " + addComment + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			}
             return Ok(1);
 		}
@@ -245,14 +246,14 @@ namespace AdminPanel.Controllers.Task
 				return Ok(0);
             }
 
-			Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"InsertedDate\") VALUES (" + userId + " , " + addTask + ", 15, '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+			Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + " , " + addTask + ", 15, '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 
 			if (request.Users != null || request.Users.Count != 0 )
             {
 				foreach (var item in request.Users)
 				{
 					_taskService.AddTaskUser(item, addTask);
-					Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TransactionUser\", \"InsertedDate\") VALUES (" + userId + " , " + addTask + ", 5, " + item + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+					Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TransactionUser\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + " , " + addTask + ", 5, " + item + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 				}
 			}
 
@@ -261,7 +262,7 @@ namespace AdminPanel.Controllers.Task
 				foreach (var item in request.Services)
 				{
 					_taskService.AddTaskTemplateTask(item, addTask);
-					Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\") VALUES (" + userId + " , " + addTask + ", 7, " + item + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+					Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + " , " + addTask + ", 7, " + item + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 				}
 			}
             
@@ -273,6 +274,7 @@ namespace AdminPanel.Controllers.Task
 		public async Task<IActionResult> UpdateTask([FromBody] UpdateTaskContent request)
 		{
 			var uId = UserId();
+			var user = _userService.GetUserById(uId);
 			string departman = string.Join(", ", request.Departments);
 
 			var addTask = _taskService.UpdateTask(request.Id, request.Name, request.Content, request.Durations.ToUniversalTime(), departman, request.Priority);
@@ -282,7 +284,7 @@ namespace AdminPanel.Controllers.Task
 				return Ok(0);
 			}
 
-			Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"InsertedDate\") VALUES (" + uId + " , " + addTask + ", 16, '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+			Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"InsertedDate\", \"OrganizationId\") VALUES (" + uId + " , " + addTask + ", 16, '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			
 			#region Users
 			var existingUsers = (await _taskService.GetTaskUser(request.Id))
@@ -296,13 +298,13 @@ namespace AdminPanel.Controllers.Task
 			foreach (var userId in usersToAdd)
 			{
 				_taskService.AddTaskUser(userId, request.Id);
-				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TransactionUser\", \"InsertedDate\") VALUES (" + uId + " , " + addTask + ", 5, " + userId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TransactionUser\", \"InsertedDate\", \"OrganizationId\") VALUES (" + uId + " , " + addTask + ", 5, " + userId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			}
 
 			foreach (var userId in usersToRemove)
 			{
 				_taskService.IsDeletedTaskUser(request.Id, userId);
-				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TransactionUser\", \"InsertedDate\") VALUES (" + uId + " , " + addTask + ", 6, " + userId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TransactionUser\", \"InsertedDate\", \"OrganizationId\") VALUES (" + uId + " , " + addTask + ", 6, " + userId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			}
 			#endregion
 
@@ -318,13 +320,13 @@ namespace AdminPanel.Controllers.Task
 			foreach (var serviceId in servicesToAdd)
 			{
 				_taskService.AddTaskTemplateTask(serviceId, request.Id);
-				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\") VALUES (" + uId + " , " + addTask + ", 7, " + serviceId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\", \"OrganizationId\") VALUES (" + uId + " , " + addTask + ", 7, " + serviceId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			}
 
 			foreach (var serviceId in servicesToRemove)
 			{
 				_taskService.IsDeletedTaskUser(request.Id, serviceId);
-				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\") VALUES (" + uId + " , " + addTask + ", 8, " + serviceId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\", \"OrganizationId\") VALUES (" + uId + " , " + addTask + ", 8, " + serviceId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			}
 			#endregion
 
@@ -343,7 +345,7 @@ namespace AdminPanel.Controllers.Task
 				return Ok(0);
             }
 
-			Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"InsertedDate\") VALUES (" + userId + " , " + taskId + ", " + state + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+			Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + " , " + taskId + ", " + state + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			return Ok(1);
 		}
 
@@ -352,16 +354,17 @@ namespace AdminPanel.Controllers.Task
 		public async Task<IActionResult> UpdateTaskTemplateTask(int taskTemplateTaskId)
 		{
 			var userId = UserId();
+			var user = _userService.GetUserById(userId);
 			var updateState = _taskService.UpdateTaskTemplateTask(taskTemplateTaskId);
 			var task = _taskService.GetTaskTemplateTaskTask(taskTemplateTaskId);
 
 			if (updateState)
             {
-				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\") VALUES (" + userId + " , " + task.TaskId + ", 9, " + taskTemplateTaskId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + " , " + task.TaskId + ", 9, " + taskTemplateTaskId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			}
             else
             {
-				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\") VALUES (" + userId + " , " + task.TaskId + ", 10, " + taskTemplateTaskId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+				Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + " , " + task.TaskId + ", 10, " + taskTemplateTaskId + ", '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			}
 			return Ok(1);
 		}
@@ -371,13 +374,151 @@ namespace AdminPanel.Controllers.Task
 		public async Task<IActionResult> DeleteTask(int taskId)
 		{
 			var userId = UserId();
+			var user = _userService.GetUserById(userId);
 			var deleteTask = _taskService.IsDeletedTask(taskId);
             if (deleteTask == 0)
             {
 				return Ok(0);
             }
-			Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"InsertedDate\") VALUES (" + userId + " , " + deleteTask + ", 13, '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + "');");
+			Sql.GetQueryResult("INSERT INTO public.\"TaskLog\"(\"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"InsertedDate\", \"OrganizationId\") VALUES (" + userId + " , " + deleteTask + ", 13, '" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffffzzz") + ", " + user.OrganizationId + "');");
 			return Ok(1);
+		}
+
+		[HttpGet("user-count")]
+		public async Task<IActionResult> ReportUserCount()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var result = Sql.GetQueryResult("SELECT \"UserPerformingTheTransaction\", COUNT(*) AS transaction_count FROM public.\"TaskLog\" WHERE \"OrganizationId\" = " + user.OrganizationId + " GROUP BY \"UserPerformingTheTransaction\" ORDER BY transaction_count DESC LIMIT 3;");
+			var response = new List<object>();
+
+			foreach (DataRow row in result.Rows)
+			{
+				var userPerformingId = Convert.ToInt32(row["UserPerformingTheTransaction"]);
+				var performingUser = _userService.GetUserById(userPerformingId);
+
+
+				if (performingUser != null)
+				{
+					response.Add(new
+					{
+						Id = performingUser.Id,
+						Name = performingUser.FirstName + " " + performingUser.LastName,
+					});
+				}
+			}
+
+			return Ok(response);
+		}
+
+		[HttpGet("user-apex")]
+		public async Task<IActionResult> ReportUserApex()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var result = Sql.GetQueryResult("SELECT \"UserPerformingTheTransaction\", COUNT(*) AS transaction_count FROM public.\"TaskLog\" WHERE \"OrganizationId\" = " + user.OrganizationId + " GROUP BY \"UserPerformingTheTransaction\" ORDER BY transaction_count DESC LIMIT 3;");
+			var response = new List<object>();
+			int totalTransactions = 0;
+
+			foreach (DataRow row in result.Rows)
+			{
+				totalTransactions += Convert.ToInt32(row["transaction_count"]);
+			}
+
+			foreach (DataRow row in result.Rows)
+			{
+				var userPerformingId = Convert.ToInt32(row["UserPerformingTheTransaction"]);
+				var performingUser = _userService.GetUserById(userPerformingId);
+
+				if (performingUser != null)
+				{
+					var transactionCount = Convert.ToInt32(row["transaction_count"]);
+					var percentage = totalTransactions > 0 ? (transactionCount / (float)totalTransactions) * 100 : 0;
+
+					response.Add(new
+					{
+						Id = performingUser.Id,
+						Name = performingUser.FirstName + " " + performingUser.LastName,
+						Count = transactionCount,
+						Percentage = percentage.ToString("00")
+					});
+				}
+			}
+
+			return Ok(new { Total = totalTransactions, Users = response });
+		}
+
+		[HttpGet("task-list-report")]
+		public async Task<IActionResult> ReportTaskList()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var tasks = await _taskService.GetTasks(user.OrganizationId);
+
+			var taskList = tasks.Select(task =>
+			{
+				var createdUser = _userService.GetUserById(task.CreatedUser);
+				return new Models.Task.Task.Tasks
+				{
+					Id = task.Id,
+					CreatedDate = task.InsertedDate ?? DateTime.MinValue,
+					Name = task.TaskName,
+					CreatedUser = createdUser != null ? $"{createdUser.FirstName} {createdUser.LastName}" : "Bilinmiyor",
+				};
+			})
+			.OrderByDescending(task => task.CreatedDate)
+			.Take(5)
+			.ToList();
+
+			return Ok(taskList);
+		}
+
+		[HttpGet("task-count-report")]
+		public async Task<IActionResult> ReportTaskCount()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var tasks = await _taskService.GetTasks(user.OrganizationId);
+
+			var taskCounts = tasks
+				.GroupBy(t => t.State)
+				.ToDictionary(g => g.Key, g => g.Count());
+
+			var totalCount = tasks.Count();
+
+			double GetPercentage(int count) => totalCount > 0 ? Math.Round((count / (double)totalCount) * 100, 2) : 0;
+
+			var result = new
+			{
+				Bekleyen = new { Count = taskCounts.GetValueOrDefault(0, 0), Percentage = GetPercentage(taskCounts.GetValueOrDefault(0, 0)) },
+				DevamEden = new { Count = taskCounts.GetValueOrDefault(1, 0), Percentage = GetPercentage(taskCounts.GetValueOrDefault(1, 0)) },
+				Tamamlanan = new { Count = taskCounts.GetValueOrDefault(2, 0), Percentage = GetPercentage(taskCounts.GetValueOrDefault(2, 0)) },
+				IptalEdilen = new { Count = taskCounts.GetValueOrDefault(3, 0), Percentage = GetPercentage(taskCounts.GetValueOrDefault(3, 0)) },
+				Toplam = totalCount
+			};
+
+			return Ok(result);
+		}
+
+		[HttpGet("tasks-chart-report")]
+		public async Task<ActionResult<IEnumerable<Models.Task.Task.Tasks>>> GetTasksChart()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var tasks = await _taskService.GetTasks(user.OrganizationId);
+
+			var taskList = tasks.Select(task =>
+			{
+				return new Models.Task.Task.Tasks
+				{
+					Id = task.Id,
+					Name = task.TaskName,
+					Team = task.TaskUser.Count,
+				};
+			})
+			.ToList();
+
+			return Ok(taskList);
 		}
 
 		private int UserId()
