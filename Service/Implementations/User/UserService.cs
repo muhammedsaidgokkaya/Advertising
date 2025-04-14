@@ -135,7 +135,7 @@ namespace Service.Implementations.User
             var organization = GetOrganizationById(organizationId);
             if (organization != null)
             {
-                var currentUser = GetUser(organizationId).Count();
+                var currentUser = GetUser(organizationId).Count() - 1;
 
                 if (currentUser >= organization.UserCount)
                 {

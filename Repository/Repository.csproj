@@ -25,6 +25,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.29" />
+    <PackageReference Include="NPOI" Version="2.7.3" />
     <PackageReference Include="OpenAI.API" Version="1.0.0" />
   </ItemGroup>
 

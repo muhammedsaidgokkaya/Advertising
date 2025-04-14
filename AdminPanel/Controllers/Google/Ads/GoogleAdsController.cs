@@ -42,9 +42,9 @@ namespace AdminPanel.Controllers.Google.Ads
             _defaultValues = new DefaultValues();
         }
 
-        [HttpGet("account")]
-        public IActionResult GetAccount()
-        {
+		[HttpGet("account")]
+		public IActionResult GetAccount()
+		{
 			var config = new GoogleAdsConfig()
 			{
 				DeveloperToken = "gP3mj269UEIGz2Nupz9N7w",
@@ -59,8 +59,42 @@ namespace AdminPanel.Controllers.Google.Ads
 			var service = client.GetService(Services.V17.CustomerService);
 			string[] customers = service.ListAccessibleCustomers();
 
-			return Ok(customers);
-        }
+			var accountDetails = new List<object>();
+
+			foreach (var customerId in customers)
+			{
+				string id = customerId.Split('/')[1];
+
+				var googleAdsService = client.GetService(Services.V18.GoogleAdsService);
+				string query = $@"
+					SELECT
+						customer.id,
+						customer.descriptive_name
+					FROM
+						customer
+					WHERE
+						customer.id = '{id}'
+				";
+
+				var searchRequest = new SearchGoogleAdsRequest()
+				{
+					CustomerId = id,
+					Query = query
+				};
+				var response = googleAdsService.Search(searchRequest);
+
+				foreach (var row in response)
+				{
+					accountDetails.Add(new
+					{
+						CustomerId = row.Customer.Id,
+						CustomerName = row.Customer.DescriptiveName
+					});
+				}
+			}
+
+			return Ok(accountDetails);
+		}
 
 		[HttpGet("campaigns")]
 		public IActionResult GetCampaigns()
@@ -88,13 +122,13 @@ namespace AdminPanel.Controllers.Google.Ads
 					campaign.start_date,
 					campaign.end_date,
 					campaign.advertising_channel_type
-				FROM campaign";
+				FROM campaign
+				WHERE campaign.status != 'REMOVED'";
 
 			var searchRequest = new SearchGoogleAdsRequest()
 			{
 				CustomerId = customerId,
-				Query = query,
-				PageSize = 1000
+				Query = query
 			};
 
 			var response = service.Search(searchRequest);

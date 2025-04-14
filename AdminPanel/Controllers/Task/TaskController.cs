@@ -1,4 +1,5 @@
 ﻿using AdminPanel.Controllers.Organization;
+using AdminPanel.Helpers.ExcelService;
 using AdminPanel.Models.Organization.User;
 using AdminPanel.Models.Task.Task;
 using AdminPanel.Models.Task.TaskTemplate;
@@ -7,9 +8,13 @@ using Core.Domain.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using Service.Implementations.Task;
 using Service.Implementations.User;
+using System.ComponentModel.Design;
 using System.Data;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Utilities.Helper;
@@ -24,6 +29,7 @@ namespace AdminPanel.Controllers.Task
 		private readonly ILogger<TaskController> _logger;
 		private readonly UserService _userService;
 		private readonly TaskService _taskService;
+		private readonly ExcelService _excelService;
 		private readonly DefaultValues _defaultValues;
 		private readonly EmailHelper _emailHelper;
 
@@ -32,6 +38,7 @@ namespace AdminPanel.Controllers.Task
 			_logger = logger;
 			_userService = new UserService();
 			_taskService = new TaskService();
+			_excelService = new ExcelService();
 			_defaultValues = new DefaultValues();
 			_emailHelper = new EmailHelper();
 		}
@@ -519,6 +526,46 @@ namespace AdminPanel.Controllers.Task
 			.ToList();
 
 			return Ok(taskList);
+		}
+
+		[HttpGet("all-report")]
+		public IActionResult AllReportExcel()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var result = Sql.GetQueryResult("SELECT \"Id\", \"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"TransactionUser\", \"CommentId\", \"TaskTemplateId\", \"InsertedDate\", \"OrganizationId\" FROM public.\"TaskLog\" WHERE \"OrganizationId\" = " + user.OrganizationId + ";");
+
+			return _excelService.CreateExcelFile(result);
+		}
+
+		[HttpGet("task-report")]
+		public IActionResult TaskReportExcel(int taskId)
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var result = Sql.GetQueryResult("SELECT \"Id\", \"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"TransactionUser\", \"CommentId\", \"TaskTemplateId\", \"InsertedDate\", \"OrganizationId\" FROM public.\"TaskLog\" WHERE \"OrganizationId\" = " + user.OrganizationId + " AND \"TaskId\" = " + taskId + ";");
+
+			return _excelService.CreateExcelFile(result);
+		}
+
+		[HttpGet("user-report")]
+		public IActionResult UserReportExcel(int uId)
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var result = Sql.GetQueryResult("SELECT \"Id\", \"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"TransactionUser\", \"CommentId\", \"TaskTemplateId\", \"InsertedDate\", \"OrganizationId\" FROM public.\"TaskLog\" WHERE \"OrganizationId\" = " + user.OrganizationId + " AND \"UserPerformingTheTransaction\" = " + uId + ";");
+
+			return _excelService.CreateExcelFile(result);
+		}
+
+		[HttpGet("task-user-report")]
+		public IActionResult TaskUserReportExcel(int taskId, int uId)
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var result = Sql.GetQueryResult("SELECT \"Id\", \"UserPerformingTheTransaction\", \"TaskId\", \"Process\", \"TaskTemplateTaskId\", \"TransactionUser\", \"CommentId\", \"TaskTemplateId\", \"InsertedDate\", \"OrganizationId\" FROM public.\"TaskLog\" WHERE \"OrganizationId\" = " + user.OrganizationId + " AND \"TaskId\" = " + taskId + " AND \"UserPerformingTheTransaction\" = " + uId + ";");
+
+			return _excelService.CreateExcelFile(result);
 		}
 
 		private int UserId()

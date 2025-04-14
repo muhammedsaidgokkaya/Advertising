@@ -226,7 +226,7 @@ namespace AdminPanel.Controllers.Report
                 {
                     var typeValue = queryType[typeId];
 
-                    var generalRateQuery = _googleData.GeneralRateAdmin(
+                    var generalRateQuery = await _googleData.GeneralRateAdmin(
                         accessTokenControl,
                         accountId,
                         typeValue,
@@ -234,7 +234,7 @@ namespace AdminPanel.Controllers.Report
                         defaultValues[1].ToString("yyyy-MM-dd")
                     );
 
-                    var generalCountQuery = _googleData.GeneralCountAdmin(
+                    var generalCountQuery = await _googleData.GeneralCountAdmin(
                         accessTokenControl,
                         accountId,
                         typeValue,

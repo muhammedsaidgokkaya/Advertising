@@ -249,6 +249,11 @@ namespace Service.Implementations.Task
 			return _repository.GetById<TaskTemplateTask>(id);
 		}
 
+		public TaskComment GetTaskCommentById(int id)
+		{
+			return _repository.GetById<TaskComment>(id);
+		}
+
 		public Core.Domain.Task.Task GetTaskById(int id)
 		{
 			return _repository.GetById<Core.Domain.Task.Task>(id);
