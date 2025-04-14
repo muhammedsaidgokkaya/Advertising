@@ -7,8 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Ads.GoogleAds" Version="22.0.0" />
+    <PackageReference Include="Google.Ads.GoogleAds" Version="22.1.0" />
+    <PackageReference Include="Google.Ads.GoogleAds.Core" Version="4.0.4" />
+    <PackageReference Include="Google.Apis.AnalyticsData.v1beta" Version="1.68.0.3608" />
     <PackageReference Include="Google.Apis.Auth" Version="1.69.0" />
+    <PackageReference Include="Google.Apis.GoogleAnalyticsAdmin.v1beta" Version="1.69.0.3718" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.35" />
     <PackageReference Include="OpenAI.API" Version="1.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />

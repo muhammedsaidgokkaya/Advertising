@@ -153,12 +153,12 @@ namespace AdminPanel.Controllers.Google.Analytics
         }
 
         [HttpGet("query")]
-        public ActionResult<IEnumerable<GeneralRateResponse>> GetGeneralQuery(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<ActionResult<IEnumerable<GeneralRateResponse>>> GetGeneralQuery(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
             var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var generalRateQuery = _googleData.GeneralRateAdmin(accessTokenControl, accountId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var generalRateQuery = await _googleData.GeneralRateAdmin(accessTokenControl, accountId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var generalRates = generalRateQuery.Select(gr => new GeneralRateResponse
             {
                 Dimension = gr.Dimension == "(not set)" ? "Bilinmeyen" : gr.Dimension,
@@ -173,7 +173,7 @@ namespace AdminPanel.Controllers.Google.Analytics
                 UserKeyEventRate = gr.UserKeyEventRate
             }).ToList();
 
-            var generalCountQuery = _googleData.GeneralCountAdmin(accessTokenControl, accountId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var generalCountQuery = await _googleData.GeneralCountAdmin(accessTokenControl, accountId, dimensions, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var generalCounts = generalCountQuery.Select(gc => new GeneralCountResponse
             {
                 Dimension = gc.Dimension == "(not set)" ? "Bilinmeyen" : gc.Dimension,

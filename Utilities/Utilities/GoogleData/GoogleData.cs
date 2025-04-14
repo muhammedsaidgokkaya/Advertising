@@ -17,12 +17,14 @@ namespace Utilities.Utilities.GoogleData
         private readonly PythonRun _pythonRun;
         private readonly IConfiguration _configuration;
         private readonly Utilities.GoogleData.SearchConsole.SearchConsole _searchConsole;
+        private readonly Utilities.GoogleData.Analytics.Analytics _analyticsConsole;
 
         public GoogleData(IConfiguration configuration)
         {
             _pythonRun = new PythonRun();
             _configuration = configuration;
 			_searchConsole = new Utilities.GoogleData.SearchConsole.SearchConsole();
+			_analyticsConsole = new Utilities.GoogleData.Analytics.Analytics();
 		}
 
         private string GetPythonScriptPath(string relativePath)
@@ -151,85 +153,71 @@ namespace Utilities.Utilities.GoogleData
 		#endregion
 
 		#region Analytics
+
 		public AccountSummaryResponse AccountSummaryAdmin(string access_token)
         {
-            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/accountSummary.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
+			try
+			{
+				var result = _analyticsConsole.AccountSummaryAdmin(access_token);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("Google Analytics verisi alınırken hata oluştu.", ex);
+			}
+		}
 
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<AccountSummaryResponse>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
+		public async Task<List<DashboardResponse>> DashboardAdmin(string access_token, string property_id, string start_date, string end_date)
+		{
+			try
+			{
+				var result = await _analyticsConsole.GetAnalyticsDashboardMonthly(access_token, property_id, start_date, end_date);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("Google Analytics verisi alınırken hata oluştu.", ex);
+			}
+		}
 
-        public async Task<List<DashboardResponse>> DashboardAdmin(string access_token, string property_id, string start_date, string end_date)
+		public async Task<List<DashboardDimensionResponse>> DashboardDimensionAdmin(string access_token, string property_id, string dimension, string metric, string start_date, string end_date)
         {
-            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/analyticsDashboard.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, start_date, end_date);
+			try
+			{
+				var result = await _analyticsConsole.GetAnalyticsDimensionData(access_token, property_id, dimension, metric, start_date, end_date);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("Google Analytics verisi alınırken hata oluştu.", ex);
+			}
+		}
 
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<List<DashboardResponse>>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
-
-        public async Task<List<DashboardDimensionResponse>> DashboardDimensionAdmin(string access_token, string property_id, string dimension, string metric, string start_date, string end_date)
+        public async Task<List<GeneralCountResponse>> GeneralCountAdmin(string access_token, string property_id, string dimension, string start_date, string end_date)
         {
-            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/analyticsDashboardDimension.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, metric, start_date, end_date);
+			try
+			{
+				var result = await _analyticsConsole.GetAnalyticsGeneralCount(access_token, property_id, dimension, start_date, end_date);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("Google Analytics verisi alınırken hata oluştu.", ex);
+			}
+		}
 
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<List<DashboardDimensionResponse>>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
-
-        public List<GeneralCountResponse> GeneralCountAdmin(string access_token, string property_id, string dimension, string start_date, string end_date)
+        public async Task<List<GeneralRateResponse>> GeneralRateAdmin(string access_token, string property_id, string dimension, string start_date, string end_date)
         {
-            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/analyticsGeneralCount.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, start_date, end_date);
-
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<List<GeneralCountResponse>>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
-
-        public List<GeneralRateResponse> GeneralRateAdmin(string access_token, string property_id, string dimension, string start_date, string end_date)
-        {
-            string pythonScriptPath = GetPythonScriptPath("Google/Analytics/analyticsGeneralRate.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, property_id, dimension, start_date, end_date);
-
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<List<GeneralRateResponse>>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
+			try
+			{
+				var result = await _analyticsConsole.GetAnalyticsGeneralRate(access_token, property_id, dimension, start_date, end_date);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("Google Analytics verisi alınırken hata oluştu.", ex);
+			}
+		}
         #endregion
 
         #endregion
