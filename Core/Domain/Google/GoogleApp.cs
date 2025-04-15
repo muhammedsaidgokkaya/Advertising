@@ -11,6 +11,8 @@ namespace Core.Domain.Google
         public string AppId { get; set; }
         public string AppSecret { get; set; }
         public string RedirectUrl { get; set; }
+        public string DeveloperToken { get; set; }
+        public bool Type { get; set; }
         public virtual ICollection<GoogleAccessToken> GoogleAccessToken { get; set; }
     }
 }

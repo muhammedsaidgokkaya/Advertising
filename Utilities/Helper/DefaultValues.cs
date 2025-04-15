@@ -303,7 +303,167 @@ namespace Utilities.Helper
             };
         }
 
-        public string GoogleProperty(string property)
+		public string GetBiddingStrategyTypeName(string strategyType)
+		{
+			return strategyType switch
+			{
+				"UNSPECIFIED" => "Belirtilmemiş",
+				"UNKNOWN" => "Bilinmeyen",
+				"COMMISSION" => "Komisyon Bazlı Teklif",
+				"ENHANCED_CPC" => "Geliştirilmiş Tıklama Başına Maliyet (eCPC)",
+				"MANUAL_CPC" => "Manuel Tıklama Başına Maliyet (CPC)",
+				"MANUAL_CPM" => "Manuel Bin Gösterim Başına Maliyet (CPM)",
+				"MANUAL_CPV" => "Manuel Görüntüleme Başına Maliyet (CPV)",
+				"MAXIMIZE_CONVERSIONS" => "Dönüşümleri Maksimize Et",
+				"MAXIMIZE_CONVERSION_VALUE" => "Dönüşüm Değerini Maksimize Et",
+				"PAGE_ONE_PROMOTED" => "1. Sayfa Hedefli Tanıtım (Kullanımdan Kalktı)",
+				"TARGET_CPA" => "Hedef Maliyet Başına Edinim (CPA)",
+				"TARGET_IMPRESSION_SHARE" => "Hedef Gösterim Payı",
+				"TARGET_ROAS" => "Hedef Reklam Harcaması Getirisi (ROAS)",
+				"TARGET_SPEND" => "Hedef Harcama (Kullanımdan Kalktı)",
+				"NONE" => "Teklif Stratejisi Yok",
+				_ => "Bilinmeyen Strateji"
+			};
+		}
+
+		public string GetAdvertisingChannelTypeName(string type)
+		{
+			return type switch
+			{
+				"SEARCH" => "Arama Ağı",
+				"DISPLAY" => "Görüntülü Reklam Ağı",
+				"SHOPPING" => "Alışveriş",
+				"HOTEL" => "Otel Reklamları",
+				"VIDEO" => "Video",
+				"MULTI_CHANNEL" => "Çok Kanallı",
+				"LOCAL" => "Yerel",
+				"SMART" => "Akıllı Kampanya",
+				"PERFORMANCE_MAX" => "Max Performans",
+				"DISCOVERY" => "Discovery",
+				_ => "Bilinmeyen Kanal Türü"
+			};
+		}
+
+		public string GetAdGroupTypeName(string adGroupType)
+		{
+			var formattedKey = ToUpperSnakeCase(adGroupType);
+			return formattedKey switch
+			{
+				"UNSPECIFIED" => "Belirtilmemiş",
+				"UNKNOWN" => "Bilinmeyen",
+				"SEARCH_STANDARD" => "Arama Reklam Grubu",
+				"DISPLAY_STANDARD" => "Görüntülü Reklam Grubu",
+				"SHOPPING_PRODUCT_ADS" => "Alışveriş Ürün Reklam Grubu",
+				"HOTEL_ADS" => "Otel Reklam Grubu",
+				"SHOPPING_SMART_ADS" => "Akıllı Alışveriş Reklam Grubu",
+				"VIDEO_BUMPER" => "Kısa Atlanamayan Video",
+				"VIDEO_TRUE_VIEW_IN_STREAM" => "TrueView Video (Atlanabilir)",
+				"VIDEO_TRUE_VIEW_IN_DISPLAY" => "TrueView Görüntülü Video",
+				"VIDEO_NON_SKIPPABLE_IN_STREAM" => "Atlanamayan Video",
+				"VIDEO_OUTSTREAM" => "Outstream Video",
+				"SEARCH_DYNAMIC_ADS" => "Dinamik Arama Reklam Grubu",
+				"SHOPPING_COMPARISON_LISTING_ADS" => "Alışveriş Karşılaştırma Reklamları",
+				"PROMOTED_HOTEL_ADS" => "Tanıtılan Otel Reklamları",
+				"VIDEO_RESPONSIVE" => "Duyarlı Video Reklam Grubu",
+				"VIDEO_EFFICIENT_REACH" => "Verimli Video Ulaşımı",
+				"SMART_CAMPAIGN_ADS" => "Akıllı Kampanya Reklam Grubu",
+				"TRAVEL_ADS" => "Seyahat Reklamları",
+				_ => "Bilinmeyen Tür"
+			};
+		}
+
+		public string GetAdStrengthName(string adStrength)
+		{
+			var formattedKey = ToUpperSnakeCase(adStrength);
+			return formattedKey switch
+			{
+				"UNSPECIFIED" => "Belirtilmemiş",
+				"UNKNOWN" => "Bilinmeyen",
+				"PENDING" => "Beklemede",
+				"NO_ADS" => "Reklam Yok",
+				"POOR" => "Zayıf",
+				"AVERAGE" => "Orta",
+				"GOOD" => "İyi",
+				"EXCELLENT" => "Mükemmel",
+				_ => "Bilinmeyen Güç"
+			};
+		}
+
+		public string GetAdTypeName(string adType)
+		{
+			var formattedKey = ToUpperSnakeCase(adType);
+			return formattedKey switch
+			{
+				"UNSPECIFIED" => "Belirtilmemiş",
+				"UNKNOWN" => "Bilinmeyen",
+				"TEXT_AD" => "Metin Reklamı",
+				"EXPANDED_TEXT_AD" => "Genişletilmiş Metin Reklamı",
+				"DYNAMIC_SEARCH_AD" => "Dinamik Arama Reklamı",
+				"RESPONSIVE_SEARCH_AD" => "Uyarlanabilir Arama Reklamı",
+				"CALL_ONLY_AD" => "Sadece Arama Reklamı",
+				"EXPANDED_DYNAMIC_SEARCH_AD" => "Genişletilmiş Dinamik Arama Reklamı",
+				"HOTEL_AD" => "Otel Reklamı",
+				"SHOPPING_SMART_AD" => "Akıllı Alışveriş Reklamı",
+				"SHOPPING_PRODUCT_AD" => "Ürün Alışveriş Reklamı",
+				"VIDEO_AD" => "Video Reklamı",
+				"IMAGE_AD" => "Görsel Reklam",
+				"RESPONSIVE_DISPLAY_AD" => "Uyarlanabilir Görüntülü Reklam",
+				"LEGACY_RESPONSIVE_DISPLAY_AD" => "Klasik Uyarlanabilir Reklam",
+				"APP_AD" => "Uygulama Reklamı",
+				"LEGACY_APP_INSTALL_AD" => "Klasik Uygulama Kurulum Reklamı",
+				"APP_ENGAGEMENT_AD" => "Uygulama Etkileşim Reklamı",
+				"VIDEO_BUMPER_AD" => "Kısa Video Reklamı (Bumper)",
+				"VIDEO_NON_SKIPPABLE_IN_STREAM_AD" => "Atlanamayan Video Reklamı",
+				"VIDEO_OUTSTREAM_AD" => "Outstream Video Reklamı",
+				"VIDEO_TRUEVIEW_IN_STREAM_AD" => "TrueView Video Reklamı",
+				"VIDEO_RESPONSIVE_AD" => "Uyarlanabilir Video Reklam",
+				"SMART_CAMPAIGN_AD" => "Akıllı Kampanya Reklamı",
+				"CALL_AD" => "Arama Reklamı",
+				"APP_PRE_REGISTRATION_AD" => "Ön Kayıt Reklamı",
+				"IN_FEED_VIDEO_AD" => "Feed Video Reklamı",
+				"DISCOVERY_MULTI_ASSET_AD" => "Discovery Çoklu Öğeli Reklam",
+				_ => "Bilinmeyen Reklam Türü"
+			};
+		}
+
+		public string GetKeywordMatchTypeName(string matchType)
+		{
+			var formattedKey = ToUpperSnakeCase(matchType);
+			return formattedKey switch
+			{
+				"EXACT" => "Tam Eşleme",
+				"PHRASE" => "Sözcük Öbeği Eşleme",
+				"BROAD" => "Geniş Eşleme",
+				"UNKNOWN" => "Bilinmeyen",
+				"UNSPECIFIED" => "Belirtilmemiş",
+				_ => "Bilinmeyen Eşleme Türü"
+			};
+		}
+
+		public string GetSystemServingStatusName(string status)
+		{
+			var formattedKey = ToUpperSnakeCase(status);
+			return formattedKey switch
+			{
+				"SERVING" => "Yayında",
+				"NONE" => "Yayında Değil",
+				"ENDED" => "Sona Erdi",
+				"PENDING" => "Beklemede",
+				"SUSPENDED" => "Askıya Alındı",
+				"UNKNOWN" => "Bilinmeyen",
+				"UNSPECIFIED" => "Belirtilmemiş",
+				_ => "Bilinmeyen Yayın Durumu"
+			};
+		}
+
+		public string ToUpperSnakeCase(string input)
+		{
+			return string.Concat(input.Select((c, i) =>
+				i > 0 && char.IsUpper(c) ? "_" + c : c.ToString()
+			)).ToUpper(new CultureInfo("en-US", false));
+		}
+
+		public string GoogleProperty(string property)
         {
             var propertyId = property.Split('/').Last().TrimEnd('\"');
             return propertyId;

@@ -37,5 +37,11 @@ namespace Utilities.Helper
             }
             return control.AccessToken;
         }
+
+        public string GetTokenAds(int userId)
+        {
+            var control = _googleService.GetGoogleAccessTokenAds(userId);
+            return control.AccessToken;
+        }
     }
 }

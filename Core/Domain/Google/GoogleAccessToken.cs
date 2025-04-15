@@ -14,7 +14,8 @@ namespace Core.Domain.Google
         public int ExpiresIn { get; set; }
         public string Scope { get; set; }
         public string TokenType { get; set; }
-        public int GoogleAppId { get; set; }
+		public bool Type { get; set; }
+		public int GoogleAppId { get; set; }
         public virtual GoogleApp GoogleApp { get; set; }
         public int OrganizationId { get; set; }
         public virtual Organization Organization { get; set; }

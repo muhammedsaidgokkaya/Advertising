@@ -149,6 +149,7 @@ namespace Service.Implementations.Google
             var data = _repository.FilterAsQueryable<GoogleAccessToken>(p =>
                     p.IsActive &&
                     !p.IsDeleted &&
+                    !p.Type &&
                     p.Organization.User.Any(u => u.Id == userId) &&
                     p.UpdateDate.HasValue &&
                     p.UpdateDate.Value.AddSeconds(p.ExpiresIn) > now)
@@ -157,9 +158,22 @@ namespace Service.Implementations.Google
             return data;
         }
 
+        public GoogleAccessToken GetGoogleAccessTokenAds(int userId)
+        {
+            var now = DateTime.UtcNow;
+            var data = _repository.FilterAsQueryable<GoogleAccessToken>(p =>
+                    p.IsActive &&
+                    !p.IsDeleted &&
+                    p.Type &&
+                    p.Organization.User.Any(u => u.Id == userId))
+                .IncludeGoogleAccessToken()
+                .FirstOrDefault();
+            return data;
+        }
+
         public GoogleAccessToken GetGoogleAccessTokenControl(int userId)
         {
-            var data = _repository.FilterAsQueryable<GoogleAccessToken>(p => p.IsActive && !p.IsDeleted && p.Organization.User.Any(u => u.Id == userId)).IncludeGoogleAccessToken().FirstOrDefault();
+            var data = _repository.FilterAsQueryable<GoogleAccessToken>(p => p.IsActive && !p.IsDeleted && !p.Type && p.Organization.User.Any(u => u.Id == userId)).IncludeGoogleAccessToken().FirstOrDefault();
             return data;
         }
 
