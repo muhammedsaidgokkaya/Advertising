@@ -21,6 +21,9 @@ using System.Xml.Linq;
 using AdminPanel.Helpers;
 using Utilities.Utilities.MetaData;
 using Service.Implementations.Meta;
+using Newtonsoft.Json.Linq;
+using System.Net.Http.Headers;
+using System.Net.Http;
 
 namespace AdminPanel.Controllers.Report
 {
@@ -41,8 +44,9 @@ namespace AdminPanel.Controllers.Report
         private readonly GoogleData _googleData;
         private readonly MetaService _metaService;
         private readonly MetaData _metaData;
+        private readonly HttpClient _httpClient;
 
-        public ReportController(ILogger<ReportController> logger, IConfiguration configuration, GoogleService googleService, GoogleData googleData, MetaService metaService, MetaData metaData)
+		public ReportController(ILogger<ReportController> logger, HttpClient httpClient, IConfiguration configuration, GoogleService googleService, GoogleData googleData, MetaService metaService, MetaData metaData)
         {
             _logger = logger;
             _configuration = configuration;
@@ -56,7 +60,8 @@ namespace AdminPanel.Controllers.Report
             _googleData = googleData;
             _metaService = metaService;
             _metaData = metaData;
-        }
+			_httpClient = httpClient;
+		}
 
         [HttpGet("reports")]
         public ActionResult<IEnumerable<GetReports>> GetReports(string accountId, int reportType, DateTime? startDate = null, DateTime? endDate = null)
@@ -64,7 +69,7 @@ namespace AdminPanel.Controllers.Report
             var userId = UserId();
             var user = _userService.GetUserById(userId);
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 7);
-            var reports = _reportService.GetReports(user.OrganizationId, accountId, reportType, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd")).OrderByDescending(report => report.InsertedDate); ;
+            var reports = _reportService.GetReports(user.OrganizationId, accountId, reportType, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var reportList = reports.Select(report => new GetReports
             {
                 Id = report.Id,
@@ -72,9 +77,9 @@ namespace AdminPanel.Controllers.Report
                 Account = report.Account,
                 TypeId = report.TypeId,
                 InsertedDate = report.InsertedDate,
-            }).ToList();
+            }).OrderByDescending(report => report.Id).ToList();
 
-            return Ok(reportList);
+			return Ok(reportList);
         }
 
         [HttpGet("report")]
@@ -289,6 +294,56 @@ namespace AdminPanel.Controllers.Report
             var metaQuery = queryMethod(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
 
             string jsonData = JsonConvert.SerializeObject(metaQuery);
+            string prompt = $"Kullanıcıya React projemde görüntüleyebileceği formatta numaralandırarak aşağıdaki veriye dayanarak detaylı bir rapor, performans analizi ve geliştirme önerileri oluştur.\r\n Veri: {jsonData}\r\n Veriyi analiz ederken şu kurallara uymalısın:\r\n\r\n1. **Kalın Yazılar:** `**` işaretlerini HTML `<b></b>` formatında kalın yazıya dönüştür.\r\n2. **Başlıkları Kaldır:** `##` gibi Markdown başlık işaretlerini kaldır. Ancak içerik düzenini koru.\r\n3. **Numaralandırılmış Liste:** Sonuçları numaralandırılmış şekilde ver.\r\n4. **Detay Seviyeleri:** Analizde ilk 3 madde detaylı, diğerleri kısa ve öz olsun.\r\n\r\nVeri: \r\n{{jsonData}}\r\n\r\nYanıtı şu formatta döndür:\r\n1. Genel Performans:\r\n2. Hesap Verileri Analizi (ilk 3 tanesi detaylı diğerleri tek cümle olacak şekilde):\r\n3. Genel Öneriler (en detaylı olacak kısım):\r\nBu 3 başlık dışında hiçbir şey yazma. Sadece ve sadece 3 başlığı doldur.";
+            var reportResult = await _reportHelpers.GeneralReportAI(name, account, accountId, typeId, reportType, user.OrganizationId, prompt, defaultValues[0].ToUniversalTime(), defaultValues[1].ToUniversalTime());
+
+            if (reportResult == 1)
+            {
+                return Ok(new { success = true, message = "Rapor başarıyla oluşturuldu." });
+            }
+            else
+            {
+                return BadRequest(new { success = false, message = "Rapor oluşturulamadı." });
+            }
+        }
+        
+        [HttpPost]
+        [Route("chatgpt-prompt-google-ads")]
+        public async Task<IActionResult> GeneratePromptAds(string name, string account, string accountId, string typeId, int reportType, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+
+			var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+			var url = "";
+            if (typeId == "Genel")
+            {
+				url = $"{baseUrl}/api/GoogleAds/ads-summary?customerId={accountId}";
+			}
+            else if (typeId == "Kampanya")
+            {
+				url = $"{baseUrl}/api/GoogleAds/campaigns?customerId={accountId}";
+			}
+            else if (typeId == "Reklam Grubu")
+            {
+				url = $"{baseUrl}/api/GoogleAds/ad-groups?customerId={accountId}";
+			}
+            else if (typeId == "Reklam")
+            {
+				url = $"{baseUrl}/api/GoogleAds/ads?customerId={accountId}";
+			}
+            else if (typeId == "Anahtar Kelime")
+            {
+				url = $"{baseUrl}/api/GoogleAds/ads-keywords?customerId={accountId}";
+			}
+
+			var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "").Trim();
+			_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			var response = await _httpClient.GetAsync(url);
+			var result = await response.Content.ReadAsStringAsync();
+
+			string jsonData = JsonConvert.SerializeObject(result);
             string prompt = $"Kullanıcıya React projemde görüntüleyebileceği formatta numaralandırarak aşağıdaki veriye dayanarak detaylı bir rapor, performans analizi ve geliştirme önerileri oluştur.\r\n Veri: {jsonData}\r\n Veriyi analiz ederken şu kurallara uymalısın:\r\n\r\n1. **Kalın Yazılar:** `**` işaretlerini HTML `<b></b>` formatında kalın yazıya dönüştür.\r\n2. **Başlıkları Kaldır:** `##` gibi Markdown başlık işaretlerini kaldır. Ancak içerik düzenini koru.\r\n3. **Numaralandırılmış Liste:** Sonuçları numaralandırılmış şekilde ver.\r\n4. **Detay Seviyeleri:** Analizde ilk 3 madde detaylı, diğerleri kısa ve öz olsun.\r\n\r\nVeri: \r\n{{jsonData}}\r\n\r\nYanıtı şu formatta döndür:\r\n1. Genel Performans:\r\n2. Hesap Verileri Analizi (ilk 3 tanesi detaylı diğerleri tek cümle olacak şekilde):\r\n3. Genel Öneriler (en detaylı olacak kısım):\r\nBu 3 başlık dışında hiçbir şey yazma. Sadece ve sadece 3 başlığı doldur.";
             var reportResult = await _reportHelpers.GeneralReportAI(name, account, accountId, typeId, reportType, user.OrganizationId, prompt, defaultValues[0].ToUniversalTime(), defaultValues[1].ToUniversalTime());
 
