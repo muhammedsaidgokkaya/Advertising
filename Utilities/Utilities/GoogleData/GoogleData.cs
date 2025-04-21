@@ -150,6 +150,19 @@ namespace Utilities.Utilities.GoogleData
 
 			return result;
 		}
+
+		public SearchConsole SearchConsoleDashboardAdmin(string access_token)
+		{
+			var metrics = _searchConsole.GetAllSearchConsoleMetrics(access_token);
+
+			var result = new SearchConsole
+			{
+				TotalClicks = metrics.totalClicksSum,
+				TotalImpressions = metrics.totalImpressionsSum,
+			};
+
+			return result;
+		}
 		#endregion
 
 		#region Analytics
@@ -172,6 +185,19 @@ namespace Utilities.Utilities.GoogleData
 			try
 			{
 				var result = await _analyticsConsole.GetAnalyticsDashboardMonthly(access_token, property_id, start_date, end_date);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("Google Analytics verisi alınırken hata oluştu.", ex);
+			}
+		}
+
+		public async Task<int> Dashboards(string access_token)
+		{
+			try
+			{
+				var result = await _analyticsConsole.GetTotalActiveUsers(access_token);
 				return result;
 			}
 			catch (Exception ex)

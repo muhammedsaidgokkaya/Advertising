@@ -169,6 +169,18 @@ namespace Service.Implementations.Calendar
 			return data;
 		}
 
+		public int GetCalendersCount(int organizationId)
+		{
+			var data = _repository.FilterAsQueryable<Core.Domain.Calendar.Calendar>(p => !p.IsDeleted && p.IsConfirmation && p.Organization.Id.Equals(organizationId)).IncludeCalendar().Count();
+			return data;
+		}
+
+		public int GetCalendersRequestCount(int organizationId)
+		{
+			var data = _repository.FilterAsQueryable<Core.Domain.Calendar.Calendar>(p => !p.IsDeleted && !p.IsConfirmation && p.Organization.Id.Equals(organizationId)).IncludeCalendar().Count();
+			return data;
+		}
+
 		public async Task<IEnumerable<Core.Domain.Calendar.Calendar>> GetCalendersHashCode(string organization)
 		{
 			var data = _repository.FilterAsQueryable<Core.Domain.Calendar.Calendar>(p => !p.IsDeleted && p.IsConfirmation && p.Organization.OrganizationHashCode.Equals(organization)).IncludeCalendar();

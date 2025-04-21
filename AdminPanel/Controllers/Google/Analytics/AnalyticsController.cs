@@ -84,8 +84,17 @@ namespace AdminPanel.Controllers.Google.Analytics
             return Ok(result);
         }
 
+        [HttpGet("dashboard")]
+        public async Task<ActionResult<IEnumerable<DashboardResponse>>> GetDashboard()
+        {
+            var userId = UserId();
+            var accessTokenControl = _googleTokenControl.GetControl(userId);
+            var dashboard = await _googleData.Dashboards(accessTokenControl);
+            return Ok(dashboard);
+        }
+
         [HttpGet("dashboards")]
-        public async Task<ActionResult<IEnumerable<DashboardResponse>>> GetDashboard(string accountId, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<ActionResult<IEnumerable<DashboardResponse>>> GetDashboards(string accountId, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);

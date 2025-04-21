@@ -192,6 +192,88 @@ namespace AdminPanel.Controllers.Google.Ads
 			return Ok(summaryList);
 		}
 
+		[HttpGet("dashboard")]
+		public IActionResult GetAccountSummary()
+		{
+			var userId = UserId();
+			var control = _googleTokenControl.GetTokenAds(userId);
+			var app = _googleService.GetGoogleApp();
+
+			var config = new GoogleAdsConfig()
+			{
+				DeveloperToken = app.DeveloperToken,
+				OAuth2Mode = OAuth2Flow.APPLICATION,
+				OAuth2ClientId = app.AppId,
+				OAuth2ClientSecret = app.AppSecret,
+				OAuth2RefreshToken = control
+			};
+
+			GoogleAdsClient client = new GoogleAdsClient(config);
+
+			var service = client.GetService(Services.V18.GoogleAdsService);
+			var services = client.GetService(Services.V17.CustomerService);
+			string[] customers = services.ListAccessibleCustomers();
+
+			var totalClicks = 0;
+			var totalImpressions = 0;
+			var totalCost = 0.0;
+
+			foreach (var customerRow in customers)
+			{
+				string customerId = customerRow.Split('/')[1];
+
+				string checkMccQuery = @"
+					SELECT customer.manager 
+					FROM customer";
+
+				var checkMccRequest = new SearchGoogleAdsRequest()
+				{
+					CustomerId = customerId,
+					Query = checkMccQuery
+				};
+
+				var checkResponse = service.Search(checkMccRequest);
+
+				bool isManager = checkResponse.FirstOrDefault()?.Customer?.Manager ?? false;
+
+				if (isManager)
+				{
+					continue;
+				}
+
+				string query = @"
+					SELECT
+						customer.id,
+						metrics.clicks,
+						metrics.impressions,
+						metrics.cost_micros
+					FROM customer
+					WHERE customer.id = " + customerId;
+
+				var request = new SearchGoogleAdsRequest()
+				{
+					CustomerId = customerId,
+					Query = query
+				};
+
+				var response = service.Search(request);
+
+				foreach (var row in response)
+				{
+					totalClicks += (int)(row.Metrics?.Clicks ?? 0);
+					totalImpressions += (int)(row.Metrics?.Impressions ?? 0);
+					totalCost += (row.Metrics?.CostMicros ?? 0) / 1_000_000.0;
+				}
+			}
+
+			return Ok(new
+			{
+				TotalClicks = totalClicks,
+				TotalImpressions = totalImpressions,
+				TotalCost = totalCost
+			});
+		}
+
 		[HttpGet("campaigns")]
 		public IActionResult GetCampaigns(string customerId)
 		{

@@ -301,6 +301,12 @@ namespace Service.Implementations.Task
 			var data = _repository.FilterAsQueryable<Core.Domain.Task.Task>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeTask();
 			return data;
 		}
+
+		public int GetTasksCount(int organizationId)
+		{
+			var data = _repository.FilterAsQueryable<Core.Domain.Task.Task>(p => !p.IsDeleted && p.Organization.Id.Equals(organizationId)).IncludeTask().Count();
+			return data;
+		}
 	}
 
 	public static class TaskExtensions

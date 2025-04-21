@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Implementations;
+using Service.Implementations.Calendar;
 using Service.Implementations.Google;
 using Service.Implementations.Meta;
+using Service.Implementations.Task;
 using Service.Implementations.User;
 using System.ComponentModel.Design;
 using Utilities.Helper;
@@ -27,14 +29,18 @@ namespace AdminPanel.Controllers.Organization
         private readonly UserService _userService;
         private readonly DefaultValues _defaultValues;
         private readonly EmailHelper _emailHelper;
+		private readonly TaskService _taskService;
+		private readonly CalendarService _calendarService;
 
-        public OrganizationController(ILogger<OrganizationController> logger)
+		public OrganizationController(ILogger<OrganizationController> logger)
         {
             _logger = logger;
             _userService = new UserService();
             _defaultValues = new DefaultValues();
             _emailHelper = new EmailHelper();
-        }
+			_taskService = new TaskService();
+			_calendarService = new CalendarService();
+		}
 
         [HttpGet("users")]
         public ActionResult<IEnumerable<Users>> GetUsers()
@@ -220,6 +226,25 @@ namespace AdminPanel.Controllers.Organization
 			var user = _userService.GetUserById(userId);
 			var users = _userService.GetUserTitles(user.OrganizationId, userId);
 			return Ok(users);
+		}
+
+		[HttpGet("dashboard-task-calendar")]
+		public ActionResult<TaskAndCalendar> GetOrganizationDashboard()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var tasks = _taskService.GetTasksCount(user.OrganizationId);
+			var calendar = _calendarService.GetCalendersCount(user.OrganizationId);
+			var request = _calendarService.GetCalendersRequestCount(user.OrganizationId);
+
+			var data = new TaskAndCalendar
+			{
+				TaskCount = tasks,
+				RequestCount = request,
+				CalendarCount = calendar,
+			};
+
+			return Ok(data);
 		}
 
 		[HttpGet("department-users")]

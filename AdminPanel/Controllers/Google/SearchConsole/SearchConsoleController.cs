@@ -115,9 +115,23 @@ namespace AdminPanel.Controllers.Google.SearchConsole
             };
 
             return Ok(new List<SearchConsoleDashboard> { data });
-        }
+		}
 
-        [HttpGet("get-search-console-chart-ten")]
+		[HttpGet("get-search-console-dashboard")]
+		public ActionResult<SearchConsoleDashboard> GetSearchConsoleDashboard()
+		{
+			var userId = UserId();
+			var accessTokenControl = _googleTokenControl.GetControl(userId);
+			var searchConsoleQuery = _googleData.SearchConsoleDashboardAdmin(accessTokenControl);
+
+			return Ok(new
+			{
+				TotalClicks = searchConsoleQuery.TotalClicks,
+				TotalImpressions = searchConsoleQuery.TotalImpressions,
+			});
+		}
+
+		[HttpGet("get-search-console-chart-ten")]
         public async Task<ActionResult<IEnumerable<Row>>> GetSearchConsoleChartTen(string accountId, string dimensions, DateTime? startDate = null, DateTime? endDate = null)
         {
             var userId = UserId();

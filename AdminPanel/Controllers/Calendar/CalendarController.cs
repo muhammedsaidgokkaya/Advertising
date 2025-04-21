@@ -88,6 +88,28 @@ namespace AdminPanel.Controllers.Calendar
 			return Ok(calendarsList);
 		}
 
+		[HttpGet("calendars-five")]
+		public async Task<ActionResult<IEnumerable<Models.Calendar.GetCalendars>>> GetCalendarsFive()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var calendars = await _calendarService.GetCalenders(user.OrganizationId);
+
+			var calendarsList = calendars.Select(calendar => new Models.Calendar.GetCalendars
+			{
+				Id = calendar.Id,
+				Title = calendar.Title,
+				Mail = calendar.Mail,
+				FirstName = calendar.FirstName + " " + calendar.LastName,
+				IsConfirmation = calendar.IsConfirmation,
+			})
+			.OrderByDescending(task => task.Id)
+			.Take(5)
+			.ToList();
+
+			return Ok(calendarsList);
+		}
+
 		[HttpPost]
 		[Route("add-schema")]
 		public async Task<IActionResult> AddSchema([FromBody] AddSchemaCalendar request)

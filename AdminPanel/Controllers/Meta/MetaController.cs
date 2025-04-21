@@ -7,11 +7,14 @@ using AdminPanel.Models.Meta.Campaign;
 using AdminPanel.Models.Meta.Charts;
 using AdminPanel.Models.Meta.Insight;
 using AdminPanel.Models.Meta.Report;
+using AdminPanel.Models.Organization.User;
+using AdminPanel.Models.Task.Task;
 using Core.Domain.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using OpenAI.API.Embedding;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
 using System.Net.Http;
@@ -422,6 +425,40 @@ namespace AdminPanel.Controllers.Meta
             var charts = _metaData.Charts(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             return Ok(charts);
         }
+
+        [HttpGet("dashboards")]
+        public ActionResult<DashboardMeta> GetDashboards()
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var charts = _metaData.GetMetaTotalSummary(accessToken.AccessToken);
+            var data = new DashboardMeta
+			{
+				Spend = charts.TotalMeta.Spend,
+				Impressions = charts.TotalMeta.Impressions,
+				Clicks = charts.TotalMeta.Clicks,
+			};
+			return Ok(data);
+        }
+
+        [HttpGet("top-ads")]
+        public ActionResult<TopAds> GetTopAds()
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+			var topAds = _metaData.TopAdsAdmin(accessToken.AccessToken);
+
+			var data = topAds
+				.Select((a, index) => new TopAds
+				{
+					Id = index + 1,
+					Name = a.Name,
+					Url = a.Url
+				})
+				.ToList();
+
+			return Ok(data);
+		}
 
         [HttpGet("audiences")]
         public async Task<ActionResult<ApiResponse>> GetAudiences(string accountId)

@@ -113,5 +113,38 @@ namespace Utilities.Utilities.GoogleData.SearchConsole
 
             return result;
         }
-    }
+
+		public (int totalClicksSum, int totalImpressionsSum) GetAllSearchConsoleMetrics(string accessToken)
+		{
+			var service = CreateSearchConsoleService(accessToken);
+
+			var sitesList = service.Sites.List().Execute().SiteEntry;
+
+			int totalClicksSum = 0;
+			int totalImpressionsSum = 0;
+
+			foreach (var site in sitesList)
+			{
+				var siteUrl = site.SiteUrl;
+
+				var currentMetrics = GetGoogleSearchConsoleMetrics(service, siteUrl, "1900-01-01", DateTime.Now.ToString("yyyy-MM-dd"));
+
+				var previousMetrics = GetGoogleSearchConsoleMetrics(service, siteUrl, "1900-01-01", DateTime.Now.ToString("yyyy-MM-dd"));
+
+				var clicksChange = CalculateChange(Convert.ToDouble(previousMetrics["total_clicks"]), Convert.ToDouble(currentMetrics["total_clicks"]));
+				var impressionsChange = CalculateChange(Convert.ToDouble(previousMetrics["total_impressions"]), Convert.ToDouble(currentMetrics["total_impressions"]));
+
+				var result = new SearchConsoleMetrics
+				{
+					TotalClicks = Convert.ToInt32(currentMetrics["total_clicks"]),
+					TotalImpressions = Convert.ToInt32(currentMetrics["total_impressions"]),
+				};
+
+				totalClicksSum += result.TotalClicks;
+				totalImpressionsSum += result.TotalImpressions;
+			}
+
+			return (totalClicksSum, totalImpressionsSum);
+		}
+	}
 }

@@ -216,10 +216,41 @@ namespace Utilities.Utilities.MetaData
                 throw new Exception("Hata.", ex);
             }
         }
-        #endregion
 
-        #region Class
-        public class AccessTokenResponse
+		public MetaSummaryResponse GetMetaTotalSummary(string accessToken)
+		{
+			string pythonScriptPath = GetPythonScriptPath("Meta/Charts/total.py");
+			var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, accessToken);
+
+			try
+			{
+				var result = JsonConvert.DeserializeObject<MetaSummaryResponse>(jsonOutput?.ToString() ?? string.Empty);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("Meta toplam verisi deserialize edilirken hata oluştu: " + ex.Message);
+			}
+		}
+
+		public List<TopAds> TopAdsAdmin(string access_token)
+		{
+			string pythonScriptPath = GetPythonScriptPath("Meta/AdvertisingManager/topAds.py");
+			var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
+
+			try
+			{
+				return JsonConvert.DeserializeObject<List<TopAds>>(jsonOutput?.ToString() ?? string.Empty);
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("Hata.", ex);
+			}
+		}
+		#endregion
+
+		#region Class
+		public class AccessTokenResponse
         {
             [JsonProperty("access_token")]
             public string AccessToken { get; set; }
@@ -672,8 +703,35 @@ namespace Utilities.Utilities.MetaData
             public double Value { get; set; }
         }
 
-        #region Audience
-        public class LookalikeSpec
+		public class MetaSummaryResponse
+		{
+			[JsonProperty("totalMeta")]
+			public MetaMetrics TotalMeta { get; set; }
+		}
+
+		public class MetaMetrics
+		{
+			[JsonProperty("spend")]
+			public double Spend { get; set; }
+
+			[JsonProperty("impressions")]
+			public double Impressions { get; set; }
+
+			[JsonProperty("clicks")]
+			public double Clicks { get; set; }
+		}
+
+		public class TopAds
+		{
+			[JsonProperty("name")]
+			public string Name { get; set; }
+
+			[JsonProperty("image_url")]
+			public string Url { get; set; }
+		}
+
+		#region Audience
+		public class LookalikeSpec
         {
             [JsonProperty("country")]
             public string Country { get; set; }
