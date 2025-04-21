@@ -71,7 +71,7 @@ namespace AdminPanel.Controllers.Organization
         {
             if (photo?.Photo != null)
             {
-                var uploadsDirectory = @"C:\Users\furka\Desktop\project-template\public\user";
+                var uploadsDirectory = @"C:\Users\furka\Desktop\dijitals\public\user";
 
                 if (!Directory.Exists(uploadsDirectory))
                 {
@@ -80,9 +80,9 @@ namespace AdminPanel.Controllers.Organization
 
                 var fileExtension = Path.GetExtension(photo.Photo.FileName).ToLower();
 
-                if (fileExtension != ".png" && fileExtension != ".jpg" && fileExtension != ".jpeg")
+                if (fileExtension != ".png")
                 {
-                    return BadRequest("Yalnızca .png, .jpg, .jpeg dosya uzantıları kabul edilmektedir.");
+                    return BadRequest("Yalnızca .png dosya uzantıları kabul edilmektedir.");
                 }
 
                 var fileName = photo.UserId + fileExtension;
