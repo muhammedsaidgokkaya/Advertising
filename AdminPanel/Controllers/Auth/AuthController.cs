@@ -40,6 +40,7 @@ namespace AdminPanel.Controllers.Auth
             if (user == null) return Ok(new { IsSuccess = false, Message = "Kullanıcı adı veya şifre yanlış!" });
 
             var roles = _userService.GetUserRole(user.Id).Select(ur => ur.Role.Name).ToList();
+            var lastActivity = _userService.UpdateLastActivity(user.Id);
             var token = _jwtService.GenerateToken(user, roles);
 
             return Ok(new { IsSuccess = true, Token = token });

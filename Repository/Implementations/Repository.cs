@@ -93,5 +93,21 @@ namespace Repository.Implementations
         {
             return _context.Set<E>().Where(expression).AsQueryable();
         }
-    }
+
+		public async Task SaveAsync<E>(E entity) where E : class, new()
+		{
+			await using var dbContextTransaction = await _context.Database.BeginTransactionAsync();
+			try
+			{
+				await _context.Set<E>().AddAsync(entity);
+				await _context.SaveChangesAsync();
+				await dbContextTransaction.CommitAsync();
+			}
+			catch (Exception)
+			{
+				await dbContextTransaction.RollbackAsync();
+				throw;
+			}
+		}
+	}
 }

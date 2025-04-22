@@ -8,6 +8,7 @@ using Core.Domain.Report;
 using Core.Domain.Task;
 using System.Globalization;
 using Core.Domain.Calendar;
+using Core.Domain.Chat;
 
 namespace Core.Data
 {
@@ -59,6 +60,9 @@ namespace Core.Data
         public DbSet<Core.Domain.Calendar.Calendar> Calendar { get; set; }
         public DbSet<CalendarTemplate> CalendarTemplate { get; set; }
         public DbSet<CalendarTemplateCalendar> CalendarTemplateCalendar { get; set; }
+        public DbSet<Conversation> Conversation { get; set; }
+        public DbSet<Message> Message { get; set; }
+        public DbSet<Attachment> Attachment { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

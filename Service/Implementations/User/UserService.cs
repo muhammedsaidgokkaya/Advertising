@@ -155,8 +155,10 @@ namespace Service.Implementations.User
                     Address = address,
                     UserName = userName,
                     Password = password,
+                    ActivityStatus = "offline",
                     InsertedDate = DateTime.UtcNow,
-                    IsActive = true,
+					LastActivity = DateTime.UtcNow,
+					IsActive = true,
                     IsDeleted = false
                 };
 
@@ -229,7 +231,20 @@ namespace Service.Implementations.User
             return 0;
         }
 
-        public int IsActiveUser(int id)
+		public int UpdateLastActivity(int id)
+		{
+			var user = GetUserById(id);
+			if (user != null)
+			{
+				user.LastActivity = DateTime.UtcNow;
+
+				_repository.Update(user);
+				return user.Id;
+			}
+			return 0;
+		}
+
+		public int IsActiveUser(int id)
         {
             var user = GetUserById(id);
             if (user != null)

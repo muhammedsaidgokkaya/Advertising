@@ -1,4 +1,5 @@
-﻿using Core.Domain.Google;
+﻿using Core.Domain.Chat;
+using Core.Domain.Google;
 using Core.Domain.Meta;
 using Core.Domain.Task;
 using System;
@@ -21,12 +22,15 @@ namespace Core.Domain.User
         public string Address { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }
-        public int OrganizationId { get; set; }
+        public string? ActivityStatus { get; set; }
+		public DateTime? LastActivity { get; set; }
+		public int OrganizationId { get; set; }
         public virtual Organization Organization { get; set; }
         public virtual ICollection<GoogleAccessToken> GoogleAccessToken { get; set; }
         public virtual ICollection<MetaLongAccess> MetaLongAccess { get; set; }
         public virtual ICollection<UserRole> UserRole { get; set; }
 		public virtual ICollection<TaskUser> TaskUser { get; set; }
 		public virtual ICollection<TaskComment> TaskComment { get; set; }
+		public virtual ICollection<Participant> Participant { get; set; }
 	}
 }
