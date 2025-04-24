@@ -28,31 +28,51 @@ namespace AdminPanel.Controllers.Google
             _googleData = googleData;
         }
 
-        // https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=876265473668-dkrg8ouj2qaginhpoamfdacf0f83002j.apps.googleusercontent.com&redirect_uri=https://localhost:7081/api/GoogleOauth/call-back&scope=https://www.googleapis.com/auth/analytics.readonly%20https://www.googleapis.com/auth/analytics.manage.users.readonly%20https://www.googleapis.com/auth/webmasters&access_type=offline
-        [Authorize(Roles = "SuperAdmin,Admin")]
-        [HttpGet("call-back")]
-        public ActionResult<AdminPanel.Models.Google.AccessToken.GoogleAccesToken> Get(string code, string scope)
-        {
-            var userId = UserId();
-            var user = _userService.GetUserById(userId);
-            var model = _googleService.GetGoogleApp();
-            var accessToken = _googleData.AccessTokenAdmin(model.AppId, model.AppSecret, model.RedirectUrl, code);
-            if (accessToken.AccessToken == null || accessToken.RefreshToken == null)
-            {
-                return Ok(0);
-            }
-            var googleAccessToken = _googleService.AddGoogleAccessToken(model.Id, user.OrganizationId, accessToken.AccessToken, accessToken.RefreshToken, accessToken.ExpiresIn, accessToken.Scope, accessToken.TokenType);
+		// https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=876265473668-dkrg8ouj2qaginhpoamfdacf0f83002j.apps.googleusercontent.com&redirect_uri=https://localhost:7081/api/GoogleOauth/call-back&scope=https://www.googleapis.com/auth/analytics.readonly%20https://www.googleapis.com/auth/analytics.manage.users.readonly%20https://www.googleapis.com/auth/webmasters&access_type=offline
+		[Authorize(Roles = "SuperAdmin,Admin")]
+		[HttpGet("call-back")]
+		public ActionResult<AdminPanel.Models.Google.AccessToken.GoogleAccesToken> Get(string code, string scope)
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var model = _googleService.GetGoogleApp();
+			if (scope == "https://www.googleapis.com/auth/adwords")
+			{
+				var accessToken = _googleData.AccessTokenAdmin(model.AppId, model.AppSecret, model.RedirectUrl, code);
+				if (accessToken.AccessToken == null || accessToken.RefreshToken == null)
+				{
+					return Ok(0);
+				}
+				var googleAccessToken = _googleService.AddGoogleAccessToken(model.Id, user.OrganizationId, accessToken.RefreshToken, accessToken.RefreshToken, accessToken.ExpiresIn, accessToken.Scope, accessToken.TokenType, true);
 
-            var google = new AdminPanel.Models.Google.AccessToken.GoogleAccesToken
-            {
-                AccessToken = accessToken.AccessToken,
-                IsSuccess = googleAccessToken != 0
-            };
+				var google = new AdminPanel.Models.Google.AccessToken.GoogleAccesToken
+				{
+					AccessToken = accessToken.AccessToken,
+					IsSuccess = googleAccessToken != 0
+				};
 
-            return Ok(google);
-        }
+				return Ok(google);
+			}
+			else
+			{
+				var accessToken = _googleData.AccessTokenAdmin(model.AppId, model.AppSecret, model.RedirectUrl, code);
+				if (accessToken.AccessToken == null || accessToken.RefreshToken == null)
+				{
+					return Ok(0);
+				}
+				var googleAccessToken = _googleService.AddGoogleAccessToken(model.Id, user.OrganizationId, accessToken.AccessToken, accessToken.RefreshToken, accessToken.ExpiresIn, accessToken.Scope, accessToken.TokenType, false);
 
-        [HttpGet("get-google-app")]
+				var google = new AdminPanel.Models.Google.AccessToken.GoogleAccesToken
+				{
+					AccessToken = accessToken.AccessToken,
+					IsSuccess = googleAccessToken != 0
+				};
+
+				return Ok(google);
+			}
+		}
+
+		[HttpGet("get-google-app")]
         public ActionResult<GoogleApp> GetGoogleApp()
         {
             var model = _googleService.GetGoogleApp();

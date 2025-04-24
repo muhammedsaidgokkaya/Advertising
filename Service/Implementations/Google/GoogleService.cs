@@ -86,7 +86,7 @@ namespace Service.Implementations.Google
             return 0;
         }
 
-        public int AddGoogleAccessToken(int googleAppId, int organizationId, string accessToken, string refreshToken, int expiresIn, string scope, string tokenType)
+        public int AddGoogleAccessToken(int googleAppId, int organizationId, string accessToken, string refreshToken, int expiresIn, string scope, string tokenType, bool type)
         {
             var googleApp = GetGoogleAppById(googleAppId);
             if (googleApp != null)
@@ -103,7 +103,8 @@ namespace Service.Implementations.Google
                     InsertedDate = DateTime.UtcNow,
                     UpdateDate = DateTime.UtcNow,
                     IsActive = true,
-                    IsDeleted = false
+                    IsDeleted = false,
+                    Type = type
                 };
 
                 _repository.Save(googleAccessToken);
@@ -174,6 +175,12 @@ namespace Service.Implementations.Google
         public GoogleAccessToken GetGoogleAccessTokenControl(int userId)
         {
             var data = _repository.FilterAsQueryable<GoogleAccessToken>(p => p.IsActive && !p.IsDeleted && !p.Type && p.Organization.User.Any(u => u.Id == userId)).IncludeGoogleAccessToken().FirstOrDefault();
+            return data;
+        }
+
+        public GoogleAccessToken GetGoogleAdsAccessTokenControl(int userId)
+        {
+            var data = _repository.FilterAsQueryable<GoogleAccessToken>(p => p.IsActive && !p.IsDeleted && p.Type && p.Organization.User.Any(u => u.Id == userId)).IncludeGoogleAccessToken().FirstOrDefault();
             return data;
         }
 

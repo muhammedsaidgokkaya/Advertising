@@ -99,13 +99,12 @@ namespace AdminPanel.Controllers.Auth
         }
 
         [Authorize]
-        [HttpGet("organization-control")]
-        public IActionResult OrganizationControl()
+        [HttpGet("ads-token-control")]
+        public IActionResult AdsControl()
         {
             var userId = UserId();
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
-            if (organization.GoogleAnalytics == null || organization.GoogleSearchConsole == null || organization.MetaAccount == null)
+            var google = _googleService.GetGoogleAdsAccessTokenControl(userId);
+            if (google == null)
             {
                 return Ok(0);
             }
@@ -115,7 +114,216 @@ namespace AdminPanel.Controllers.Auth
             }
         }
 
-        public class LoginRequest
+		[Authorize]
+		[HttpGet("meta-control-lazy")]
+		public IActionResult OrganizationMetaLazy()
+		{
+			var userId = UserId();
+			var meta = _metaService.GetLongAccessToken(userId);
+			if (meta == null)
+			{
+				return Ok(0);
+			}
+			else
+			{
+				var user = _userService.GetUserById(userId);
+				var organization = _userService.GetOrganizationById(user.OrganizationId);
+				if (organization.MetaAccount == null)
+				{
+					return Ok(0);
+				}
+				else
+				{
+					return Ok(1);
+				}
+			}
+		}
+
+		[Authorize]
+		[HttpGet("google-control-lazy")]
+		public IActionResult OrganizationGoogleLazy()
+		{
+			var userId = UserId();
+			var google = _googleService.GetGoogleAccessTokenControl(userId);
+			if (google == null)
+			{
+				return Ok(0);
+			}
+			else
+			{
+				var user = _userService.GetUserById(userId);
+				var organization = _userService.GetOrganizationById(user.OrganizationId);
+				if (organization.GoogleAnalytics == null || organization.GoogleSearchConsole == null)
+				{
+					return Ok(0);
+				}
+				else
+				{
+					return Ok(1);
+				}
+			}
+		}
+
+		[Authorize]
+		[HttpGet("ads-control-lazy")]
+		public IActionResult OrganizationAdsLazy()
+		{
+			var userId = UserId();
+			var google = _googleService.GetGoogleAdsAccessTokenControl(userId);
+			if (google == null)
+			{
+				return Ok(0);
+			}
+			else
+			{
+				var user = _userService.GetUserById(userId);
+				var organization = _userService.GetOrganizationById(user.OrganizationId);
+				if (organization.GoogleAccount == null)
+				{
+					return Ok(0);
+				}
+				else
+				{
+					return Ok(1);
+				}
+			}
+		}
+
+		[Authorize]
+		[HttpGet("meta-control")]
+		public IActionResult OrganizationMeta()
+		{
+			var userId = UserId();
+			var meta = _metaService.GetLongAccessToken(userId);
+			if (meta == null)
+			{
+				return Ok(0);
+			}
+			else
+			{
+                var user = _userService.GetUserById(userId);
+				var organization = _userService.GetOrganizationById(user.OrganizationId);
+				if (organization.MetaAccount == null)
+				{
+					return Ok(1);
+				}
+				else
+				{
+					return Ok(2);
+				}
+			}
+		}
+
+		[Authorize]
+		[HttpGet("google-control")]
+		public IActionResult OrganizationGoogle()
+		{
+			var userId = UserId();
+			var google = _googleService.GetGoogleAccessTokenControl(userId);
+			if (google == null)
+			{
+				return Ok(0);
+			}
+			else
+			{
+				var user = _userService.GetUserById(userId);
+				var organization = _userService.GetOrganizationById(user.OrganizationId);
+				if (organization.GoogleAnalytics == null || organization.GoogleSearchConsole == null)
+				{
+					return Ok(1);
+				}
+				else
+				{
+					return Ok(2);
+				}
+			}
+		}
+
+		[Authorize]
+		[HttpGet("ads-control")]
+		public IActionResult OrganizationAds()
+		{
+			var userId = UserId();
+			var google = _googleService.GetGoogleAdsAccessTokenControl(userId);
+			if (google == null)
+			{
+				return Ok(0);
+			}
+			else
+			{
+				var user = _userService.GetUserById(userId);
+				var organization = _userService.GetOrganizationById(user.OrganizationId);
+				if (organization.GoogleAccount == null)
+				{
+					return Ok(1);
+				}
+				else
+				{
+					return Ok(2);
+				}
+			}
+		}
+
+		[Authorize]
+		[HttpGet("controls")]
+		public IActionResult OrganizationControls()
+		{
+			var userId = UserId();
+			var googleAds = _googleService.GetGoogleAdsAccessTokenControl(userId);
+			var meta = _metaService.GetLongAccessToken(userId);
+			var google = _googleService.GetGoogleAccessTokenControl(userId);
+
+            if (meta == null && googleAds == null && google == null)
+            {
+				return Ok(0);
+            }
+            else
+            {
+				return Ok(1);
+            }
+        }
+
+		[Authorize]
+		[HttpGet("menu-list")]
+		public IActionResult MenuList()
+		{
+			var userId = UserId();
+			var googleIsValid = true;
+			var adsIsValid = true;
+			var metaIsValid = true;
+
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+			var googleAds = _googleService.GetGoogleAdsAccessTokenControl(userId);
+			var meta = _metaService.GetLongAccessToken(userId);
+			var google = _googleService.GetGoogleAccessTokenControl(userId);
+
+			if (google == null || organization.GoogleAnalytics == null || organization.GoogleSearchConsole == null)
+			{
+				googleIsValid = false;
+			}
+
+			if (meta == null || organization.MetaAccount == null)
+			{
+				metaIsValid = false;
+			}
+
+			if (googleAds == null || organization.GoogleAccount == null)
+			{
+				adsIsValid = false;
+			}
+
+			var result = new
+			{
+				google = googleIsValid,
+				google_ads = adsIsValid,
+				meta = metaIsValid
+			};
+
+			return Ok(result);
+		}
+
+		public class LoginRequest
         {
             public string Email { get; set; }
             public string Password { get; set; }

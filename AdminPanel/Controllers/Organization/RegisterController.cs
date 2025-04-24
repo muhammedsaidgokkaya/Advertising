@@ -6,6 +6,8 @@ using OpenAI.API.Completions;
 using OpenAI.API;
 using Service.Implementations.User;
 using Utilities.Helper;
+using Google.Protobuf.Collections;
+using AdminPanel.Models.Auth;
 
 namespace AdminPanel.Controllers.Organization
 {
@@ -97,5 +99,17 @@ namespace AdminPanel.Controllers.Organization
 
             return Ok(new { success = true });
         }
-    }
+
+		[HttpPost("check-mail")]
+		public async Task<IActionResult> CheckMail([FromBody] CheckMail request)
+		{
+            var userCheck = _userService.GetUserCheckMail(request.Mail).ToList();
+            if (userCheck.Count != 0)
+            {
+				return Ok(0);
+			}
+
+			return Ok(1);
+		}
+	}
 }

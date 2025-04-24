@@ -127,6 +127,24 @@ namespace Service.Implementations.User
 			var data = _repository.Filter<Organization>(p => p.IsActive && !p.IsDeleted && p.OrganizationHashCode == code);
 			return data.SingleOrDefault();
 		}
+
+		public string GetOrganizationMeta(int id)
+		{
+            var data = _repository.Filter<Organization>(p => p.IsActive && !p.IsDeleted && p.Id.Equals(id)).SingleOrDefault();
+			return data.MetaAccount;
+		}
+
+		public string GetOrganizationGoogleAnalytics(int id)
+		{
+            var data = _repository.Filter<Organization>(p => p.IsActive && !p.IsDeleted && p.Id.Equals(id)).SingleOrDefault();
+			return data.GoogleAnalytics;
+		}
+
+		public string GetOrganizationGoogleSearchConsole(int id)
+		{
+            var data = _repository.Filter<Organization>(p => p.IsActive && !p.IsDeleted && p.Id.Equals(id)).SingleOrDefault();
+			return data.GoogleSearchConsole;
+		}
 		#endregion
 
 		#region User
@@ -325,6 +343,26 @@ namespace Service.Implementations.User
 						 && !p.Id.Equals(userId)
 				         && department.Contains(p.Title))
 				.IncludeUser();
+			return data;
+		}
+
+		public IEnumerable<Core.Domain.User.User> GetUserCheckMail(string mail)
+		{
+			var data = _repository
+				.FilterAsQueryable<Core.Domain.User.User>(
+					p => !p.IsDeleted && p.Mail == mail)
+				.IncludeUser();
+			return data;
+		}
+
+		public IEnumerable<Core.Domain.User.User> GetUserCheckMail(string mail, int userId)
+		{
+			var data = _repository
+				.FilterAsQueryable<Core.Domain.User.User>(
+					p => !p.IsDeleted && p.Mail == mail && p.Id != userId
+				)
+				.IncludeUser();
+
 			return data;
 		}
 		#endregion

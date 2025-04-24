@@ -1,4 +1,5 @@
 ﻿using AdminPanel.Controllers.Google.SearchConsole;
+using AdminPanel.Models.Auth;
 using AdminPanel.Models.Meta.AdvertisingAccount;
 using AdminPanel.Models.Organization.Role;
 using AdminPanel.Models.Organization.User;
@@ -42,7 +43,19 @@ namespace AdminPanel.Controllers.Organization
 			_calendarService = new CalendarService();
 		}
 
-        [HttpGet("users")]
+		[HttpPost("check-mail-me")]
+		public async Task<IActionResult> CheckMailMe([FromBody] CheckMailRequest request)
+		{
+			var userCheck = _userService.GetUserCheckMail(request.Mail, request.UserId).ToList();
+			if (userCheck.Count != 0)
+			{
+				return Ok(0);
+			}
+
+			return Ok(1);
+		}
+
+		[HttpGet("users")]
         public ActionResult<IEnumerable<Users>> GetUsers()
         {
             var userId = UserId();

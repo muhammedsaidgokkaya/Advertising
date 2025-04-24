@@ -63,7 +63,6 @@ namespace Utilities.Helper
                             <div class='header'>Merhaba, {name}!</div>
                             <div class='content'>
                                 <p>Dijitals uygulamasına hoşgeldiniz!</p>
-                                <p><b>Kullanıcı Adınız:</b> {userName}</p>
                                 <p><b>Parolanız:</b> {password}</p>
                             </div>
                             <div class='footer'>
