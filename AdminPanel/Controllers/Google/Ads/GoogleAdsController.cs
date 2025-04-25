@@ -74,11 +74,12 @@ namespace AdminPanel.Controllers.Google.Ads
 				string query = $@"
 					SELECT
 						customer.id,
-						customer.descriptive_name
+						customer.descriptive_name,
+						customer.manager
 					FROM
 						customer
 					WHERE
-						customer.id = '{id}'
+						customer.manager = false AND customer.id = '{id}'
 				";
 
 				var searchRequest = new SearchGoogleAdsRequest()
@@ -90,10 +91,15 @@ namespace AdminPanel.Controllers.Google.Ads
 
 				foreach (var row in response)
 				{
+					var rawId = row.Customer.Id.ToString();
+					var formattedId = rawId.Length == 10
+						? $"{rawId.Substring(0, 3)}-{rawId.Substring(3, 3)}-{rawId.Substring(6, 4)}"
+						: rawId;
+
 					accountDetails.Add(new
 					{
-						CustomerId = row.Customer.Id,
-						CustomerName = row.Customer.DescriptiveName
+						Id = row.Customer.Id,
+						Name = string.IsNullOrEmpty(row.Customer.DescriptiveName) ? "Google Ads Hesabı (" + formattedId + ")" : row.Customer.DescriptiveName
 					});
 				}
 			}
@@ -175,7 +181,7 @@ namespace AdminPanel.Controllers.Google.Ads
 				summaryList.Add(new
 				{
 					AccountId = row.Customer.Id,
-					AccountName = row.Customer.DescriptiveName,
+					AccountName = string.IsNullOrEmpty(row.Customer.DescriptiveName) ? "Google Ads Hesabı" : row.Customer.DescriptiveName,
 					Currency = row.Customer.CurrencyCode,
 					TimeZone = row.Customer.TimeZone,
 					IsManagerAccount = row.Customer.Manager,

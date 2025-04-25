@@ -107,12 +107,12 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("advertising-accounts")]
-        public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccounts([FromQuery] string businessIds)
+        public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccounts()
         {
             var userId = UserId();
             var accessToken = _metaService.GetLongAccessToken(userId);
-
-            var businessIdList = businessIds.Split(',').ToList();
+			var business = _metaData.BusinessAdmin(accessToken.AccessToken);
+			var businessIdList = business.Data?.Select(b => b.Id).ToList() ?? new List<string>();
 
             var allAdvertisingAccounts = new List<AdvertisingAccount>();
 

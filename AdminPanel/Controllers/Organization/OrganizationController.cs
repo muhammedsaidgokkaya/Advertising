@@ -438,39 +438,98 @@ namespace AdminPanel.Controllers.Organization
             return BadRequest("Geçerli bir fotoğraf yüklenmedi.");
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPost("save-selections")]
-        public IActionResult SaveSelections([FromBody] AddAccountSetting payload)
+        [HttpPost("save-meta-selections")]
+        public IActionResult SaveMetaSelections([FromBody] SelectedAdvertisingAccounts payload)
         {
             var userId = UserId();
             var user = _userService.GetUserById(userId);
             var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var metaAccounts = payload.SelectedAdvertisingAccount.ToList();
+            var metaAccount = string.Join(",", metaAccounts.Select(account => $"{account.Id}/{account.Name}"));
 
-            var searchUrl = payload.SelectedSites.ToList();
-            var googleSearchConsole = string.Join(",", searchUrl.Select(site => site.SiteUrl));
+            if (metaAccount != "")
+            {
+                var updateOrganization = _userService.UpdateMetaAccountOrganization(organization.Id, metaAccount);
 
+                if (updateOrganization == 0)
+                {
+                    return Ok(new { success = false, message = "Meta ads hesabı seçtiğinize emin olun!" });
+                }
+
+                return Ok(new { success = true });
+            }
+            return Ok(new { success = false, message = "Meta ads hesabı seçtiğinize emin olun!" });
+        }
+
+        [HttpPost("save-analytics-selections")]
+        public IActionResult SaveAnalyticsSelections([FromBody] SelectedAnalyticss payload)
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
             var analyticsList = payload.SelectedAnalytics.ToList();
             var googleAnalytics = string.Join(",",
                 analyticsList.Select(account =>
                     $"{account.DisplayName}/{string.Join("/", account.PropertySummaries.Select(property => property.Property))}"
                 )
             );
-
-            var metaAccounts = payload.SelectedAdvertisingAccount.ToList();
-            var metaAccount = string.Join(",", metaAccounts.Select(account => $"{account.Id}/{account.Name}"));
-
-            if (googleSearchConsole != "" && googleAnalytics != "" && metaAccount != "")
+            if (googleAnalytics != "")
             {
-                var updateOrganization = _userService.UpdateAccountOrganization(organization.Id, googleSearchConsole, googleAnalytics, metaAccount);
+                var updateOrganization = _userService.UpdateAnalyticsAccountOrganization(organization.Id, googleAnalytics);
 
                 if (updateOrganization == 0)
                 {
-                    return Ok(new { success = false, message = "Tüm alanlarda seçim yaptığınızdan emin olun!" });
+                    return Ok(new { success = false, message = "Analytics hesabı seçtiğinize emin olun!" });
                 }
 
                 return Ok(new { success = true });
             }
-            return Ok(new { success = false, message = "Tüm alanlarda seçim yaptığınızdan emin olun!" });
+            return Ok(new { success = false, message = "Analytics hesabı seçtiğinize emin olun!" });
+        }
+
+        [HttpPost("save-search-console-selections")]
+        public IActionResult SaveSearchConsoleSelections([FromBody] SelectedSitess payload)
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var searchUrl = payload.SelectedSites.ToList();
+            var googleSearchConsole = string.Join(",", searchUrl.Select(site => site.SiteUrl));
+            if (googleSearchConsole != "")
+            {
+                var updateOrganization = _userService.UpdateSearchConsoleAccountOrganization(organization.Id, googleSearchConsole);
+
+                if (updateOrganization == 0)
+                {
+                    return Ok(new { success = false, message = "Search Console hesabı seçtiğinize emin olun!" });
+                }
+
+                return Ok(new { success = true });
+            }
+            return Ok(new { success = false, message = "Search Console hesabı seçtiğinize emin olun!" });
+        }
+
+        [HttpPost("save-ads-selections")]
+        public IActionResult SaveAdsSelections([FromBody] SelectedAdsAccounts payload)
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var adsAccounts = payload.SelectedAdsAccount.ToList();
+            var adsAccount = string.Join(",", adsAccounts.Select(account => $"{account.Name}/{account.Id}"));
+
+            if (adsAccount != "")
+            {
+                var updateOrganization = _userService.UpdateAdsAccountOrganization(organization.Id, adsAccount);
+
+                if (updateOrganization == 0)
+                {
+                    return Ok(new { success = false, message = "Google Ads hesabı seçtiğinize emin olun!" });
+                }
+
+                return Ok(new { success = true });
+            }
+            return Ok(new { success = false, message = "Google Ads hesabı seçtiğinize emin olun!" });
         }
 
         [Authorize(Roles = "Admin")]

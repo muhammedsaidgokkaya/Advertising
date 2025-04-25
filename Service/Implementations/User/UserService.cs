@@ -81,9 +81,65 @@ namespace Service.Implementations.User
                 return organization.Id;
             }
             return 0;
-        }
+		}
 
-        public int IsActiveOrganization(int id)
+		public int UpdateMetaAccountOrganization(int id, string metaAccount)
+		{
+			var organization = GetOrganizationById(id);
+			if (organization != null)
+			{
+				organization.MetaAccount = metaAccount;
+				organization.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(organization);
+				return organization.Id;
+			}
+			return 0;
+		}
+
+		public int UpdateAnalyticsAccountOrganization(int id, string googleAnalytics)
+		{
+			var organization = GetOrganizationById(id);
+			if (organization != null)
+			{
+				organization.GoogleAnalytics = googleAnalytics;
+				organization.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(organization);
+				return organization.Id;
+			}
+			return 0;
+		}
+
+		public int UpdateAdsAccountOrganization(int id, string googleAds)
+		{
+			var organization = GetOrganizationById(id);
+			if (organization != null)
+			{
+				organization.GoogleAccount = googleAds;
+				organization.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(organization);
+				return organization.Id;
+			}
+			return 0;
+		}
+
+		public int UpdateSearchConsoleAccountOrganization(int id, string googleSearchConsole)
+		{
+			var organization = GetOrganizationById(id);
+			if (organization != null)
+			{
+				organization.GoogleSearchConsole = googleSearchConsole;
+				organization.UpdateDate = DateTime.UtcNow;
+
+				_repository.Update(organization);
+				return organization.Id;
+			}
+			return 0;
+		}
+
+		public int IsActiveOrganization(int id)
         {
             var organization = GetOrganizationById(id);
             if (organization != null)

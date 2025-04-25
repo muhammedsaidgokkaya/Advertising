@@ -291,6 +291,7 @@ namespace AdminPanel.Controllers.Auth
 			var googleIsValid = true;
 			var adsIsValid = true;
 			var metaIsValid = true;
+			var accountDetail = true;
 
 			var user = _userService.GetUserById(userId);
 			var organization = _userService.GetOrganizationById(user.OrganizationId);
@@ -313,11 +314,17 @@ namespace AdminPanel.Controllers.Auth
 				adsIsValid = false;
 			}
 
-			var result = new
+            if (googleAds == null && meta == null && google == null)
+            {
+				accountDetail = false;
+			}
+
+            var result = new
 			{
 				google = googleIsValid,
 				google_ads = adsIsValid,
-				meta = metaIsValid
+				meta = metaIsValid,
+				account_detail = accountDetail,
 			};
 
 			return Ok(result);
