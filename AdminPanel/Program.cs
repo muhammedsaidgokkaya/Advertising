@@ -62,6 +62,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<MetaService>();
+builder.Services.AddScoped<Meta>();
 builder.Services.AddScoped<GoogleService>();
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<TaskService>();

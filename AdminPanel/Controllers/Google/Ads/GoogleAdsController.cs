@@ -232,74 +232,80 @@ namespace AdminPanel.Controllers.Google.Ads
 		public IActionResult GetAccountSummary()
 		{
 			var userId = UserId();
-			var control = _googleTokenControl.GetTokenAds(userId);
-			var app = _googleService.GetGoogleApp();
-
-			var config = new GoogleAdsConfig()
-			{
-				DeveloperToken = app.DeveloperToken,
-				OAuth2Mode = OAuth2Flow.APPLICATION,
-				OAuth2ClientId = app.AppId,
-				OAuth2ClientSecret = app.AppSecret,
-				OAuth2RefreshToken = control
-			};
-
-			GoogleAdsClient client = new GoogleAdsClient(config);
-
-			var service = client.GetService(Services.V18.GoogleAdsService);
-			var services = client.GetService(Services.V17.CustomerService);
-			string[] customers = services.ListAccessibleCustomers();
-
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
 			var totalClicks = 0;
 			var totalImpressions = 0;
 			var totalCost = 0.0;
+			var adsAccount = organization.GoogleAccount;
 
-			foreach (var customerRow in customers)
-			{
-				string customerId = customerRow.Split('/')[1];
-
-				string checkMccQuery = @"
-					SELECT customer.manager 
-					FROM customer";
-
-				var checkMccRequest = new SearchGoogleAdsRequest()
+            if (adsAccount != null)
+            {
+				var result = adsAccount
+				.Split(',')
+				.Select(accountInfo =>
 				{
-					CustomerId = customerId,
-					Query = checkMccQuery
+					var parts = accountInfo.Split('/');
+					return new
+					{
+						account = parts[0],
+						accountId = parts[1]
+					};
+				})
+				.ToList();
+				var accountIds = result.Select(r => r.accountId).ToList();
+				var control = _googleTokenControl.GetTokenAds(userId);
+				var app = _googleService.GetGoogleApp();
+
+				var config = new GoogleAdsConfig()
+				{
+					DeveloperToken = app.DeveloperToken,
+					OAuth2Mode = OAuth2Flow.APPLICATION,
+					OAuth2ClientId = app.AppId,
+					OAuth2ClientSecret = app.AppSecret,
+					OAuth2RefreshToken = control
 				};
 
-				var checkResponse = service.Search(checkMccRequest);
+				GoogleAdsClient client = new GoogleAdsClient(config);
 
-				bool isManager = checkResponse.FirstOrDefault()?.Customer?.Manager ?? false;
+				var service = client.GetService(Services.V18.GoogleAdsService);
 
-				if (isManager)
+				if (accountIds != null)
 				{
-					continue;
+					foreach (var customerId in accountIds)
+					{
+						string query = @"
+							SELECT
+								customer.id,
+								metrics.clicks,
+								metrics.impressions,
+								metrics.cost_micros
+							FROM customer
+							WHERE customer.id = " + customerId;
+
+						var request = new SearchGoogleAdsRequest()
+						{
+							CustomerId = customerId,
+							Query = query
+						};
+
+						var response = service.Search(request);
+
+						foreach (var row in response)
+						{
+							totalClicks += (int)(row.Metrics?.Clicks ?? 0);
+							totalImpressions += (int)(row.Metrics?.Impressions ?? 0);
+							totalCost += (row.Metrics?.CostMicros ?? 0) / 1_000_000.0;
+						}
+					}
 				}
 
-				string query = @"
-					SELECT
-						customer.id,
-						metrics.clicks,
-						metrics.impressions,
-						metrics.cost_micros
-					FROM customer
-					WHERE customer.id = " + customerId;
-
-				var request = new SearchGoogleAdsRequest()
+				return Ok(new
 				{
-					CustomerId = customerId,
-					Query = query
-				};
-
-				var response = service.Search(request);
-
-				foreach (var row in response)
-				{
-					totalClicks += (int)(row.Metrics?.Clicks ?? 0);
-					totalImpressions += (int)(row.Metrics?.Impressions ?? 0);
-					totalCost += (row.Metrics?.CostMicros ?? 0) / 1_000_000.0;
-				}
+					TotalClicks = totalClicks,
+					TotalImpressions = totalImpressions,
+					TotalCost = totalCost
+				});
 			}
 
 			return Ok(new

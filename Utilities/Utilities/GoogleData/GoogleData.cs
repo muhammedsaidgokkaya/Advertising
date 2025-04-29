@@ -151,9 +151,9 @@ namespace Utilities.Utilities.GoogleData
 			return result;
 		}
 
-		public SearchConsole SearchConsoleDashboardAdmin(string access_token)
+		public SearchConsole SearchConsoleDashboardAdmin(string access_token, List<string> accountIds)
 		{
-			var metrics = _searchConsole.GetAllSearchConsoleMetrics(access_token);
+			var metrics = _searchConsole.GetAllSearchConsoleMetrics(access_token, accountIds);
 
 			var result = new SearchConsole
 			{
@@ -193,11 +193,11 @@ namespace Utilities.Utilities.GoogleData
 			}
 		}
 
-		public async Task<int> Dashboards(string access_token)
+		public async Task<int> Dashboards(string access_token, List<string> accountIds)
 		{
 			try
 			{
-				var result = await _analyticsConsole.GetTotalActiveUsers(access_token);
+				var result = await _analyticsConsole.GetTotalActiveUsers(access_token, accountIds);
 				return result;
 			}
 			catch (Exception ex)

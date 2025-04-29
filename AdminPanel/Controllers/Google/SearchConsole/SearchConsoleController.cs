@@ -144,13 +144,29 @@ namespace AdminPanel.Controllers.Google.SearchConsole
 		public ActionResult<SearchConsoleDashboard> GetSearchConsoleDashboard()
 		{
 			var userId = UserId();
-			var accessTokenControl = _googleTokenControl.GetControl(userId);
-			var searchConsoleQuery = _googleData.SearchConsoleDashboardAdmin(accessTokenControl);
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+			var searchConsoleAccount = organization.GoogleSearchConsole;
+            if (searchConsoleAccount != null)
+            {
+				var result = searchConsoleAccount
+				.Split(',')
+				.Select(url => new { account = url.Trim(), accountId = url.Trim() })
+				.ToList();
+				var accountIds = result.Select(r => r.accountId).ToList();
+				var accessTokenControl = _googleTokenControl.GetControl(userId);
+				var searchConsoleQuery = _googleData.SearchConsoleDashboardAdmin(accessTokenControl, accountIds);
 
+				return Ok(new
+				{
+					TotalClicks = searchConsoleQuery.TotalClicks,
+					TotalImpressions = searchConsoleQuery.TotalImpressions,
+				});
+			}
 			return Ok(new
 			{
-				TotalClicks = searchConsoleQuery.TotalClicks,
-				TotalImpressions = searchConsoleQuery.TotalImpressions,
+				TotalClicks = 0,
+				TotalImpressions = 0,
 			});
 		}
 

@@ -124,16 +124,9 @@ namespace Utilities.Utilities.GoogleData.Analytics
 			return results;
 		}
 
-		public async Task<int> GetTotalActiveUsers(string accessToken)
+		public async Task<int> GetTotalActiveUsers(string accessToken, List<string> accountIds)
 		{
 			var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromAccessToken(accessToken);
-
-			var analyticsAdminService = new GoogleAnalyticsAdminService(
-				new BaseClientService.Initializer
-				{
-					HttpClientInitializer = credential,
-					ApplicationName = "Analytics Admin API Sample"
-				});
 
 			var analyticsDataService = new Google.Apis.AnalyticsData.v1beta.AnalyticsDataService(
 				new Google.Apis.Services.BaseClientService.Initializer
@@ -142,46 +135,41 @@ namespace Utilities.Utilities.GoogleData.Analytics
 					ApplicationName = "AnalyticsDataSample"
 				});
 
-			var adminRequest = analyticsAdminService.AccountSummaries.List();
-			var adminResponse = await adminRequest.ExecuteAsync();
-
-			var propertyIds = adminResponse.AccountSummaries?
-				.SelectMany(a => a.PropertySummaries ?? Enumerable.Empty<GoogleAnalyticsAdminV1betaPropertySummary>())
-				.Select(p => p.Property)
-				.ToList();
-
 			var totalActiveUsers = 0;
 			var startDate = "2015-08-14";
 			var endDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
-			foreach (var propertyId in propertyIds)
-			{
-				var requestBody = new RunReportRequest
+            if (accountIds != null)
+            {
+				foreach (var propertyId in accountIds)
 				{
-					Metrics = new List<Metric>
+					var requestBody = new RunReportRequest
 					{
-						new Metric { Name = "activeUsers" }
-					},
-					DateRanges = new List<DateRange>
-					{
-						new DateRange
+						Metrics = new List<Metric>
 						{
-							StartDate = startDate,
-							EndDate = endDate
+							new Metric { Name = "activeUsers" }
+						},
+						DateRanges = new List<DateRange>
+						{
+							new DateRange
+							{
+								StartDate = startDate,
+								EndDate = endDate
+							}
 						}
-					}
-				};
+					};
 
-				var analyticsRequest = analyticsDataService.Properties.RunReport(requestBody, $"{propertyId}");
-				var analyticsResponse = await analyticsRequest.ExecuteAsync();
+					var analyticsRequest = analyticsDataService.Properties.RunReport(requestBody, $"{propertyId}");
+					var analyticsResponse = await analyticsRequest.ExecuteAsync();
 
-				if (analyticsResponse.Rows != null)
-				{
-					foreach (var row in analyticsResponse.Rows)
+					if (analyticsResponse.Rows != null)
 					{
-						if (int.TryParse(row.MetricValues.ElementAtOrDefault(0)?.Value, out var activeUsers))
+						foreach (var row in analyticsResponse.Rows)
 						{
-							totalActiveUsers += activeUsers;
+							if (int.TryParse(row.MetricValues.ElementAtOrDefault(0)?.Value, out var activeUsers))
+							{
+								totalActiveUsers += activeUsers;
+							}
 						}
 					}
 				}

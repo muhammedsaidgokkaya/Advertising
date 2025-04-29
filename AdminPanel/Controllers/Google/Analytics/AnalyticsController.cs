@@ -121,9 +121,29 @@ namespace AdminPanel.Controllers.Google.Analytics
         public async Task<ActionResult<IEnumerable<DashboardResponse>>> GetDashboard()
         {
             var userId = UserId();
-            var accessTokenControl = _googleTokenControl.GetControl(userId);
-            var dashboard = await _googleData.Dashboards(accessTokenControl);
-            return Ok(dashboard);
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+			var analyticsAccount = organization.GoogleAnalytics;
+            if (analyticsAccount != null)
+            {
+				var result = analyticsAccount
+				.Split(',')
+				.Select(accountInfo =>
+				{
+					var parts = accountInfo.Split('/');
+					return new
+					{
+						account = parts[0],
+						accountId = parts[1] + "/" + parts[2]
+					};
+				})
+				.ToList();
+				var accountIds = result.Select(r => r.accountId).ToList();
+				var accessTokenControl = _googleTokenControl.GetControl(userId);
+				var dashboard = await _googleData.Dashboards(accessTokenControl, accountIds);
+				return Ok(dashboard);
+			}
+            return Ok(0);
         }
 
         [HttpGet("dashboards")]

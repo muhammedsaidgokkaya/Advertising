@@ -33,15 +33,17 @@ namespace AdminPanel.Controllers.Meta
         private readonly UserService _userService;
         private readonly MetaService _metaService;
         private readonly MetaData _metaData;
+        private readonly Utilities.Utilities.MetaData.Meta _meta;
         private readonly DefaultValues _defaultValues;
         private readonly PythonRun _pythonRun;
         private readonly IHttpClientFactory _httpClientFactory;
 
-        public MetaController(ILogger<MetaController> logger, MetaService metaService, MetaData metaData, IHttpClientFactory httpClientFactory)
+        public MetaController(ILogger<MetaController> logger, Utilities.Utilities.MetaData.Meta meta, MetaService metaService, MetaData metaData, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _userService = new UserService();
             _metaService = metaService;
+            _meta = meta;
             _metaData = metaData;
             _defaultValues = new DefaultValues();
             _pythonRun = new PythonRun(); 
@@ -452,40 +454,99 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("dashboards")]
-        public ActionResult<DashboardMeta> GetDashboards()
+		public async Task<ActionResult<DashboardMeta>> GetDashboards()
         {
             var userId = UserId();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var charts = _metaData.GetMetaTotalSummary(accessToken.AccessToken);
-            var data = new DashboardMeta
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+
+			var metaAccount = organization.MetaAccount;
+
+			if (metaAccount != null)
 			{
-				Spend = charts.TotalMeta.Spend,
-				Impressions = charts.TotalMeta.Impressions,
-				Clicks = charts.TotalMeta.Clicks,
-			};
-			return Ok(data);
-        }
-
-        [HttpGet("top-ads")]
-        public ActionResult<TopAds> GetTopAds()
-        {
-            var userId = UserId();
-            var accessToken = _metaService.GetLongAccessToken(userId);
-			var topAds = _metaData.TopAdsAdmin(accessToken.AccessToken);
-
-			var data = topAds
-				.Select((a, index) => new TopAds
+				var accounts = metaAccount.Split(',')
+				.Select(account =>
 				{
-					Id = index + 1,
-					Name = a.Name,
-					Url = a.Url
+					var parts = account.Split('/');
+					return new
+					{
+						AccountId = parts[0].Trim(),
+						Account = parts.Length > 1 ? parts[1].Trim() : string.Empty
+					};
 				})
 				.ToList();
 
-			return Ok(data);
+				var accountIds = accounts.Select(r => r.AccountId).ToList();
+
+				var charts = await _meta.GetCombinedMetricsAsync(accessToken.AccessToken, accountIds);
+				var data = new DashboardMeta
+				{
+					Spend = charts.Spend,
+					Impressions = charts.Impressions,
+					Clicks = charts.Clicks
+				};
+
+				return Ok(data);
+			}
+
+			return Ok(new
+			{
+				Spend = 0,
+				Impressions = 0,
+				Clicks = 0
+			});
+        }
+
+		[HttpGet("top-ads")]
+		public async Task<ActionResult<List<TopAds>>> GetTopAds()
+		{
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+
+			var metaAccount = organization.MetaAccount;
+
+			if (metaAccount != null)
+            {
+				var accounts = metaAccount.Split(',')
+				.Select(account =>
+				{
+					var parts = account.Split('/');
+					return new
+					{
+						AccountId = parts[0].Trim(),
+						Account = parts.Length > 1 ? parts[1].Trim() : string.Empty
+					};
+				})
+				.ToList();
+
+				var accountIds = accounts.Select(r => r.AccountId).ToList();
+				var accessToken = _metaService.GetLongAccessToken(userId);
+
+				var topAds = await _meta.GetAllAdsAsync(accessToken.AccessToken, accountIds);
+
+				var data = topAds
+					.Select((a, index) => new TopAds
+					{
+						Id = index + 1,
+						Name = a.Name,
+						Url = a.ImageUrl
+					})
+					.ToList();
+
+				return Ok(data);
+			}
+
+			return Ok(new
+			{
+				Id = 1,
+				Name = "Henüz reklam bulunamadı",
+				Url = ""
+			});
 		}
 
-        [HttpGet("audiences")]
+		[HttpGet("audiences")]
         public async Task<ActionResult<ApiResponse>> GetAudiences(string accountId)
         {
             var userId = UserId();
