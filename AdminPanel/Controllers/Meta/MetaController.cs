@@ -109,30 +109,55 @@ namespace AdminPanel.Controllers.Meta
         [HttpGet("advertising-accounts")]
         public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccounts()
         {
-            var userId = UserId();
-            var accessToken = _metaService.GetLongAccessToken(userId);
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+			var metaAccount = organization.MetaAccount ?? string.Empty;
+			var accounts = metaAccount.Split(',', StringSplitOptions.RemoveEmptyEntries)
+				.Select(account =>
+				{
+					var parts = account.Split('/');
+					return new
+					{
+						AccountId = parts[0].Trim(),
+						Account = parts.Length > 1 ? parts[1].Trim() : string.Empty
+					};
+				})
+				.ToList();
+
+			var accessToken = _metaService.GetLongAccessToken(userId);
 			var business = _metaData.BusinessAdmin(accessToken.AccessToken);
 			var businessIdList = business.Data?.Select(b => b.Id).ToList() ?? new List<string>();
 
-            var allAdvertisingAccounts = new List<AdvertisingAccount>();
+			var allAdvertisingAccounts = new List<AdvertisingAccount>();
 
-            foreach (var businessId in businessIdList)
-            {
-                var advertisingAccount = _metaData.AdvertisingAccountsAdmin(accessToken.AccessToken, businessId);
-                allAdvertisingAccounts.AddRange(advertisingAccount.Data?.Select(q => new AdvertisingAccount
-                {
-                    Id = q.Id,
-                    Name = q.Name
-                }).ToList() ?? new List<AdvertisingAccount>());
-            }
+			foreach (var businessId in businessIdList)
+			{
+				var advertisingAccount = _metaData.AdvertisingAccountsAdmin(accessToken.AccessToken, businessId);
+				allAdvertisingAccounts.AddRange(advertisingAccount.Data?.Select(q => new AdvertisingAccount
+				{
+					Id = q.Id,
+					Name = q.Name
+				}).ToList() ?? new List<AdvertisingAccount>());
+			}
 
-            var data = new AdvertisingAccountsResponse
-            {
-                Data = allAdvertisingAccounts
-            };
+			var accountIds = accounts.Select(a => a.AccountId).ToHashSet();
+			var availableAccounts = allAdvertisingAccounts
+				.Where(a => !accountIds.Contains(a.Id))
+				.ToList();
 
-            return Ok(new List<AdvertisingAccountsResponse> { data });
-        }
+			var selectedAccounts = allAdvertisingAccounts
+				.Where(a => accountIds.Contains(a.Id))
+				.ToList();
+
+			var response = new
+			{
+				Available = availableAccounts,
+				Selected = selectedAccounts
+			};
+
+			return Ok(response);
+		}
 
         [HttpGet("ads")]
         public ActionResult<IEnumerable<Ad>> GetAds(string accountId, DateTime? startDate = null, DateTime? endDate = null)

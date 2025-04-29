@@ -47,6 +47,21 @@ namespace AdminPanel.Controllers.Google.Ads
 		public IActionResult GetAccount()
 		{
 			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+			var adsAccount = organization.GoogleAccount ?? string.Empty;
+			var accounts = adsAccount.Split(',', StringSplitOptions.RemoveEmptyEntries)
+				.Select(account =>
+				{
+					var parts = account.Split('/');
+					return new
+					{
+						account = parts[0],
+						accountId = long.Parse(parts[1])
+					};
+				})
+				.ToList();
+
 			var control = _googleTokenControl.GetTokenAds(userId);
 			var app = _googleService.GetGoogleApp();
 
@@ -64,7 +79,7 @@ namespace AdminPanel.Controllers.Google.Ads
 			var service = client.GetService(Services.V17.CustomerService);
 			string[] customers = service.ListAccessibleCustomers();
 
-			var accountDetails = new List<object>();
+			var accountDetails = new List<GoogleAccountDto>();
 
 			foreach (var customerId in customers)
 			{
@@ -96,7 +111,7 @@ namespace AdminPanel.Controllers.Google.Ads
 						? $"{rawId.Substring(0, 3)}-{rawId.Substring(3, 3)}-{rawId.Substring(6, 4)}"
 						: rawId;
 
-					accountDetails.Add(new
+					accountDetails.Add(new GoogleAccountDto
 					{
 						Id = row.Customer.Id,
 						Name = string.IsNullOrEmpty(row.Customer.DescriptiveName) ? "Google Ads Hesabı (" + formattedId + ")" : row.Customer.DescriptiveName
@@ -104,7 +119,22 @@ namespace AdminPanel.Controllers.Google.Ads
 				}
 			}
 
-			return Ok(accountDetails);
+			var accountIds = accounts.Select(a => a.accountId).ToHashSet();
+			var availableAccounts = accountDetails
+				.Where(a => !accountIds.Contains(a.Id))
+				.ToList();
+
+			var selectedAccounts = accountDetails
+				.Where(a => accountIds.Contains(a.Id))
+				.ToList();
+
+			var responses = new
+			{
+				Available = availableAccounts,
+				Selected = selectedAccounts
+			};
+
+			return Ok(responses);
 		}
 
 		[HttpGet("ads-account")]
@@ -604,5 +634,11 @@ namespace AdminPanel.Controllers.Google.Ads
             int userId = int.Parse(userIdClaim.Value);
             return userId;
         }
-    }
+
+		public class GoogleAccountDto
+		{
+			public long Id { get; set; }
+			public string Name { get; set; }
+		}
+	}
 }

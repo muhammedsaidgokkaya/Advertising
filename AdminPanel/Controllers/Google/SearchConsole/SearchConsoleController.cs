@@ -40,7 +40,15 @@ namespace AdminPanel.Controllers.Google.SearchConsole
         public async Task<ActionResult<IEnumerable<SiteResponse>>> GetSites()
         {
             var userId = UserId();
-            var accessTokenControl = _googleTokenControl.GetControl(userId);
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+			var searchConsoleAccount = organization.GoogleSearchConsole ?? string.Empty;
+			var result = searchConsoleAccount
+				.Split(',', StringSplitOptions.RemoveEmptyEntries)
+				.Select(url => new { account = url.Trim(), accountId = url.Trim() })
+				.ToList();
+
+			var accessTokenControl = _googleTokenControl.GetControl(userId);
             var sites = await _googleData.GetSiteDataAsync(accessTokenControl);
 
             var data = new SiteResponse
@@ -52,7 +60,22 @@ namespace AdminPanel.Controllers.Google.SearchConsole
                 }).ToList() ?? new List<Sites>()
             };
 
-            return Ok(new List<SiteResponse> { data });
+			var accountIds = result.Select(a => a.accountId).ToHashSet();
+			var availableAccounts = data.SiteEntry
+				.Where(a => !accountIds.Contains(a.SiteUrl))
+				.ToList();
+
+			var selectedAccounts = data.SiteEntry
+				.Where(a => accountIds.Contains(a.SiteUrl))
+				.ToList();
+
+			var responses = new
+			{
+				Available = availableAccounts,
+				Selected = selectedAccounts
+			};
+
+			return Ok(responses);
         }
 
         [HttpGet("search-console-account")]

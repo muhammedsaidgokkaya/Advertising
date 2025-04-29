@@ -147,17 +147,91 @@ namespace AdminPanel.Controllers.Organization
         [HttpGet("account-count")]
         public ActionResult<AccountCount> GetOrganizationAccountCount()
         {
-            var userId = UserId();
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetOrganizationById(user.OrganizationId);
+			var userId = UserId();
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var metaCount = organization.AccountCount;
+            var adsCount = organization.AccountCount;
+            var searchCount = organization.AccountCount;
+            var analyticsCount = organization.AccountCount;
 
-            var data = new AccountCount
+			var metaAccount = organization.MetaAccount;
+            if (metaAccount != null)
             {
-                AccountCounts = organization.AccountCount
-            };
+				var accounts = metaAccount?.Split(',')
+				.Select(account =>
+				{
+					var parts = account.Split('/');
+					return new
+					{
+						AccountId = parts[0].Trim(),
+						Account = parts.Length > 1 ? parts[1].Trim() : string.Empty
+					};
+				})
+				.ToList();
 
-            return Ok(data);
-        }
+				metaCount = organization.AccountCount - accounts.Count;
+			}
+
+            var adsAccount = organization.GoogleAccount;
+            if (adsAccount != null)
+            {
+				var result = adsAccount
+			       .Split(',')
+			       .Select(accountInfo =>
+			       {
+				       var parts = accountInfo.Split('/');
+				       return new
+				       {
+					       account = parts[0],
+					       accountId = parts[1]
+				       };
+			       })
+			       .ToList();
+
+                adsCount = organization.AccountCount - result.Count;
+			}
+
+            var searchAccount = organization.GoogleSearchConsole;
+            if (searchAccount != null) 
+            {
+				var result = searchAccount
+				.Split(',')
+				.Select(url => new { account = url.Trim(), accountId = url.Trim() })
+				.ToList();
+
+                searchCount = organization.AccountCount - result.Count;
+			}
+
+			var analyticsAccount = organization.GoogleAnalytics;
+            if (analyticsAccount != null)
+            {
+				var result = analyticsAccount
+				    .Split(',')
+				    .Select(accountInfo =>
+				    {
+					    var parts = accountInfo.Split('/');
+					    return new
+					    {
+						    account = parts[0],
+						    accountId = parts[2]
+					    };
+				    })
+				    .ToList();
+
+                analyticsCount = organization.AccountCount - result.Count;
+			}
+			
+			var data = new AccountCount
+			{
+				MetaCount = metaCount,
+                AdsCount = adsCount,
+                SearchCount = searchCount,
+                AnalyticsCount = analyticsCount,
+			};
+
+			return Ok(data);
+		}
 
         [HttpGet("drawer")]
         public ActionResult<Drawer> GetDrawer()
@@ -447,6 +521,19 @@ namespace AdminPanel.Controllers.Organization
             var metaAccounts = payload.SelectedAdvertisingAccount.ToList();
             var metaAccount = string.Join(",", metaAccounts.Select(account => $"{account.Id}/{account.Name}"));
 
+            if (organization.MetaAccount != null)
+            {
+                var metas = organization.MetaAccount + "," + metaAccount;
+				var updateOrganization = _userService.UpdateMetaAccountOrganization(organization.Id, metas);
+
+				if (updateOrganization == 0)
+				{
+					return Ok(new { success = false, message = "Meta ads hesabı seçtiğinize emin olun!" });
+				}
+
+				return Ok(new { success = true });
+			}
+
             if (metaAccount != "")
             {
                 var updateOrganization = _userService.UpdateMetaAccountOrganization(organization.Id, metaAccount);
@@ -473,7 +560,21 @@ namespace AdminPanel.Controllers.Organization
                     $"{account.DisplayName}/{string.Join("/", account.PropertySummaries.Select(property => property.Property))}"
                 )
             );
-            if (googleAnalytics != "")
+
+			if (organization.GoogleAnalytics != null)
+			{
+				var metas = organization.GoogleAnalytics + "," + googleAnalytics;
+				var updateOrganization = _userService.UpdateAnalyticsAccountOrganization(organization.Id, metas);
+
+				if (updateOrganization == 0)
+				{
+					return Ok(new { success = false, message = "Analytics hesabı seçtiğinize emin olun!" });
+				}
+
+				return Ok(new { success = true });
+			}
+
+			if (googleAnalytics != "")
             {
                 var updateOrganization = _userService.UpdateAnalyticsAccountOrganization(organization.Id, googleAnalytics);
 
@@ -495,7 +596,21 @@ namespace AdminPanel.Controllers.Organization
             var organization = _userService.GetOrganizationById(user.OrganizationId);
             var searchUrl = payload.SelectedSites.ToList();
             var googleSearchConsole = string.Join(",", searchUrl.Select(site => site.SiteUrl));
-            if (googleSearchConsole != "")
+
+			if (organization.GoogleSearchConsole != null)
+			{
+				var metas = organization.GoogleSearchConsole + "," + googleSearchConsole;
+				var updateOrganization = _userService.UpdateSearchConsoleAccountOrganization(organization.Id, metas);
+
+				if (updateOrganization == 0)
+				{
+					return Ok(new { success = false, message = "Search Console hesabı seçtiğinize emin olun!" });
+				}
+
+				return Ok(new { success = true });
+			}
+
+			if (googleSearchConsole != "")
             {
                 var updateOrganization = _userService.UpdateSearchConsoleAccountOrganization(organization.Id, googleSearchConsole);
 
@@ -518,7 +633,20 @@ namespace AdminPanel.Controllers.Organization
             var adsAccounts = payload.SelectedAdsAccount.ToList();
             var adsAccount = string.Join(",", adsAccounts.Select(account => $"{account.Name}/{account.Id}"));
 
-            if (adsAccount != "")
+			if (organization.GoogleAccount != null)
+			{
+				var metas = organization.GoogleAccount + "," + adsAccount;
+				var updateOrganization = _userService.UpdateAdsAccountOrganization(organization.Id, metas);
+
+				if (updateOrganization == 0)
+				{
+					return Ok(new { success = false, message = "Google Ads hesabı seçtiğinize emin olun!" });
+				}
+
+				return Ok(new { success = true });
+			}
+
+			if (adsAccount != "")
             {
                 var updateOrganization = _userService.UpdateAdsAccountOrganization(organization.Id, adsAccount);
 

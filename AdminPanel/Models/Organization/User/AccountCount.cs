@@ -2,6 +2,9 @@
 {
     public class AccountCount
     {
-        public int AccountCounts { get; set; }
+        public int MetaCount { get; set; }
+        public int AdsCount { get; set; }
+        public int SearchCount { get; set; }
+        public int AnalyticsCount { get; set; }
     }
 }

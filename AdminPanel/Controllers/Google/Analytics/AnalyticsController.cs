@@ -38,7 +38,23 @@ namespace AdminPanel.Controllers.Google.Analytics
         public ActionResult<IEnumerable<AccountSummaryResponse>> GetAccountSummary()
         {
             var userId = UserId();
-            var accessTokenControl = _googleTokenControl.GetControl(userId);
+			var user = _userService.GetUserById(userId);
+			var organization = _userService.GetOrganizationById(user.OrganizationId);
+			var analyticsAccount = organization.GoogleAnalytics ?? string.Empty;
+			var result = analyticsAccount
+				.Split(',', StringSplitOptions.RemoveEmptyEntries)
+				.Select(accountInfo =>
+				{
+					var parts = accountInfo.Split('/');
+					return new
+                    {
+                        account = parts[0],
+                        accountId = parts[1] + "/" + parts[2]
+					};
+				})
+				.ToList();
+
+			var accessTokenControl = _googleTokenControl.GetControl(userId);
             var accountSummary = _googleData.AccountSummaryAdmin(accessTokenControl);
 
             var data = new AccountSummaryResponse
@@ -58,8 +74,25 @@ namespace AdminPanel.Controllers.Google.Analytics
                 }).ToList() ?? new List<AccountSummary>()
             };
 
-            return Ok(new List<AccountSummaryResponse> { data });
-        }
+			var accountIds = result.Select(a => a.accountId).ToHashSet();
+			var availableAccounts = data.AccountSummaries
+				.Where(a => !a.PropertySummaries
+		        .Any(p => accountIds.Contains(p.Property)))
+	            .ToList();
+
+			var selectedAccounts = data.AccountSummaries
+				.Where(a => a.PropertySummaries
+				.Any(p => accountIds.Contains(p.Property)))
+				.ToList();
+
+			var responses = new
+			{
+				Available = availableAccounts,
+				Selected = selectedAccounts
+			};
+
+			return Ok(responses);
+		}
 
         [HttpGet("analytics-account")]
         public ActionResult<IEnumerable<object>> GetOrganizationAnalyticsAccount()
