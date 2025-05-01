@@ -514,16 +514,16 @@ namespace AdminPanel.Controllers.Task
 			var user = _userService.GetUserById(userId);
 			var tasks = await _taskService.GetTasks(user.OrganizationId);
 
-			var taskList = tasks.Select(task =>
-			{
-				return new Models.Task.Task.Tasks
+			var taskList = tasks
+				.OrderByDescending(task => task.InsertedDate)
+				.Take(10)
+				.Select(task => new Models.Task.Task.Tasks
 				{
 					Id = task.Id,
 					Name = task.TaskName,
 					Team = task.TaskUser.Count,
-				};
-			})
-			.ToList();
+				})
+				.ToList();
 
 			return Ok(taskList);
 		}
