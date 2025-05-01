@@ -45,38 +45,6 @@ namespace Utilities.Utilities.MetaData
             }
         }
 
-        public BusinessResponse BusinessAdmin(string access_token)
-        {
-            string pythonScriptPath = GetPythonScriptPath("Meta/Business/businessAdmin.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
-
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<BusinessResponse>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
-
-        public AdvertisingAccountsResponse AdvertisingAccountsAdmin(string access_token, string business_id)
-        {
-            string pythonScriptPath = GetPythonScriptPath("Meta/Business/advertisingAccountsAdmin.py");
-            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, business_id);
-
-            try
-            {
-                var tokenResponse = JsonConvert.DeserializeObject<AdvertisingAccountsResponse>(jsonOutput.ToString());
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Hata.");
-            }
-        }
-
         public CampaignResponse CampaignsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
         {
             string pythonScriptPath = GetPythonScriptPath("Meta/AdvertisingManager/campaigns.py");
@@ -216,37 +184,6 @@ namespace Utilities.Utilities.MetaData
                 throw new Exception("Hata.", ex);
             }
         }
-
-		public MetaSummaryResponse GetMetaTotalSummary(string accessToken)
-		{
-			string pythonScriptPath = GetPythonScriptPath("Meta/Charts/total.py");
-			var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, accessToken);
-
-			try
-			{
-				var result = JsonConvert.DeserializeObject<MetaSummaryResponse>(jsonOutput?.ToString() ?? string.Empty);
-				return result;
-			}
-			catch (Exception ex)
-			{
-				throw new Exception("Meta toplam verisi deserialize edilirken hata oluştu: " + ex.Message);
-			}
-		}
-
-		public List<TopAds> TopAdsAdmin(string access_token)
-		{
-			string pythonScriptPath = GetPythonScriptPath("Meta/AdvertisingManager/topAds.py");
-			var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token);
-
-			try
-			{
-				return JsonConvert.DeserializeObject<List<TopAds>>(jsonOutput?.ToString() ?? string.Empty);
-			}
-			catch (Exception ex)
-			{
-				throw new Exception("Hata.", ex);
-			}
-		}
 		#endregion
 
 		#region Class

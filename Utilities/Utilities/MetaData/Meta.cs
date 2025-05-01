@@ -1,4 +1,5 @@
-﻿using NPOI.XSSF.Model;
+﻿using Newtonsoft.Json;
+using NPOI.XSSF.Model;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -7,6 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static Utilities.Utilities.MetaData.MetaData;
 
 namespace Utilities.Utilities.MetaData
 {
@@ -17,6 +19,62 @@ namespace Utilities.Utilities.MetaData
 		public Meta(HttpClient httpClient)
 		{
 			_httpClient = httpClient;
+		}
+
+		public async Task<BusinessResponse> GetFacebookBusinesses(string accessToken)
+		{
+			string apiVersion = "v21.0";
+			string url = $"https://graph.facebook.com/{apiVersion}/me/businesses?access_token={accessToken}";
+
+			using var client = new HttpClient();
+			try
+			{
+				var response = await client.GetAsync(url);
+				var content = await response.Content.ReadAsStringAsync();
+
+				if (response.IsSuccessStatusCode)
+				{
+					return JsonConvert.DeserializeObject<BusinessResponse>(content);
+				}
+				else
+				{
+					Console.WriteLine($"API Hatası: {content}");
+					return null;
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"İstek hatası: {ex.Message}");
+				return null;
+			}
+		}
+
+		public async Task<AdvertisingAccountsResponse> GetFacebookAdAccounts(string accessToken, string businessId)
+		{
+			string apiVersion = "v21.0";
+			string url = $"https://graph.facebook.com/{apiVersion}/{businessId}/owned_ad_accounts?fields=id,name&access_token={accessToken}";
+
+			using var client = new HttpClient();
+			try
+			{
+				var response = await client.GetAsync(url);
+				var content = await response.Content.ReadAsStringAsync();
+
+				if (response.IsSuccessStatusCode)
+				{
+					return JsonConvert.DeserializeObject<AdvertisingAccountsResponse>(content);
+				}
+				else
+				{
+					Console.WriteLine($"API Hatası: {content}");
+					return null;
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"İstek hatası: {ex.Message}");
+				return null;
+			}
 		}
 
 		public async Task<List<AdInfo>> GetAllAdsAsync(string accessToken, List<string> adAccounts)
@@ -58,7 +116,7 @@ namespace Utilities.Utilities.MetaData
 			var url = $"https://graph.facebook.com/v21.0/{adAccountId}/ads?access_token={accessToken}&fields=id,name,creative{{image_url}}&limit=3";
 			var response = await _httpClient.GetAsync(url);
 			var content = await response.Content.ReadAsStringAsync();
-			var json = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(content);
+			var json = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, JsonElement>>(content);
 
 			return json;
 		}

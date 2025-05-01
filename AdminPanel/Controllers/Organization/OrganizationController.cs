@@ -228,6 +228,7 @@ namespace AdminPanel.Controllers.Organization
                 AdsCount = adsCount,
                 SearchCount = searchCount,
                 AnalyticsCount = analyticsCount,
+                TotalCount = organization.AccountCount,
 			};
 
 			return Ok(data);
@@ -518,7 +519,11 @@ namespace AdminPanel.Controllers.Organization
             var userId = UserId();
             var user = _userService.GetUserById(userId);
             var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var metaAccounts = payload.SelectedAdvertisingAccount.ToList();
+			if (payload.SelectedAdvertisingAccount.Count == 0)
+			{
+				return Ok(new { success = false, message = "Meta ads hesabı seçtiğinize emin olun!" });
+			}
+			var metaAccounts = payload.SelectedAdvertisingAccount.ToList();
             var metaAccount = string.Join(",", metaAccounts.Select(account => $"{account.Id}/{account.Name}"));
 
             if (organization.MetaAccount != null)
@@ -554,7 +559,11 @@ namespace AdminPanel.Controllers.Organization
             var userId = UserId();
             var user = _userService.GetUserById(userId);
             var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var analyticsList = payload.SelectedAnalytics.ToList();
+			if (payload.SelectedAnalytics.Count == 0)
+			{
+				return Ok(new { success = false, message = "Analytics hesabı seçtiğinize emin olun!" });
+			}
+			var analyticsList = payload.SelectedAnalytics.ToList();
             var googleAnalytics = string.Join(",",
                 analyticsList.Select(account =>
                     $"{account.DisplayName}/{string.Join("/", account.PropertySummaries.Select(property => property.Property))}"
@@ -594,6 +603,10 @@ namespace AdminPanel.Controllers.Organization
             var userId = UserId();
             var user = _userService.GetUserById(userId);
             var organization = _userService.GetOrganizationById(user.OrganizationId);
+            if (payload.SelectedSites.Count == 0)
+            {
+				return Ok(new { success = false, message = "Search Console hesabı seçtiğinize emin olun!" });
+			}
             var searchUrl = payload.SelectedSites.ToList();
             var googleSearchConsole = string.Join(",", searchUrl.Select(site => site.SiteUrl));
 
@@ -630,7 +643,11 @@ namespace AdminPanel.Controllers.Organization
             var userId = UserId();
             var user = _userService.GetUserById(userId);
             var organization = _userService.GetOrganizationById(user.OrganizationId);
-            var adsAccounts = payload.SelectedAdsAccount.ToList();
+			if (payload.SelectedAdsAccount.Count == 0)
+			{
+				return Ok(new { success = false, message = "Google Ads hesabı seçtiğinize emin olun!" });
+			}
+			var adsAccounts = payload.SelectedAdsAccount.ToList();
             var adsAccount = string.Join(",", adsAccounts.Select(account => $"{account.Name}/{account.Id}"));
 
 			if (organization.GoogleAccount != null)

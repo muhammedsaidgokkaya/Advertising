@@ -6,5 +6,6 @@
         public int AdsCount { get; set; }
         public int SearchCount { get; set; }
         public int AnalyticsCount { get; set; }
+        public int TotalCount { get; set; }
     }
 }

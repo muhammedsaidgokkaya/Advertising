@@ -8,7 +8,6 @@ using AdminPanel.Models.Meta.Charts;
 using AdminPanel.Models.Meta.Insight;
 using AdminPanel.Models.Meta.Report;
 using AdminPanel.Models.Organization.User;
-using AdminPanel.Models.Task.Task;
 using Core.Domain.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -51,12 +50,12 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("business")]
-        public ActionResult<IEnumerable<BusinessResponse>> GetBusiness()
+        public async Task<ActionResult<IEnumerable<BusinessResponse>>> GetBusiness()
         {
             var userId = UserId();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var business = _metaData.BusinessAdmin(accessToken.AccessToken);
-            var data = new BusinessResponse
+            var business = await _meta.GetFacebookBusinesses(accessToken.AccessToken);
+			var data = new BusinessResponse
             {
                 Data = business.Data?.Select(q => new Business
                 {
@@ -69,11 +68,11 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("advertising-account")]
-        public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccount(string businessId)
+        public async Task<ActionResult<IEnumerable<AdvertisingAccountsResponse>>> GetAdvertisingAccount(string businessId)
         {
             var userId = UserId();
             var accessToken = _metaService.GetLongAccessToken(userId);
-            var advertisingAccount = _metaData.AdvertisingAccountsAdmin(accessToken.AccessToken, businessId);
+            var advertisingAccount = await _meta.GetFacebookAdAccounts(accessToken.AccessToken, businessId);
             var data = new AdvertisingAccountsResponse
             {
                 Data = advertisingAccount.Data?.Select(q => new AdvertisingAccount
@@ -109,7 +108,7 @@ namespace AdminPanel.Controllers.Meta
         }
 
         [HttpGet("advertising-accounts")]
-        public ActionResult<IEnumerable<AdvertisingAccountsResponse>> GetAdvertisingAccounts()
+		public async Task<ActionResult<IEnumerable<AdvertisingAccountsResponse>>> GetAdvertisingAccounts()
         {
 			var userId = UserId();
 			var user = _userService.GetUserById(userId);
@@ -128,20 +127,19 @@ namespace AdminPanel.Controllers.Meta
 				.ToList();
 
 			var accessToken = _metaService.GetLongAccessToken(userId);
-			var business = _metaData.BusinessAdmin(accessToken.AccessToken);
+			var business = await _meta.GetFacebookBusinesses(accessToken.AccessToken);
 			var businessIdList = business.Data?.Select(b => b.Id).ToList() ?? new List<string>();
 
-			var allAdvertisingAccounts = new List<AdvertisingAccount>();
+			var tasks = businessIdList.Select(businessId => _meta.GetFacebookAdAccounts(accessToken.AccessToken, businessId));
+			var advertisingAccountsList = await System.Threading.Tasks.Task.WhenAll(tasks);
 
-			foreach (var businessId in businessIdList)
-			{
-				var advertisingAccount = _metaData.AdvertisingAccountsAdmin(accessToken.AccessToken, businessId);
-				allAdvertisingAccounts.AddRange(advertisingAccount.Data?.Select(q => new AdvertisingAccount
+			var allAdvertisingAccounts = advertisingAccountsList
+				.SelectMany(advertisingAccount => advertisingAccount.Data?.Select(q => new AdvertisingAccount
 				{
 					Id = q.Id,
 					Name = q.Name
-				}).ToList() ?? new List<AdvertisingAccount>());
-			}
+				}).ToList() ?? new List<AdvertisingAccount>())
+				.ToList();
 
 			var accountIds = accounts.Select(a => a.AccountId).ToHashSet();
 			var availableAccounts = allAdvertisingAccounts
