@@ -85,40 +85,29 @@ namespace Utilities.Utilities.MetaData
 			{
 				var ads = await GetAdsFromAccountAsync(accessToken, account);
 
-				if (ads.ContainsKey("error"))
+				foreach (var ad in ads.Data)
 				{
-					allAds.Add(new AdInfo { Error = ads["error"].ToString() });
-				}
-				else
-				{
-					foreach (var ad in ads["data"].EnumerateArray())
-					{
-						var name = ad.GetProperty("name").GetString();
-						var imageUrl = ad.TryGetProperty("creative", out var creative) &&
-									   creative.TryGetProperty("image_url", out var image)
-									   ? image.GetString()
-									   : null;
+					var name = ad.Name;
+					var imageUrl = ad.Creative?.ImageUrl;
 
-						allAds.Add(new AdInfo
-						{
-							Name = name,
-							ImageUrl = imageUrl
-						});
-					}
+					allAds.Add(new AdInfo
+					{
+						Name = name,
+						ImageUrl = imageUrl
+					});
 				}
 			}
-
 			return allAds;
 		}
 
-		private async Task<Dictionary<string, JsonElement>> GetAdsFromAccountAsync(string accessToken, string adAccountId)
+		public async Task<AdData> GetAdsFromAccountAsync(string accessToken, string adAccountId)
 		{
 			var url = $"https://graph.facebook.com/v21.0/{adAccountId}/ads?access_token={accessToken}&fields=id,name,creative{{image_url}}&limit=3";
 			var response = await _httpClient.GetAsync(url);
 			var content = await response.Content.ReadAsStringAsync();
-			var json = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, JsonElement>>(content);
+			var jsons = Newtonsoft.Json.JsonConvert.DeserializeObject<AdData>(content);
 
-			return json;
+			return jsons;
 		}
 
 		public async Task<Dictionary<string, object>> FetchMetricAsync(string accessToken, string adAccountId, string metric)
@@ -219,5 +208,50 @@ namespace Utilities.Utilities.MetaData
 		public double Spend { get; set; }
 		public double Impressions { get; set; }
 		public double Clicks { get; set; }
+	}
+
+	public class AdData
+	{
+		[JsonProperty("data")]
+		public List<AdRes> Data { get; set; }
+
+		[JsonProperty("paging")]
+		public Paging Paging { get; set; }
+	}
+
+	public class AdRes
+	{
+		[JsonProperty("id")]
+		public string Id { get; set; }
+
+		[JsonProperty("name")]
+		public string Name { get; set; }
+
+		[JsonProperty("creative")]
+		public Creative Creative { get; set; }
+	}
+
+	public class Creative
+	{
+		[JsonProperty("id")]
+		public string Id { get; set; }
+
+		[JsonProperty("image_url")]
+		public string ImageUrl { get; set; }
+	}
+
+	public class Paging
+	{
+		[JsonProperty("cursors")]
+		public Cursors Cursors { get; set; }
+	}
+
+	public class Cursors
+	{
+		[JsonProperty("before")]
+		public string Before { get; set; }
+
+		[JsonProperty("after")]
+		public string After { get; set; }
 	}
 }
