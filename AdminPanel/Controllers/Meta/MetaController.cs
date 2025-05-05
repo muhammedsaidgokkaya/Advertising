@@ -536,13 +536,16 @@ namespace AdminPanel.Controllers.Meta
 				return Ok(data);
 			}
 
-			return Ok(new
-			{
-				Id = 1,
-				Name = "Henüz reklam bulunamadı",
-				Url = ""
-			});
-		}
+            return Ok(new List<TopAds>
+            {
+                new TopAds
+                {
+                    Id = 1,
+                    Name = "Henüz reklam bulunamadı",
+                    Url = ""
+                }
+            });
+        }
 
 		[HttpGet("audiences")]
         public async Task<ActionResult<ApiResponse>> GetAudiences(string accountId)

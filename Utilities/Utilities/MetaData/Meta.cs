@@ -102,6 +102,7 @@ namespace Utilities.Utilities.MetaData
 
 		public async Task<AdData> GetAdsFromAccountAsync(string accessToken, string adAccountId)
 		{
+			//act_342280538743641/adimages?fields=url
 			var url = $"https://graph.facebook.com/v21.0/{adAccountId}/ads?access_token={accessToken}&fields=id,name,creative{{image_url}}&limit=3";
 			var response = await _httpClient.GetAsync(url);
 			var content = await response.Content.ReadAsStringAsync();
