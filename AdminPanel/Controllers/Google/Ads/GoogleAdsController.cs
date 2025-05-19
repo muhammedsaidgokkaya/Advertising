@@ -18,6 +18,14 @@ using Utilities.Helper;
 using Utilities.Utilities.GoogleData;
 using Google.Ads.Gax.Config;
 using Google.Ads.GoogleAds.V17.Errors;
+using Google.Ads.GoogleAds.V18.Common;
+using static AdminPanel.Models.Google.Ads.AddCampaign;
+using static AdminPanel.Models.Google.Ads.AddAdSet;
+using static AdminPanel.Models.Google.Ads.AddAd;
+using static Google.Ads.GoogleAds.V18.Enums.AdGroupAdStatusEnum.Types;
+using Google.Protobuf;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace AdminPanel.Controllers.Google.Ads
 {
@@ -467,7 +475,79 @@ namespace AdminPanel.Controllers.Google.Ads
 			return Ok(adGroupList);
 		}
 
-		[HttpGet("ads")]
+		[HttpGet("ad-groups-campaign")]
+		public IActionResult GetCampaignAdGroups(string customerId, string campaignId)
+		{
+			var userId = UserId();
+			var control = _googleTokenControl.GetTokenAds(userId);
+			var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var service = client.GetService(Services.V18.GoogleAdsService);
+
+            string query = $@"
+				SELECT
+				  campaign.name,
+				  ad_group.id,
+				  ad_group.name,
+				  ad_group.status,
+				  ad_group.type,
+				  ad_group.cpc_bid_micros,
+				  metrics.clicks,
+				  metrics.impressions,
+				  metrics.ctr,
+				  metrics.average_cpc,
+				  metrics.cost_micros,
+				  metrics.conversions,
+				  metrics.cost_per_conversion
+				FROM ad_group
+				WHERE ad_group.status != 'REMOVED'
+				  AND campaign.status != 'REMOVED'
+				  AND campaign.id = {campaignId}";
+
+            var request = new SearchGoogleAdsRequest()
+            {
+                CustomerId = customerId,
+                Query = query
+            };
+
+            var response = service.Search(request);
+            var adGroupList = new List<object>();
+
+            foreach (var row in response)
+            {
+                adGroupList.Add(new
+                {
+                    CampaignName = row.Campaign.Name,
+                    AdGroupId = row.AdGroup.Id,
+                    AdGroupName = row.AdGroup.Name,
+                    Status = row.AdGroup.Status.ToString() == "Enabled" ? "Aktif" : "Pasif",
+                    Type = _defaultValues.GetAdGroupTypeName(row.AdGroup.Type.ToString()),
+                    Clicks = row.Metrics.Clicks,
+                    Impressions = row.Metrics.Impressions,
+                    Ctr = row.Metrics.Ctr * 100,
+                    AverageCpc = row.Metrics.AverageCpc != null ? Convert.ToDouble(row.Metrics.AverageCpc) / 1_000_000.0 : 0,
+                    Cost = row.Metrics.CostMicros / 1_000_000.0,
+                    Conversions = row.Metrics.Conversions,
+                    ConversionRate = row.Metrics.Clicks != 0 ? (row.Metrics.Conversions / row.Metrics.Clicks) * 100 : 0,
+                    CostPerConversion = row.Metrics.CostPerConversion != null ? Convert.ToDouble(row.Metrics.CostPerConversion) / 1_000_000.0 : 0,
+                    TargetEbm = row.Metrics.Conversions != 0 ? (row.Metrics.CostMicros / 1_000_000.0) / row.Metrics.Conversions : 0
+                });
+            }
+
+            return Ok(adGroupList);
+        }
+
+        [HttpGet("ads")]
 		public IActionResult GetAds(string customerId)
 		{
 			var userId = UserId();
@@ -629,7 +709,754 @@ namespace AdminPanel.Controllers.Google.Ads
 			return Ok(keywords);
 		}
 
-		private int UserId()
+        [HttpPost("save-search-campaign")]
+        public async Task<IActionResult> SaveSearchCampaign([FromBody] SearchCampaignRequest request)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var budgetService = client.GetService(Services.V18.CampaignBudgetService);
+            var campaignService = client.GetService(Services.V18.CampaignService);
+
+            if (!long.TryParse(request.Budget, out long budgetValue))
+            {
+                throw new Exception("Budget değeri geçersiz.");
+            }
+
+            long amountMicros = budgetValue * 1_000_000;
+
+            var budget = new CampaignBudget
+            {
+                Name = $"{Guid.NewGuid()}",
+                AmountMicros = amountMicros,
+                DeliveryMethod = BudgetDeliveryMethodEnum.Types.BudgetDeliveryMethod.Standard,
+                ExplicitlyShared = false
+            };
+
+            var budgetOp = new CampaignBudgetOperation { Create = budget };
+            var budgetResponse = await budgetService.MutateCampaignBudgetsAsync(
+                request.SelectedAccountId.ToString(), new[] { budgetOp });
+
+            string budgetResource = budgetResponse.Results[0].ResourceName;
+
+            AdvertisingChannelTypeEnum.Types.AdvertisingChannelType deliveryMethod;
+
+            switch (request.SelectedType?.ToLower())
+            {
+                case "search":
+                    deliveryMethod = AdvertisingChannelTypeEnum.Types.AdvertisingChannelType.Search;
+                    break;
+                case "performance":
+                    deliveryMethod = AdvertisingChannelTypeEnum.Types.AdvertisingChannelType.PerformanceMax;
+                    break;
+                case "dısplay":
+                    deliveryMethod = AdvertisingChannelTypeEnum.Types.AdvertisingChannelType.Display;
+                    break;
+                default:
+                    deliveryMethod = AdvertisingChannelTypeEnum.Types.AdvertisingChannelType.Search;
+                    break;
+            }
+
+            var biddingStrategyService = client.GetService(Services.V18.BiddingStrategyService);
+            var operations = new List<BiddingStrategyOperation>();
+
+            if (request.BiddingType == "maxConversions" || request.BiddingType == "")
+            {
+                var strategy = new BiddingStrategy
+                {
+                    Name = $"MaximizeConversions-{Guid.NewGuid()}",
+                    MaximizeConversions = new MaximizeConversions
+                    {
+                        TargetCpaMicros = string.IsNullOrEmpty(request.TargetCpa)
+							? 0L
+							: (long)(decimal.Parse(request.TargetCpa) * 1_000_000)
+                    },
+                    Type = BiddingStrategyTypeEnum.Types.BiddingStrategyType.MaximizeConversions
+                };
+
+                operations.Add(new BiddingStrategyOperation { Create = strategy });
+            }
+			else if (request.BiddingType == "targetROAS")
+			{
+				var strategy = new BiddingStrategy
+				{
+                    Name = $"TargetROAS-{Guid.NewGuid()}",
+                    TargetRoas = new TargetRoas
+                    {
+                        TargetRoas_ = string.IsNullOrEmpty(request.TargetRoas)
+							? 0.0
+							: double.Parse(request.TargetRoas.Replace("%", "")) / 100.0
+                    },
+                    Type = BiddingStrategyTypeEnum.Types.BiddingStrategyType.TargetRoas
+                };
+
+				operations.Add(new BiddingStrategyOperation { Create = strategy });
+			}
+			else if (request.BiddingType == "clicks")
+			{
+				var strategy = new BiddingStrategy
+				{
+                    Name = $"MaximizeClicks-{Guid.NewGuid()}",
+                    TargetSpend = new TargetSpend
+                    {
+                        CpcBidCeilingMicros = string.IsNullOrEmpty(request.MaxCpcLimit)
+							? 0L
+							: (long)(decimal.Parse(request.MaxCpcLimit) * 1_000_000)
+                    },
+                    Type = BiddingStrategyTypeEnum.Types.BiddingStrategyType.TargetSpend
+                };
+
+				operations.Add(new BiddingStrategyOperation { Create = strategy });
+			}
+			else if (request.BiddingType == "impressionShare")
+			{
+                var positionEnum = request.ImpressionPosition switch
+                {
+                    "anywhere" => TargetImpressionShareLocationEnum.Types.TargetImpressionShareLocation.AnywhereOnPage,
+                    "top" => TargetImpressionShareLocationEnum.Types.TargetImpressionShareLocation.TopOfPage,
+                    "veryTop" => TargetImpressionShareLocationEnum.Types.TargetImpressionShareLocation.AbsoluteTopOfPage,
+                    _ => TargetImpressionShareLocationEnum.Types.TargetImpressionShareLocation.AnywhereOnPage
+                };
+
+                var targetImpressionShare = new TargetImpressionShare
+                {
+                    Location = positionEnum,
+                };
+
+                if (!string.IsNullOrEmpty(request.MaxCpcImpressionLimit))
+                {
+                    targetImpressionShare.CpcBidCeilingMicros = (long)(decimal.Parse(request.MaxCpcImpressionLimit) * 1_000_000);
+                }
+
+                var strategy = new BiddingStrategy
+                {
+                    Name = $"TargetImpressionShare-{Guid.NewGuid()}",
+                    TargetImpressionShare = targetImpressionShare,
+                    Type = BiddingStrategyTypeEnum.Types.BiddingStrategyType.TargetImpressionShare
+                };
+
+                operations.Add(new BiddingStrategyOperation { Create = strategy });
+			}
+
+			var responses = await biddingStrategyService.MutateBiddingStrategiesAsync(
+                request.SelectedAccountId.ToString(), operations);
+
+            var biddingResourceName = responses.Results.First().ResourceName;
+
+            var campaign = new Campaign
+            {
+                Name = request.CampaignName,
+                AdvertisingChannelType = deliveryMethod,
+                BiddingStrategy = biddingResourceName,
+                Status = CampaignStatusEnum.Types.CampaignStatus.Paused,
+                CampaignBudget = budgetResource,
+                StartDate = DateTime.Now.AddDays(1).ToString("yyyyMMdd"),
+                EndDate = DateTime.Now.AddYears(3).ToString("yyyyMMdd")
+            };
+
+            var campaignOp = new CampaignOperation { Create = campaign };
+            var campaignResponse = await campaignService.MutateCampaignsAsync(
+                request.SelectedAccountId.ToString(), new[] { campaignOp });
+
+            string campaignResource = campaignResponse.Results[0].ResourceName;
+
+			if (request.SelectedType?.ToLower() == "search")
+			{
+    //            var extensionFeedItemService = client.GetService(Services.V18.ExtensionFeedItemService);
+
+    //            var campaignExtensionSettingService = client.GetService(Services.V18.CampaignExtensionSettingService);
+
+				//if (request.Results.PhoneCalls)
+				//{
+    //                var callExtensionFeedItem = new ExtensionFeedItem
+    //                {
+    //                    CallFeedItem = new CallFeedItem
+    //                    {
+    //                        CountryCode = "TR",
+    //                        PhoneNumber = request.PhoneNumber,
+    //                        CallTrackingEnabled = true,
+    //                    }
+    //                };
+
+    //                var callExtensionOperation = new ExtensionFeedItemOperation { Create = callExtensionFeedItem };
+    //                var callExtensionResponse = await extensionFeedItemService.MutateExtensionFeedItemsAsync(
+    //                    request.SelectedAccountId.ToString(), new[] { callExtensionOperation });
+
+    //                string callExtensionResourceName = callExtensionResponse.Results[0].ResourceName;
+
+    //                var campaignExtensionSetting = new CampaignExtensionSetting
+    //                {
+    //                    Campaign = campaignResource,
+    //                    ExtensionType = ExtensionTypeEnum.Types.ExtensionType.Call,
+    //                    ExtensionFeedItems = { callExtensionResourceName }
+    //                };
+
+    //                var campaignCallExtensionOperation = new CampaignExtensionSettingOperation { Create = campaignExtensionSetting };
+    //                await campaignExtensionSettingService.MutateCampaignExtensionSettingsAsync(
+    //                    request.SelectedAccountId.ToString(), new[] { campaignCallExtensionOperation });
+    //            }
+
+				//if (request.Results.WebsiteVisits)
+				//{
+    //                var sitelinkExtensionFeedItem = new ExtensionFeedItem
+    //                {
+    //                    SitelinkFeedItem = new SitelinkFeedItem
+    //                    {
+    //                        LinkText = "Web Sitesi",
+    //                        FinalUrls = { request.Website }
+    //                    }
+    //                };
+
+    //                var sitelinkExtensionOperation = new ExtensionFeedItemOperation { Create = sitelinkExtensionFeedItem };
+    //                var sitelinkExtensionResponse = await extensionFeedItemService.MutateExtensionFeedItemsAsync(
+    //                    request.SelectedAccountId.ToString(), new[] { sitelinkExtensionOperation });
+
+    //                string sitelinkExtensionResourceName = sitelinkExtensionResponse.Results[0].ResourceName;
+
+    //                var campaignSitelinkExtensionSetting = new CampaignExtensionSetting
+    //                {
+    //                    Campaign = campaignResource,
+    //                    ExtensionType = ExtensionTypeEnum.Types.ExtensionType.Sitelink,
+    //                    ExtensionFeedItems = { sitelinkExtensionResourceName }
+    //                };
+
+    //                var campaignSitelinkExtensionOperation = new CampaignExtensionSettingOperation { Create = campaignSitelinkExtensionSetting };
+    //                await campaignExtensionSettingService.MutateCampaignExtensionSettingsAsync(
+    //                    request.SelectedAccountId.ToString(), new[] { campaignSitelinkExtensionOperation });
+    //            }
+            }
+			
+			if (request.SelectedType?.ToLower() == "performance" && request.Website != "")
+			{
+                var assetGroupService = client.GetService(Services.V18.AssetGroupService);
+
+                var assetGroup = new AssetGroup
+                {
+                    Name = $"{request.CampaignName}",
+                    Campaign = campaignResource,
+                    FinalUrls = { request.Website }
+                };
+
+                var assetGroupOperation = new AssetGroupOperation { Create = assetGroup };
+
+                var assetGroupResponse = await assetGroupService.MutateAssetGroupsAsync(
+                    request.SelectedAccountId.ToString(), new[] { assetGroupOperation });
+            }
+
+            if (request.SelectedType?.ToLower() == "display" && request.Website != "")
+            {
+                var extensionFeedItemService = client.GetService(Services.V18.ExtensionFeedItemService);
+
+                var sitelinkExtensionFeedItem = new ExtensionFeedItem
+                {
+                    SitelinkFeedItem = new SitelinkFeedItem
+                    {
+                        LinkText = "Web Sitesi",
+                        FinalUrls = { request.Website }
+                    }
+                };
+
+                var sitelinkExtensionOperation = new ExtensionFeedItemOperation { Create = sitelinkExtensionFeedItem };
+                var sitelinkExtensionResponse = await extensionFeedItemService.MutateExtensionFeedItemsAsync(
+                    request.SelectedAccountId.ToString(), new[] { sitelinkExtensionOperation });
+
+                string sitelinkExtensionResourceName = sitelinkExtensionResponse.Results[0].ResourceName;
+
+                var campaignExtensionSettingService = client.GetService(Services.V18.CampaignExtensionSettingService);
+
+                var campaignExtensionSetting = new CampaignExtensionSetting
+                {
+                    Campaign = campaignResource,
+                    ExtensionType = ExtensionTypeEnum.Types.ExtensionType.Sitelink,
+                    ExtensionFeedItems = { sitelinkExtensionResourceName }
+                };
+
+                var campaignExtensionOperation = new CampaignExtensionSettingOperation { Create = campaignExtensionSetting };
+                var campaignExtensionResponse = await campaignExtensionSettingService.MutateCampaignExtensionSettingsAsync(
+                    request.SelectedAccountId.ToString(), new[] { campaignExtensionOperation });
+            }
+
+            var campaignCriterionService = client.GetService(Services.V18.CampaignCriterionService);
+
+            if (request.Locations == "all")
+            {
+                var locationCriterion = new CampaignCriterion
+                {
+                    Campaign = campaignResource,
+                    Location = new LocationInfo
+                    {
+                        GeoTargetConstant = ResourceNames.GeoTargetConstant(2840)
+                    }
+                };
+
+                var locationOp = new CampaignCriterionOperation { Create = locationCriterion };
+                var locationResponse = await campaignCriterionService.MutateCampaignCriteriaAsync(
+                    request.SelectedAccountId.ToString(), new[] { locationOp });
+            }
+
+            if (request.Locations == "turkey")
+            {
+                var locationCriterion = new CampaignCriterion
+                {
+                    Campaign = campaignResource,
+                    Location = new LocationInfo
+                    {
+                        GeoTargetConstant = ResourceNames.GeoTargetConstant(2276)
+                    }
+                };
+
+                var locationOp = new CampaignCriterionOperation { Create = locationCriterion };
+                var locationResponse = await campaignCriterionService.MutateCampaignCriteriaAsync(
+                    request.SelectedAccountId.ToString(), new[] { locationOp });
+            }
+
+            if (request.Locations == "custom")
+            {
+                foreach (var item in request.CustomLocations)
+                {
+                    string query = $@"
+						SELECT geo_target_constant.id, geo_target_constant.name, geo_target_constant.country_code
+						FROM geo_target_constant
+						WHERE LOWER(geo_target_constant.name) = LOWER('{item.Town}')
+							AND LOWER(geo_target_constant.country_code) = LOWER('{item.country_code}')
+					";
+
+                    var requests = new SearchGoogleAdsRequest
+                    {
+                        CustomerId = request.SelectedAccountId.ToString(),
+                        Query = query
+                    };
+
+                    var locations = new List<long>();
+                    var googleAdsService = client.GetService(Services.V18.GoogleAdsService);
+                    var response = googleAdsService.Search(requests);
+                    foreach (var row in response)
+                    {
+                        var geo = row.GeoTargetConstant;
+                        locations.Add(geo.Id);
+                    }
+
+                    foreach (var items in locations)
+                    {
+                        var locationCriterion = new CampaignCriterion
+                        {
+                            Campaign = campaignResource,
+                            Location = new LocationInfo
+                            {
+                                GeoTargetConstant = ResourceNames.GeoTargetConstant(items)
+                            }
+                        };
+
+                        var locationOp = new CampaignCriterionOperation { Create = locationCriterion };
+                        var locationResponse = await campaignCriterionService.MutateCampaignCriteriaAsync(
+                            request.SelectedAccountId.ToString(), new[] { locationOp });
+                    }
+                }
+            }
+
+            if (request.SelectedLanguages != null && request.SelectedLanguages.Count > 0)
+            {
+                foreach (var item in request.SelectedLanguages)
+                {
+                    var languageCriterion = new CampaignCriterion
+                    {
+                        Campaign = campaignResource,
+                        Language = new LanguageInfo
+                        {
+                            LanguageConstant = ResourceNames.LanguageConstant(item)
+                        }
+                    };
+
+                    var languageOp = new CampaignCriterionOperation { Create = languageCriterion };
+                    var languageResponse = await campaignCriterionService.MutateCampaignCriteriaAsync(
+                        request.SelectedAccountId.ToString(), new[] { languageOp });
+                }
+            }
+
+            return Ok(1);
+        }
+
+        [HttpPost("save-search-adset")]
+        public async Task<IActionResult> SaveSearchAdSet([FromBody] CampaignSaveRequest request)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var adGroupService = client.GetService(Services.V18.AdGroupService);
+
+            AdGroupTypeEnum.Types.AdGroupType adGroupType;
+			adGroupType = AdGroupTypeEnum.Types.AdGroupType.SearchStandard;
+			if (request.SelectedCampaignType == "Arama Ağı")
+			{
+				adGroupType = AdGroupTypeEnum.Types.AdGroupType.SearchStandard;
+            }
+			if (request.SelectedCampaignType == "Görüntülü Reklam Ağı")
+			{
+                adGroupType = AdGroupTypeEnum.Types.AdGroupType.DisplayStandard;
+            }
+
+            var adGroup = new AdGroup
+            {
+                Name = request.AdGroupName,
+                Campaign = "customers/" + request.SelectedAccountId + "/campaigns/" + request.SelectedCampaignId.ToString(),
+                Status = AdGroupStatusEnum.Types.AdGroupStatus.Enabled,
+                Type = adGroupType
+            };
+
+            var adGroupOperation = new AdGroupOperation { Create = adGroup };
+            var adGroupResponse = await adGroupService.MutateAdGroupsAsync(request.SelectedAccountId, new[] { adGroupOperation });
+
+            string adGroupResourceName = adGroupResponse.Results[0].ResourceName;
+
+            var adGroupCriterionService = client.GetService(Services.V18.AdGroupCriterionService);
+
+            var operations = new List<AdGroupCriterionOperation>();
+
+            if (request.Chips != null && request.Chips.Count > 0)
+            {
+                foreach (var keyword in request.Chips)
+                {
+                    var keywordInfo = new KeywordInfo
+                    {
+                        Text = keyword,
+                        MatchType = KeywordMatchTypeEnum.Types.KeywordMatchType.Broad
+                    };
+
+                    var adGroupCriterion = new AdGroupCriterion
+                    {
+                        AdGroup = adGroupResourceName,
+                        Status = AdGroupCriterionStatusEnum.Types.AdGroupCriterionStatus.Enabled,
+                        Keyword = keywordInfo
+                    };
+
+                    operations.Add(new AdGroupCriterionOperation { Create = adGroupCriterion });
+                }
+
+                var response = await adGroupCriterionService.MutateAdGroupCriteriaAsync(
+                    request.SelectedAccountId, operations.ToArray());
+
+                var addedKeywords = response.Results.Select(r => r.ResourceName).ToList();
+            }
+           
+            return Ok(1);
+        }
+
+        [HttpPost("save-search-ad")]
+        public async Task<IActionResult> SaveSearchAd([FromBody] SaveRequestModel request)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+
+            ResponsiveSearchAdInfo responsiveSearchAd = new ResponsiveSearchAdInfo()
+            {
+                Headlines = { request.Headlines.Select(h => new AdTextAsset { Text = h }) },
+                Descriptions = { request.Descriptions?.Select(d => new AdTextAsset { Text = d }) },
+            };
+
+            if (request.Url1 != null && request.Url1 != "")
+            {
+                responsiveSearchAd.Path1 = request.Url1;
+            }
+
+            if (request.Url2 != null && request.Url2 != "")
+            {
+                responsiveSearchAd.Path2 = request.Url2;
+            }
+
+            AdGroupAdOperation operation = new AdGroupAdOperation()
+            {
+                Create = new AdGroupAd()
+                {
+					
+                    AdGroup = "customers/" + request.SelectedAccountId + "/adGroups/" + request.SelectedAdGroupId.ToString(),
+                    Status = AdGroupAdStatus.Enabled,
+                    Ad = new Ad()
+                    {
+                        Name = request.AdName,
+                        ResponsiveSearchAd = responsiveSearchAd,
+                        FinalUrls = { request.FinalUrl }
+                    }
+                }
+            };
+
+            AdGroupAdServiceClient serviceClient = client.GetService(Services.V18.AdGroupAdService);
+
+            MutateAdGroupAdsResponse response = serviceClient.MutateAdGroupAds(
+                request.SelectedAccountId,
+                new[] { operation }.ToList()
+            );
+
+            string resourceName = response.Results[0].ResourceName;
+
+            return Ok(1);
+        }
+
+        [HttpPost("save-display-ad")]
+        public async Task<IActionResult> SaveDisplayAd([FromForm] SaveDisplayRequestModel request)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+
+            var adGroupAdService = client.GetService(Services.V18.AdGroupAdService);
+            
+			var assetService = client.GetService(Services.V18.AssetService);
+            var assetResourceImageNames = new List<string>();
+
+            if (request.Images != null && request.Images.Count != 0)
+            {
+                foreach (var imageFile in request.Images)
+                {
+                    using var ms = new MemoryStream();
+                    await imageFile.CopyToAsync(ms);
+                    var imageBytes = ms.ToArray();
+
+                    using var originalImage = Image.Load(imageBytes);
+                    int targetWidth = 1910;
+                    int targetHeight = (int)(targetWidth / 1.91);
+
+                    originalImage.Mutate(x =>
+                    {
+                        x.Resize(new ResizeOptions
+                        {
+                            Size = new Size(targetWidth, targetHeight),
+                            Mode = ResizeMode.Crop,
+                            Position = AnchorPositionMode.Center
+                        });
+                    });
+
+                    using var outStream = new MemoryStream();
+                    originalImage.SaveAsJpeg(outStream);
+                    var resizedImageBytes = outStream.ToArray();
+
+                    var asset = new Asset
+                    {
+                        Name = "Görsel" + Guid.NewGuid().ToString(),
+                        ImageAsset = new ImageAsset
+                        {
+                            Data = ByteString.CopyFrom(resizedImageBytes)
+                        },
+                        Type = AssetTypeEnum.Types.AssetType.Image
+                    };
+
+                    var operations = new AssetOperation
+                    {
+                        Create = asset
+                    };
+
+                    var responses = await assetService.MutateAssetsAsync(request.SelectedAccountId, new[] { operations });
+                    assetResourceImageNames.Add(responses.Results[0].ResourceName);
+                }
+            }
+
+            var assetResourceSquareMarketingImagesNames = new List<string>();
+
+            if (request.Images != null && request.Images.Count != 0)
+            {
+                foreach (var logoFile in request.Images)
+                {
+                    using var ms = new System.IO.MemoryStream();
+                    await logoFile.CopyToAsync(ms);
+                    var imageBytes = ms.ToArray();
+
+                    using var originalImage = Image.Load(imageBytes);
+
+                    if (originalImage.Width < 512 || originalImage.Height < 512)
+                    {
+                        originalImage.Mutate(x =>
+                        {
+                            x.Resize(new ResizeOptions
+                            {
+                                Size = new Size(512, 512),
+                                Mode = ResizeMode.Pad,
+                                Position = AnchorPositionMode.Center,
+                                PadColor = Color.White
+                            });
+                        });
+                    }
+                    else
+                    {
+                        originalImage.Mutate(x =>
+                        {
+                            x.Resize(new ResizeOptions
+                            {
+                                Size = new Size(512, 512),
+                                Mode = ResizeMode.Crop,
+                                Position = AnchorPositionMode.Center
+                            });
+                        });
+                    }
+
+                    using var outStream = new MemoryStream();
+                    originalImage.SaveAsPng(outStream);
+                    var resizedImageBytes = outStream.ToArray();
+
+                    var asset = new Asset
+                    {
+                        Name = "Görsel" + Guid.NewGuid().ToString(),
+                        ImageAsset = new ImageAsset
+                        {
+                            Data = ByteString.CopyFrom(resizedImageBytes)
+                        },
+                        Type = AssetTypeEnum.Types.AssetType.Image
+                    };
+
+                    var operations = new AssetOperation
+                    {
+                        Create = asset
+                    };
+
+                    var responses = await assetService.MutateAssetsAsync(request.SelectedAccountId, new[] { operations });
+                    assetResourceSquareMarketingImagesNames.Add(responses.Results[0].ResourceName);
+                }
+            }
+
+            var assetResourceLogoNames = new List<string>();
+
+            if (request.Logos != null && request.Logos.Count != 0)
+			{
+                foreach (var logoFile in request.Logos)
+                {
+                    using var ms = new System.IO.MemoryStream();
+                    await logoFile.CopyToAsync(ms);
+                    var imageBytes = ms.ToArray();
+
+                    using var originalImage = Image.Load(imageBytes);
+                    int targetWidth = 1200;
+                    int targetHeight = 300;
+
+                    originalImage.Mutate(x =>
+                    {
+                        x.Resize(new ResizeOptions
+                        {
+                            Size = new Size(targetWidth, targetHeight),
+                            Mode = ResizeMode.Crop,
+                            Position = AnchorPositionMode.Center
+                        });
+                    });
+
+                    using var outStream = new MemoryStream();
+                    originalImage.SaveAsJpeg(outStream);
+                    var resizedImageBytes = outStream.ToArray();
+
+                    var asset = new Asset
+                    {
+                        Name = "Logo" + Guid.NewGuid().ToString(),
+                        ImageAsset = new ImageAsset
+                        {
+                            Data = ByteString.CopyFrom(resizedImageBytes)
+                        },
+                        Type = AssetTypeEnum.Types.AssetType.Image
+                    };
+
+                    var operations = new AssetOperation
+                    {
+                        Create = asset
+                    };
+
+                    var responses = await assetService.MutateAssetsAsync(request.SelectedAccountId, new[] { operations });
+                    assetResourceLogoNames.Add(responses.Results[0].ResourceName);
+                }
+            }
+
+            var responsiveDisplayAdInfo = new ResponsiveDisplayAdInfo
+            {
+                Headlines = { request.Headlines.Select(h => new AdTextAsset { Text = h }) },
+                Descriptions = { request.Descriptions?.Select(d => new AdTextAsset { Text = d }) },
+                LongHeadline = new AdTextAsset { Text = request.LongTittle },
+                BusinessName = request.AccountName,
+            };
+
+            if (assetResourceImageNames != null && assetResourceImageNames.Count > 0)
+            {
+                responsiveDisplayAdInfo.MarketingImages.AddRange(
+                    assetResourceImageNames.Select(name => new AdImageAsset { Asset = name })
+                );
+            }
+
+            if (assetResourceSquareMarketingImagesNames != null && assetResourceSquareMarketingImagesNames.Count > 0)
+            {
+                responsiveDisplayAdInfo.SquareMarketingImages.AddRange(
+                    assetResourceSquareMarketingImagesNames.Select(name => new AdImageAsset { Asset = name })
+                );
+            }
+
+            if (assetResourceLogoNames != null && assetResourceLogoNames.Count > 0)
+            {
+                responsiveDisplayAdInfo.LogoImages.AddRange(
+                    assetResourceLogoNames.Select(name => new AdImageAsset { Asset = name })
+                );
+            }
+
+            var ad = new Ad
+            {
+				Name = request.AdName,
+                ResponsiveDisplayAd = responsiveDisplayAdInfo,
+                FinalUrls = { request.FinalUrl }
+            };
+
+            var adGroupAd = new AdGroupAd
+            {
+                AdGroup = ResourceNames.AdGroup(long.Parse(request.SelectedAccountId), request.SelectedAdGroupId),
+                Ad = ad,
+                Status = AdGroupAdStatusEnum.Types.AdGroupAdStatus.Paused
+            };
+
+            var operation = new AdGroupAdOperation
+            {
+                Create = adGroupAd
+            };
+
+            var response = adGroupAdService.MutateAdGroupAds(request.SelectedAccountId, new[] { operation });
+			return Ok(1);
+        }
+
+        private int UserId()
         {
             var userIdClaim = HttpContext.User.FindFirst("userId");
             if (userIdClaim == null)
@@ -646,5 +1473,5 @@ namespace AdminPanel.Controllers.Google.Ads
 			public long Id { get; set; }
 			public string Name { get; set; }
 		}
-	}
+    }
 }
