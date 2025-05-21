@@ -632,7 +632,74 @@ namespace AdminPanel.Controllers.Google.Ads
             return Ok(adList);
 		}
 
-		[HttpGet("ads-keywords")]
+        [HttpGet("asset-groups")]
+        public IActionResult GetAssetGroups(string customerId)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var service = client.GetService(Services.V18.GoogleAdsService);
+
+            string query = @"
+		        SELECT
+			        campaign.name,
+			        asset_group.id,
+			        asset_group.name,
+			        asset_group.status,
+			        metrics.clicks,
+		            metrics.impressions,
+		            metrics.ctr,
+		            metrics.average_cpc,
+		            metrics.cost_micros,
+		            metrics.conversions,
+		            metrics.cost_per_conversion
+		        FROM asset_group
+		        WHERE campaign.status != 'REMOVED'
+		          AND asset_group.status != 'REMOVED'";
+
+            var request = new SearchGoogleAdsRequest()
+            {
+                CustomerId = customerId,
+                Query = query
+            };
+
+            var response = service.Search(request);
+            var assetGroups = new List<object>();
+
+            foreach (var row in response)
+            {
+                assetGroups.Add(new
+                {
+                    CampaignName = row.Campaign.Name,
+                    AssetGroupId = row.AssetGroup.Id,
+                    AssetGroupName = row.AssetGroup.Name,
+                    Status = row.AssetGroup.Status.ToString() == "Enabled" ? "Aktif" : "Pasif",
+                    Clicks = row.Metrics.Clicks,
+                    Impressions = row.Metrics.Impressions,
+                    Ctr = row.Metrics.Ctr * 100,
+                    AverageCpc = row.Metrics.AverageCpc != null ? Convert.ToDouble(row.Metrics.AverageCpc) / 1_000_000.0 : 0,
+                    Cost = row.Metrics.CostMicros / 1_000_000.0,
+                    Conversions = row.Metrics.Conversions,
+                    ConversionRate = row.Metrics.Clicks != 0 ? (row.Metrics.Conversions / row.Metrics.Clicks) * 100 : 0,
+                    CostPerConversion = row.Metrics.CostPerConversion != null ? Convert.ToDouble(row.Metrics.CostPerConversion) / 1_000_000.0 : 0,
+                });
+            }
+
+            return Ok(assetGroups);
+        }
+
+        [HttpGet("ads-keywords")]
 		public IActionResult GetAdKeywords(string customerId)
 		{
 			var userId = UserId();
