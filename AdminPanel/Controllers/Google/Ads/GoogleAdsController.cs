@@ -26,6 +26,7 @@ using static Google.Ads.GoogleAds.V18.Enums.AdGroupAdStatusEnum.Types;
 using Google.Protobuf;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+using Google.Api;
 
 namespace AdminPanel.Controllers.Google.Ads
 {
@@ -628,7 +629,7 @@ namespace AdminPanel.Controllers.Google.Ads
 				});
 			}
 
-			return Ok(adList);
+            return Ok(adList);
 		}
 
 		[HttpGet("ads-keywords")]
@@ -776,18 +777,20 @@ namespace AdminPanel.Controllers.Google.Ads
                 var strategy = new BiddingStrategy
                 {
                     Name = $"MaximizeConversions-{Guid.NewGuid()}",
-                    MaximizeConversions = new MaximizeConversions
-                    {
-                        TargetCpaMicros = string.IsNullOrEmpty(request.TargetCpa)
-							? 0L
-							: (long)(decimal.Parse(request.TargetCpa) * 1_000_000)
-                    },
                     Type = BiddingStrategyTypeEnum.Types.BiddingStrategyType.MaximizeConversions
                 };
 
+                if (request.TargetCpa != "")
+                {
+                    strategy.MaximizeConversions = new MaximizeConversions
+                    {
+                        TargetCpaMicros = (long)(decimal.Parse(request.TargetCpa) * 1_000_000)
+                    };
+                }
+
                 operations.Add(new BiddingStrategyOperation { Create = strategy });
             }
-			else if (request.BiddingType == "targetROAS")
+            else if (request.BiddingType == "targetROAS")
 			{
 				var strategy = new BiddingStrategy
 				{
@@ -819,8 +822,8 @@ namespace AdminPanel.Controllers.Google.Ads
 
 				operations.Add(new BiddingStrategyOperation { Create = strategy });
 			}
-			else if (request.BiddingType == "impressionShare")
-			{
+            else if (request.BiddingType == "impressionShare")
+            {
                 var positionEnum = request.ImpressionPosition switch
                 {
                     "anywhere" => TargetImpressionShareLocationEnum.Types.TargetImpressionShareLocation.AnywhereOnPage,
@@ -832,6 +835,7 @@ namespace AdminPanel.Controllers.Google.Ads
                 var targetImpressionShare = new TargetImpressionShare
                 {
                     Location = positionEnum,
+                    LocationFractionMicros = (long)(decimal.Parse(request.ImpressionShareTarget) * 10_000)
                 };
 
                 if (!string.IsNullOrEmpty(request.MaxCpcImpressionLimit))
@@ -847,9 +851,9 @@ namespace AdminPanel.Controllers.Google.Ads
                 };
 
                 operations.Add(new BiddingStrategyOperation { Create = strategy });
-			}
+            }
 
-			var responses = await biddingStrategyService.MutateBiddingStrategiesAsync(
+            var responses = await biddingStrategyService.MutateBiddingStrategiesAsync(
                 request.SelectedAccountId.ToString(), operations);
 
             var biddingResourceName = responses.Results.First().ResourceName;
@@ -858,12 +862,72 @@ namespace AdminPanel.Controllers.Google.Ads
             {
                 Name = request.CampaignName,
                 AdvertisingChannelType = deliveryMethod,
-                BiddingStrategy = biddingResourceName,
                 Status = CampaignStatusEnum.Types.CampaignStatus.Paused,
                 CampaignBudget = budgetResource,
                 StartDate = DateTime.Now.AddDays(1).ToString("yyyyMMdd"),
                 EndDate = DateTime.Now.AddYears(3).ToString("yyyyMMdd")
             };
+
+            if (deliveryMethod == AdvertisingChannelTypeEnum.Types.AdvertisingChannelType.PerformanceMax)
+            {
+                if (request.BiddingType == "maxConversions")
+                {
+                    campaign.BiddingStrategyType = BiddingStrategyTypeEnum.Types.BiddingStrategyType.MaximizeConversions;
+
+                    if (request.TargetCpa != "")
+                    {
+                        campaign.MaximizeConversions = new MaximizeConversions
+                        {
+                            TargetCpaMicros = (long)(decimal.Parse(request.TargetCpa) * 1_000_000)
+                        };
+                    }
+                }
+                else if (request.BiddingType == "targetROAS")
+                {
+                    campaign.BiddingStrategyType = BiddingStrategyTypeEnum.Types.BiddingStrategyType.MaximizeConversionValue;
+
+                    if (request.TargetRoas != "")
+                    {
+                        campaign.MaximizeConversionValue = new MaximizeConversionValue
+                        {
+                            TargetRoas = string.IsNullOrEmpty(request.TargetRoas)
+                            ? 0.0
+                            : double.Parse(request.TargetRoas.Replace("%", "")) / 100.0
+                        };
+                    }
+                }
+            }
+            else if (deliveryMethod == AdvertisingChannelTypeEnum.Types.AdvertisingChannelType.Display)
+            {
+                if (request.BiddingType == "maxConversions")
+                {
+                    campaign.BiddingStrategyType = BiddingStrategyTypeEnum.Types.BiddingStrategyType.TargetCpa;
+
+                    if (request.TargetCpa != "")
+                    {
+                        campaign.TargetCpa = new TargetCpa
+                        {
+                            TargetCpaMicros = (long)(decimal.Parse(request.TargetCpa) * 1_000_000)
+                        };
+                    }
+                }
+                else if (request.BiddingType == "targetROAS")
+                {
+                    campaign.BiddingStrategyType = BiddingStrategyTypeEnum.Types.BiddingStrategyType.MaximizeConversionValue;
+
+                    if (request.TargetRoas != "")
+                    {
+                        campaign.MaximizeConversionValue = new MaximizeConversionValue
+                        {
+                            TargetRoas = double.Parse(request.TargetRoas.Replace("%", "")) / 100.0
+                        };
+                    }
+                }
+            }
+            else
+            {
+                campaign.BiddingStrategy = biddingResourceName;
+            }
 
             var campaignOp = new CampaignOperation { Create = campaign };
             var campaignResponse = await campaignService.MutateCampaignsAsync(
@@ -871,138 +935,11 @@ namespace AdminPanel.Controllers.Google.Ads
 
             string campaignResource = campaignResponse.Results[0].ResourceName;
 
-			if (request.SelectedType?.ToLower() == "search")
-			{
-    //            var extensionFeedItemService = client.GetService(Services.V18.ExtensionFeedItemService);
-
-    //            var campaignExtensionSettingService = client.GetService(Services.V18.CampaignExtensionSettingService);
-
-				//if (request.Results.PhoneCalls)
-				//{
-    //                var callExtensionFeedItem = new ExtensionFeedItem
-    //                {
-    //                    CallFeedItem = new CallFeedItem
-    //                    {
-    //                        CountryCode = "TR",
-    //                        PhoneNumber = request.PhoneNumber,
-    //                        CallTrackingEnabled = true,
-    //                    }
-    //                };
-
-    //                var callExtensionOperation = new ExtensionFeedItemOperation { Create = callExtensionFeedItem };
-    //                var callExtensionResponse = await extensionFeedItemService.MutateExtensionFeedItemsAsync(
-    //                    request.SelectedAccountId.ToString(), new[] { callExtensionOperation });
-
-    //                string callExtensionResourceName = callExtensionResponse.Results[0].ResourceName;
-
-    //                var campaignExtensionSetting = new CampaignExtensionSetting
-    //                {
-    //                    Campaign = campaignResource,
-    //                    ExtensionType = ExtensionTypeEnum.Types.ExtensionType.Call,
-    //                    ExtensionFeedItems = { callExtensionResourceName }
-    //                };
-
-    //                var campaignCallExtensionOperation = new CampaignExtensionSettingOperation { Create = campaignExtensionSetting };
-    //                await campaignExtensionSettingService.MutateCampaignExtensionSettingsAsync(
-    //                    request.SelectedAccountId.ToString(), new[] { campaignCallExtensionOperation });
-    //            }
-
-				//if (request.Results.WebsiteVisits)
-				//{
-    //                var sitelinkExtensionFeedItem = new ExtensionFeedItem
-    //                {
-    //                    SitelinkFeedItem = new SitelinkFeedItem
-    //                    {
-    //                        LinkText = "Web Sitesi",
-    //                        FinalUrls = { request.Website }
-    //                    }
-    //                };
-
-    //                var sitelinkExtensionOperation = new ExtensionFeedItemOperation { Create = sitelinkExtensionFeedItem };
-    //                var sitelinkExtensionResponse = await extensionFeedItemService.MutateExtensionFeedItemsAsync(
-    //                    request.SelectedAccountId.ToString(), new[] { sitelinkExtensionOperation });
-
-    //                string sitelinkExtensionResourceName = sitelinkExtensionResponse.Results[0].ResourceName;
-
-    //                var campaignSitelinkExtensionSetting = new CampaignExtensionSetting
-    //                {
-    //                    Campaign = campaignResource,
-    //                    ExtensionType = ExtensionTypeEnum.Types.ExtensionType.Sitelink,
-    //                    ExtensionFeedItems = { sitelinkExtensionResourceName }
-    //                };
-
-    //                var campaignSitelinkExtensionOperation = new CampaignExtensionSettingOperation { Create = campaignSitelinkExtensionSetting };
-    //                await campaignExtensionSettingService.MutateCampaignExtensionSettingsAsync(
-    //                    request.SelectedAccountId.ToString(), new[] { campaignSitelinkExtensionOperation });
-    //            }
-            }
-			
-			if (request.SelectedType?.ToLower() == "performance" && request.Website != "")
-			{
-                var assetGroupService = client.GetService(Services.V18.AssetGroupService);
-
-                var assetGroup = new AssetGroup
-                {
-                    Name = $"{request.CampaignName}",
-                    Campaign = campaignResource,
-                    FinalUrls = { request.Website }
-                };
-
-                var assetGroupOperation = new AssetGroupOperation { Create = assetGroup };
-
-                var assetGroupResponse = await assetGroupService.MutateAssetGroupsAsync(
-                    request.SelectedAccountId.ToString(), new[] { assetGroupOperation });
-            }
-
-            if (request.SelectedType?.ToLower() == "display" && request.Website != "")
-            {
-                var extensionFeedItemService = client.GetService(Services.V18.ExtensionFeedItemService);
-
-                var sitelinkExtensionFeedItem = new ExtensionFeedItem
-                {
-                    SitelinkFeedItem = new SitelinkFeedItem
-                    {
-                        LinkText = "Web Sitesi",
-                        FinalUrls = { request.Website }
-                    }
-                };
-
-                var sitelinkExtensionOperation = new ExtensionFeedItemOperation { Create = sitelinkExtensionFeedItem };
-                var sitelinkExtensionResponse = await extensionFeedItemService.MutateExtensionFeedItemsAsync(
-                    request.SelectedAccountId.ToString(), new[] { sitelinkExtensionOperation });
-
-                string sitelinkExtensionResourceName = sitelinkExtensionResponse.Results[0].ResourceName;
-
-                var campaignExtensionSettingService = client.GetService(Services.V18.CampaignExtensionSettingService);
-
-                var campaignExtensionSetting = new CampaignExtensionSetting
-                {
-                    Campaign = campaignResource,
-                    ExtensionType = ExtensionTypeEnum.Types.ExtensionType.Sitelink,
-                    ExtensionFeedItems = { sitelinkExtensionResourceName }
-                };
-
-                var campaignExtensionOperation = new CampaignExtensionSettingOperation { Create = campaignExtensionSetting };
-                var campaignExtensionResponse = await campaignExtensionSettingService.MutateCampaignExtensionSettingsAsync(
-                    request.SelectedAccountId.ToString(), new[] { campaignExtensionOperation });
-            }
-
             var campaignCriterionService = client.GetService(Services.V18.CampaignCriterionService);
 
             if (request.Locations == "all")
             {
-                var locationCriterion = new CampaignCriterion
-                {
-                    Campaign = campaignResource,
-                    Location = new LocationInfo
-                    {
-                        GeoTargetConstant = ResourceNames.GeoTargetConstant(2840)
-                    }
-                };
-
-                var locationOp = new CampaignCriterionOperation { Create = locationCriterion };
-                var locationResponse = await campaignCriterionService.MutateCampaignCriteriaAsync(
-                    request.SelectedAccountId.ToString(), new[] { locationOp });
+                
             }
 
             if (request.Locations == "turkey")
@@ -1012,7 +949,7 @@ namespace AdminPanel.Controllers.Google.Ads
                     Campaign = campaignResource,
                     Location = new LocationInfo
                     {
-                        GeoTargetConstant = ResourceNames.GeoTargetConstant(2276)
+                        GeoTargetConstant = ResourceNames.GeoTargetConstant(2792)
                     }
                 };
 
@@ -1083,6 +1020,39 @@ namespace AdminPanel.Controllers.Google.Ads
                         request.SelectedAccountId.ToString(), new[] { languageOp });
                 }
             }
+
+            //var googleAdsServices = client.GetService(Services.V18.GoogleAdsService);
+
+            //var querys = @"
+            //    SELECT 
+            //        geo_target_constant.resource_name, 
+            //        geo_target_constant.name, 
+            //        geo_target_constant.country_code, 
+            //        geo_target_constant.target_type, 
+            //        geo_target_constant.status 
+            //    FROM geo_target_constant 
+            //    WHERE geo_target_constant.target_type = 'Country' 
+            //        AND geo_target_constant.status = 'ENABLED'
+            //    ORDER BY geo_target_constant.name";
+
+            //var requestss = new SearchGoogleAdsRequest
+            //{
+            //    CustomerId = request.SelectedAccountId.ToString(),
+            //    Query = querys
+            //};
+
+            //var result = new List<object>();
+
+            //foreach (var row in googleAdsServices.Search(requestss))
+            //{
+            //    var geo = row.GeoTargetConstant;
+            //    result.Add(new
+            //    {
+            //        Id = geo.ResourceName.Split('/')[1],
+            //        Name = geo.Name,
+            //        CountryCode = geo.CountryCode
+            //    });
+            //}
 
             return Ok(1);
         }
@@ -1201,7 +1171,6 @@ namespace AdminPanel.Controllers.Google.Ads
             {
                 Create = new AdGroupAd()
                 {
-					
                     AdGroup = "customers/" + request.SelectedAccountId + "/adGroups/" + request.SelectedAdGroupId.ToString(),
                     Status = AdGroupAdStatus.Enabled,
                     Ad = new Ad()
@@ -1456,6 +1425,254 @@ namespace AdminPanel.Controllers.Google.Ads
 			return Ok(1);
         }
 
+        [HttpPost("save-max-ad")]
+        public async Task<IActionResult> SaveMaxAdUnified([FromForm] SaveMaxRequestModel request)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var mutateOperations = new List<MutateOperation>();
+            long customerId = long.Parse(request.SelectedAccountId);
+            long campaignId = request.SelectedCampaignId;
+
+            int tempIdCounter = -1;
+
+            var headlineAssetIds = request.Headlines.Select(h =>
+            {
+                var op = new MutateOperation
+                {
+                    AssetOperation = new AssetOperation
+                    {
+                        Create = new Asset
+                        {
+                            ResourceName = ResourceNames.Asset(customerId, tempIdCounter),
+                            TextAsset = new TextAsset { Text = h },
+                            Type = AssetTypeEnum.Types.AssetType.Text
+                        }
+                    }
+                };
+                mutateOperations.Add(op);
+                return tempIdCounter--;
+            }).ToList();
+
+            var descriptionAssetIds = request.Descriptions.Select(d =>
+            {
+                var op = new MutateOperation
+                {
+                    AssetOperation = new AssetOperation
+                    {
+                        Create = new Asset
+                        {
+                            ResourceName = ResourceNames.Asset(customerId, tempIdCounter),
+                            TextAsset = new TextAsset { Text = d },
+                            Type = AssetTypeEnum.Types.AssetType.Text
+                        }
+                    }
+                };
+                mutateOperations.Add(op);
+                return tempIdCounter--;
+            }).ToList();
+
+            var longHeadlineAssetIds = request.LongHeadlines.Select(d =>
+            {
+                var op = new MutateOperation
+                {
+                    AssetOperation = new AssetOperation
+                    {
+                        Create = new Asset
+                        {
+                            ResourceName = ResourceNames.Asset(customerId, tempIdCounter),
+                            TextAsset = new TextAsset { Text = d },
+                            Type = AssetTypeEnum.Types.AssetType.Text
+                        }
+                    }
+                };
+                mutateOperations.Add(op);
+                return tempIdCounter--;
+            }).ToList();
+
+            var businessNameAssetId = tempIdCounter;
+            mutateOperations.Add(new MutateOperation
+            {
+                AssetOperation = new AssetOperation
+                {
+                    Create = new Asset
+                    {
+                        ResourceName = ResourceNames.Asset(customerId, businessNameAssetId),
+                        TextAsset = new TextAsset { Text = request.AccountName },
+                        Type = AssetTypeEnum.Types.AssetType.Text
+                    }
+                }
+            });
+            tempIdCounter--;
+
+            var marketingImageTempIds = new List<int>();
+            if (request.Images != null)
+            {
+                foreach (var image in request.Images)
+                {
+                    var imageBytes = await GetResizedImageBytes(image, 1200, 627);
+                    var marketingImageId = tempIdCounter;
+
+                    mutateOperations.Add(new MutateOperation
+                    {
+                        AssetOperation = new AssetOperation
+                        {
+                            Create = new Asset
+                            {
+                                Name = "Image" + Guid.NewGuid(),
+                                ResourceName = ResourceNames.Asset(customerId, marketingImageId),
+                                ImageAsset = new ImageAsset { Data = ByteString.CopyFrom(imageBytes) },
+                                Type = AssetTypeEnum.Types.AssetType.Image
+                            }
+                        }
+                    });
+
+                    marketingImageTempIds.Add(marketingImageId);
+                    tempIdCounter--;
+                }
+            }
+
+            var squareImageTempIds = new List<int>();
+            if (request.Images != null)
+            {
+                foreach (var image in request.Images)
+                {
+                    var squareImageBytes = await GetResizedImageBytes(image, 600, 600);
+                    var squareImageId = tempIdCounter;
+
+                    mutateOperations.Add(new MutateOperation
+                    {
+                        AssetOperation = new AssetOperation
+                        {
+                            Create = new Asset
+                            {
+                                Name = "Image" + Guid.NewGuid(),
+                                ResourceName = ResourceNames.Asset(customerId, squareImageId),
+                                ImageAsset = new ImageAsset { Data = ByteString.CopyFrom(squareImageBytes) },
+                                Type = AssetTypeEnum.Types.AssetType.Image
+                            }
+                        }
+                    });
+
+                    squareImageTempIds.Add(squareImageId);
+                    tempIdCounter--;
+                }
+            }
+
+            var logoImageTempIds = new List<int>();
+            if (request.Logos != null)
+            {
+                foreach (var logo in request.Logos)
+                {
+                    var logoImageBytes = await GetResizedImageBytes(logo, 512, 512);
+                    var logoImageId = tempIdCounter;
+
+                    mutateOperations.Add(new MutateOperation
+                    {
+                        AssetOperation = new AssetOperation
+                        {
+                            Create = new Asset
+                            {
+                                Name = "Logo" + Guid.NewGuid(),
+                                ResourceName = ResourceNames.Asset(customerId, logoImageId),
+                                ImageAsset = new ImageAsset { Data = ByteString.CopyFrom(logoImageBytes) },
+                                Type = AssetTypeEnum.Types.AssetType.Image
+                            }
+                        }
+                    });
+
+                    logoImageTempIds.Add(logoImageId);
+                    tempIdCounter--;
+                }
+            }
+
+            var assetGroupTempId = -1000;
+            var assetGroupResourceName = ResourceNames.AssetGroup(customerId, assetGroupTempId);
+            mutateOperations.Add(new MutateOperation
+            {
+                AssetGroupOperation = new AssetGroupOperation
+                {
+                    Create = new AssetGroup
+                    {
+                        ResourceName = assetGroupResourceName,
+                        Name = request.AdName,
+                        Campaign = ResourceNames.Campaign(customerId, campaignId),
+                        FinalUrls = { request.FinalUrl },
+                        Status = AssetGroupStatusEnum.Types.AssetGroupStatus.Paused
+                    }
+                }
+            });
+
+            if (request.VideoUrls.FirstOrDefault() != null)
+            {
+                var youtubeVideoIds = request.VideoUrls?.Select(ExtractYoutubeVideoId).Where(id => !string.IsNullOrEmpty(id)).ToList();
+                var youtubeVideoTempIds = new List<int>();
+
+                if (youtubeVideoIds != null)
+                {
+                    foreach (var videoId in youtubeVideoIds)
+                    {
+                        var videoTempId = tempIdCounter;
+
+                        mutateOperations.Add(new MutateOperation
+                        {
+                            AssetOperation = new AssetOperation
+                            {
+                                Create = new Asset
+                                {
+                                    ResourceName = ResourceNames.Asset(customerId, videoTempId),
+                                    YoutubeVideoAsset = new YoutubeVideoAsset
+                                    {
+                                        YoutubeVideoId = videoId
+                                    },
+                                    Type = AssetTypeEnum.Types.AssetType.YoutubeVideo
+                                }
+                            }
+                        });
+
+                        youtubeVideoTempIds.Add(videoTempId);
+                        tempIdCounter--;
+                    }
+                }
+                mutateOperations.AddRange(youtubeVideoTempIds.Select(id =>
+                CreateAssetGroupAssetOp(assetGroupResourceName, ResourceNames.Asset(customerId, id), AssetFieldTypeEnum.Types.AssetFieldType.YoutubeVideo)));
+            }
+
+            mutateOperations.AddRange(headlineAssetIds.Select(id => CreateAssetGroupAssetOp(assetGroupResourceName, ResourceNames.Asset(customerId, id), AssetFieldTypeEnum.Types.AssetFieldType.Headline)));
+            mutateOperations.AddRange(descriptionAssetIds.Select(id => CreateAssetGroupAssetOp(assetGroupResourceName, ResourceNames.Asset(customerId, id), AssetFieldTypeEnum.Types.AssetFieldType.Description)));
+            mutateOperations.AddRange(longHeadlineAssetIds.Select(id => CreateAssetGroupAssetOp(assetGroupResourceName, ResourceNames.Asset(customerId, id), AssetFieldTypeEnum.Types.AssetFieldType.LongHeadline)));
+            mutateOperations.Add(CreateAssetGroupAssetOp(assetGroupResourceName, ResourceNames.Asset(customerId, businessNameAssetId), AssetFieldTypeEnum.Types.AssetFieldType.BusinessName));
+            mutateOperations.AddRange(marketingImageTempIds.Select(id =>
+                CreateAssetGroupAssetOp(assetGroupResourceName, ResourceNames.Asset(customerId, id), AssetFieldTypeEnum.Types.AssetFieldType.MarketingImage)));
+
+            mutateOperations.AddRange(squareImageTempIds.Select(id =>
+                CreateAssetGroupAssetOp(assetGroupResourceName, ResourceNames.Asset(customerId, id), AssetFieldTypeEnum.Types.AssetFieldType.SquareMarketingImage)));
+
+            mutateOperations.AddRange(logoImageTempIds.Select(id =>
+                CreateAssetGroupAssetOp(assetGroupResourceName, ResourceNames.Asset(customerId, id), AssetFieldTypeEnum.Types.AssetFieldType.Logo)));
+
+            var mutateService = client.GetService(Services.V18.GoogleAdsService);
+            var response = await mutateService.MutateAsync(new MutateGoogleAdsRequest
+            {
+                CustomerId = customerId.ToString(),
+                MutateOperations = { mutateOperations }
+            });
+
+            return Ok(1);
+        }
+
         private int UserId()
         {
             var userIdClaim = HttpContext.User.FindFirst("userId");
@@ -1468,7 +1685,48 @@ namespace AdminPanel.Controllers.Google.Ads
             return userId;
         }
 
-		public class GoogleAccountDto
+        private MutateOperation CreateAssetGroupAssetOp(string assetGroupResourceName, string assetResourceName, AssetFieldTypeEnum.Types.AssetFieldType fieldType)
+        {
+            return new MutateOperation
+            {
+                AssetGroupAssetOperation = new AssetGroupAssetOperation
+                {
+                    Create = new AssetGroupAsset
+                    {
+                        AssetGroup = assetGroupResourceName,
+                        Asset = assetResourceName,
+                        FieldType = fieldType
+                    }
+                }
+            };
+        }
+
+        private async Task<byte[]> GetResizedImageBytes(IFormFile file, int width, int height)
+        {
+            using var inputStream = new MemoryStream();
+            await file.CopyToAsync(inputStream);
+            inputStream.Position = 0;
+
+            using var image = Image.Load(inputStream.ToArray());
+            image.Mutate(x => x.Resize(new ResizeOptions
+            {
+                Size = new Size(width, height),
+                Mode = ResizeMode.Crop
+            }));
+
+            using var outputStream = new MemoryStream();
+            image.SaveAsJpeg(outputStream);
+            return outputStream.ToArray();
+        }
+
+        private string ExtractYoutubeVideoId(string url)
+        {
+            var uri = new Uri(url);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            return query["v"];
+        }
+
+        public class GoogleAccountDto
 		{
 			public long Id { get; set; }
 			public string Name { get; set; }

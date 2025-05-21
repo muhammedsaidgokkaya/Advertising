@@ -34,5 +34,22 @@
             public string AdName { get; set; }
             public string LongTittle { get; set; }
         }
+
+        public class SaveMaxRequestModel
+        {
+            public List<IFormFile>? Images { get; set; }
+            public List<IFormFile>? Logos { get; set; }
+            public IFormFile? Video { get; set; }
+            public string SelectedAccountId { get; set; }
+            public long SelectedCampaignId { get; set; }
+            public string SelectedCampaignType { get; set; }
+            public List<string> Descriptions { get; set; }
+            public List<string> Headlines { get; set; }
+            public List<string> LongHeadlines { get; set; }
+            public List<string> VideoUrls { get; set; }
+            public string AccountName { get; set; }
+            public string FinalUrl { get; set; }
+            public string AdName { get; set; }
+        }
     }
 }
