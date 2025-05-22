@@ -777,6 +777,47 @@ namespace AdminPanel.Controllers.Google.Ads
 			return Ok(keywords);
 		}
 
+        [HttpGet("geo")]
+        public async Task<IActionResult> SuggestGeoTargetConstants(string query)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var service = client.GetService(Services.V18.GeoTargetConstantService);
+
+            var request = new SuggestGeoTargetConstantsRequest
+            {
+                Locale = "tr",
+                LocationNames = new SuggestGeoTargetConstantsRequest.Types.LocationNames
+                {
+                    Names = { query }
+                }
+            };
+
+            var response = await service.SuggestGeoTargetConstantsAsync(request);
+
+            var result = response.GeoTargetConstantSuggestions.Select(x => new LocationSuggestion
+            {
+                Id = x.GeoTargetConstant.Id,
+                Name = $"{x.GeoTargetConstant.CanonicalName}, {GetTurkishTargetType(x.GeoTargetConstant.TargetType)}",
+                CountryCode = x.GeoTargetConstant.CountryCode,
+                TargetType = x.GeoTargetConstant.TargetType
+            }).ToList();
+
+            return Ok(result);
+        }
+
         [HttpPost("save-search-campaign")]
         public async Task<IActionResult> SaveSearchCampaign([FromBody] SearchCampaignRequest request)
         {
@@ -1029,43 +1070,18 @@ namespace AdminPanel.Controllers.Google.Ads
             {
                 foreach (var item in request.CustomLocations)
                 {
-                    string query = $@"
-						SELECT geo_target_constant.id, geo_target_constant.name, geo_target_constant.country_code
-						FROM geo_target_constant
-						WHERE LOWER(geo_target_constant.name) = LOWER('{item.Town}')
-							AND LOWER(geo_target_constant.country_code) = LOWER('{item.country_code}')
-					";
-
-                    var requests = new SearchGoogleAdsRequest
+                    var locationCriterion = new CampaignCriterion
                     {
-                        CustomerId = request.SelectedAccountId.ToString(),
-                        Query = query
+                        Campaign = campaignResource,
+                        Location = new LocationInfo
+                        {
+                            GeoTargetConstant = ResourceNames.GeoTargetConstant(item)
+                        }
                     };
 
-                    var locations = new List<long>();
-                    var googleAdsService = client.GetService(Services.V18.GoogleAdsService);
-                    var response = googleAdsService.Search(requests);
-                    foreach (var row in response)
-                    {
-                        var geo = row.GeoTargetConstant;
-                        locations.Add(geo.Id);
-                    }
-
-                    foreach (var items in locations)
-                    {
-                        var locationCriterion = new CampaignCriterion
-                        {
-                            Campaign = campaignResource,
-                            Location = new LocationInfo
-                            {
-                                GeoTargetConstant = ResourceNames.GeoTargetConstant(items)
-                            }
-                        };
-
-                        var locationOp = new CampaignCriterionOperation { Create = locationCriterion };
-                        var locationResponse = await campaignCriterionService.MutateCampaignCriteriaAsync(
-                            request.SelectedAccountId.ToString(), new[] { locationOp });
-                    }
+                    var locationOp = new CampaignCriterionOperation { Create = locationCriterion };
+                    var locationResponse = await campaignCriterionService.MutateCampaignCriteriaAsync(
+                        request.SelectedAccountId.ToString(), new[] { locationOp });
                 }
             }
 
@@ -1793,10 +1809,35 @@ namespace AdminPanel.Controllers.Google.Ads
             return query["v"];
         }
 
+        private string GetTurkishTargetType(string targetType)
+        {
+            return targetType switch
+            {
+                "City" => "şehir",
+                "Country" => "ülke",
+                "Region" => "bölge",
+                "State" => "eyalet",
+                "Province" => "il",
+                "Prefecture" => "il",
+                "PostalCode" => "posta kodu",
+                "District" => "ilçe",
+                "Municipality" => "belediye",
+                _ => targetType.ToLower()
+            };
+        }
+
         public class GoogleAccountDto
 		{
 			public long Id { get; set; }
 			public string Name { get; set; }
 		}
+
+        public class LocationSuggestion
+        {
+            public long Id { get; set; }
+            public string Name { get; set; }
+            public string CountryCode { get; set; }
+            public string TargetType { get; set; }
+        }
     }
 }

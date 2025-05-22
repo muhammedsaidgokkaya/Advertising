@@ -20,22 +20,13 @@
             public string Budget { get; set; }
             public List<int> SelectedLanguages { get; set; }
             public string Locations { get; set; }
-            public List<LocationAddress> CustomLocations { get; set; }
+            public List<long> CustomLocations { get; set; }
         }
 
         public class Results
         {
             public bool WebsiteVisits { get; set; }
             public bool PhoneCalls { get; set; }
-        }
-
-        public class LocationAddress
-        {
-            public string? Country { get; set; }
-            public string? Region { get; set; }
-            public string? State { get; set; }
-            public string? Town { get; set; }
-            public string? country_code { get; set; }
         }
     }
 }
