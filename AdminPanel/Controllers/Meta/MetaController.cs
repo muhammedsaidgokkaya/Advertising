@@ -1,4 +1,5 @@
-﻿using AdminPanel.Models.Meta.Ad;
+﻿using AdminPanel.Models.Google.Ads;
+using AdminPanel.Models.Meta.Ad;
 using AdminPanel.Models.Meta.AdSet;
 using AdminPanel.Models.Meta.AdvertisingAccount;
 using AdminPanel.Models.Meta.Audience;
@@ -35,12 +36,14 @@ namespace AdminPanel.Controllers.Meta
         private readonly Utilities.Utilities.MetaData.Meta _meta;
         private readonly DefaultValues _defaultValues;
         private readonly PythonRun _pythonRun;
+        private readonly HttpClient _httpClient;
         private readonly IHttpClientFactory _httpClientFactory;
 
         public MetaController(ILogger<MetaController> logger, Utilities.Utilities.MetaData.Meta meta, MetaService metaService, MetaData metaData, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _userService = new UserService();
+            _httpClient = new HttpClient();
             _metaService = metaService;
             _meta = meta;
             _metaData = metaData;
@@ -623,6 +626,48 @@ namespace AdminPanel.Controllers.Meta
             allAudiences.AddRange(allSavedAudiences);
 
             return Ok(allAudiences);
+        }
+
+        [HttpPost("create-campaign")]
+        public async Task<IActionResult> CreateCampaign([FromBody] Models.Meta.Campaign.AddCampaign request)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var url = $"https://graph.facebook.com/v19.0/" + request.SelectedAccountId + "/campaigns";
+
+            var basePayload = new Dictionary<string, object>
+            {
+                { "name", request.CampaignName },
+                { "objective", request.SelectedType },
+                { "status", "PAUSED" },
+                { "special_ad_categories", new[] { "NONE" } },
+                { "buying_type", request.SelectedPriceType },
+                { "access_token", accessToken.AccessToken }
+            };
+
+            basePayload["campaign_budget_optimization"] = request.AdvantageBudget;
+
+            if (request.AdvantageBudget)
+            {
+                if (request.Daily?.ToLower() == "day")
+                {
+                    basePayload["daily_budget"] = int.TryParse(request.Budget, out var daily) ? (daily * 100) : 10000;
+                    basePayload["bid_strategy"] = request.BidStrategy;
+                }
+                else if (request.Daily?.ToLower() == "total")
+                {
+                    basePayload["lifetime_budget"] = int.TryParse(request.Budget, out var lifetime) ? (lifetime * 100) : 50000;
+                    basePayload["bid_strategy"] = request.BidStrategy;
+                }
+            }
+           
+            var json = System.Text.Json.JsonSerializer.Serialize(basePayload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+            var campaignId = await response.Content.ReadAsStringAsync();
+
+            return Ok(campaignId);
         }
 
         //[HttpPost("create-lookalike")]
