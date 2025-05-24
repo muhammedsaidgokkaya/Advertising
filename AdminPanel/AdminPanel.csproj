@@ -12,6 +12,7 @@
     <PackageReference Include="Google.Apis.AnalyticsData.v1beta" Version="1.68.0.3608" />
     <PackageReference Include="Google.Apis.Auth" Version="1.69.0" />
     <PackageReference Include="Google.Apis.GoogleAnalyticsAdmin.v1beta" Version="1.69.0.3718" />
+    <PackageReference Include="Google.Protobuf" Version="3.31.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.35" />
     <PackageReference Include="NPOI" Version="2.7.3" />
     <PackageReference Include="OpenAI.API" Version="1.0.0" />

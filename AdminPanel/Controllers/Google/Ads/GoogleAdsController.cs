@@ -23,10 +23,11 @@ using static AdminPanel.Models.Google.Ads.AddCampaign;
 using static AdminPanel.Models.Google.Ads.AddAdSet;
 using static AdminPanel.Models.Google.Ads.AddAd;
 using static Google.Ads.GoogleAds.V18.Enums.AdGroupAdStatusEnum.Types;
-using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using Google.Api;
+using Google.Protobuf;
 
 namespace AdminPanel.Controllers.Google.Ads
 {
@@ -1752,6 +1753,65 @@ namespace AdminPanel.Controllers.Google.Ads
                 CustomerId = customerId.ToString(),
                 MutateOperations = { mutateOperations }
             });
+
+            return Ok(1);
+        }
+
+        [HttpPost("campaign-status")]
+        public async Task<IActionResult> UpdateCampaignStatus(string customer, long campaignId, int statusType)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var mutateOperations = new List<MutateOperation>();
+            var campaignService = client.GetService(Services.V18.CampaignService);
+
+            var newStatus = CampaignStatusEnum.Types.CampaignStatus.Paused;
+
+            if (statusType == 1)
+            {
+                newStatus = CampaignStatusEnum.Types.CampaignStatus.Enabled;
+            }
+            if (statusType == 2)
+            {
+                newStatus = CampaignStatusEnum.Types.CampaignStatus.Paused;
+            }
+            if (statusType == 3)
+            {
+                newStatus = CampaignStatusEnum.Types.CampaignStatus.Removed;
+                var removeOperation = new CampaignOperation
+                {
+                    Remove = ResourceNames.Campaign(long.Parse(customer), campaignId)
+                };
+
+                var responses = campaignService.MutateCampaigns(customer, new[] { removeOperation });
+                return Ok(1);
+            }
+
+            Campaign campaign = new Campaign
+            {
+                ResourceName = ResourceNames.Campaign(long.Parse(customer), campaignId),
+                Status = newStatus
+            };
+
+            var operation = new CampaignOperation
+            {
+                Update = campaign,
+                UpdateMask = FieldMask.FromString("status")
+            };
+
+            var response = campaignService.MutateCampaigns(customer, new[] { operation });
 
             return Ok(1);
         }
