@@ -645,19 +645,22 @@ namespace AdminPanel.Controllers.Meta
                 { "access_token", accessToken.AccessToken }
             };
 
-            basePayload["campaign_budget_optimization"] = request.AdvantageBudget;
-
-            if (request.AdvantageBudget)
+            if (request.SelectedPriceType == "AUCTION")
             {
-                if (request.Daily?.ToLower() == "day")
+                basePayload["campaign_budget_optimization"] = request.AdvantageBudget;
+
+                if (request.AdvantageBudget)
                 {
-                    basePayload["daily_budget"] = int.TryParse(request.Budget, out var daily) ? (daily * 100) : 10000;
-                    basePayload["bid_strategy"] = request.BidStrategy;
-                }
-                else if (request.Daily?.ToLower() == "total")
-                {
-                    basePayload["lifetime_budget"] = int.TryParse(request.Budget, out var lifetime) ? (lifetime * 100) : 50000;
-                    basePayload["bid_strategy"] = request.BidStrategy;
+                    if (request.Daily?.ToLower() == "day")
+                    {
+                        basePayload["daily_budget"] = int.TryParse(request.Budget, out var daily) ? (daily * 100) : 10000;
+                        basePayload["bid_strategy"] = request.BidStrategy;
+                    }
+                    else if (request.Daily?.ToLower() == "total")
+                    {
+                        basePayload["lifetime_budget"] = int.TryParse(request.Budget, out var lifetime) ? (lifetime * 100) : 50000;
+                        basePayload["bid_strategy"] = request.BidStrategy;
+                    }
                 }
             }
            
