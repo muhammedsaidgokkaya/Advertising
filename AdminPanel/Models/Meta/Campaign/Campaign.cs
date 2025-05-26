@@ -13,6 +13,8 @@ namespace AdminPanel.Models.Meta.Campaign
 
         public string AccountId { get; set; }
 
+        public string BuyingType { get; set; }
+
         public InsightResponse Insights { get; set; }
 
         public DateTime? EndTime { get; set; }

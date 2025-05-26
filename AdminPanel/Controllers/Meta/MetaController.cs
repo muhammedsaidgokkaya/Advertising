@@ -286,6 +286,7 @@ namespace AdminPanel.Controllers.Meta
                 Status = q.Status == "ACTIVE" ? "Aktif" : "Pasif",
                 AccountId = q.AccountId,
                 EndTime = q.EndTime,
+                BuyingType = q.BuyingType,
                 Insights = new InsightResponse
                 {
                     Data = q.Insights?.Data?.Select(i => new Insight
@@ -615,17 +616,55 @@ namespace AdminPanel.Controllers.Meta
             {
                 Id = a.Id,
                 Name = a.Name,
+                AudienceType = a.AudienceType
             }).ToList();
 
             var allSavedAudiences = savedAudiences.Select(s => new Audience
             {
                 Id = s.Id,
                 Name = s.Name,
+                AudienceType = s.AudienceType
             }).ToList();
 
             allAudiences.AddRange(allSavedAudiences);
 
             return Ok(allAudiences);
+        }
+
+        [HttpGet("facebook-pages")]
+        public async Task<IActionResult> GetFacebookPages()
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var url = $"https://graph.facebook.com/v18.0/me/accounts?access_token={accessToken.AccessToken}";
+
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<FacebookPageResponse>(url);
+                return Ok(response?.Data ?? new List<FacebookPage>());
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(500, $"Facebook API hatası: {ex.Message}");
+            }
+        }
+
+        [HttpGet("instagram-account")]
+        public async Task<IActionResult> GetInstagramAccount(string facebookId)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var url = $"https://graph.facebook.com/v18.0/{facebookId}?fields=connected_instagram_account&access_token={accessToken.AccessToken}";
+
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<InstagramAccount>(url);
+                return Ok(response?.Connected_Instagram_Account);
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(500, $"Instagram API hatası: {ex.Message}");
+            }
         }
 
         [HttpPost("create-campaign")]
@@ -673,54 +712,194 @@ namespace AdminPanel.Controllers.Meta
             return Ok(campaignId);
         }
 
-        //[HttpPost("create-lookalike")]
-        //public async Task<IActionResult> CreateLookalikeAudience([FromQuery] string selectedAccount, [FromQuery] string selectedCountries, [FromQuery] string ratios, [FromQuery] string selectedAudience)
-        //{
-        //    var userId = UserId();
-        //    var accessToken = _metaService.GetLongAccessToken(userId);
-        //    var client = _httpClientFactory.CreateClient();
-        //    var apiUrl = "https://graph.facebook.com/v21.0/" + selectedAccount + "/customaudiences";
+        [HttpPost("create-adset")]
+        public async Task<IActionResult> CreateAdSet([FromBody] Models.Meta.AdSet.AddAdSet.AdSetDto request)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var url = $"https://graph.facebook.com/v19.0/" + request.SelectedAccountId + "/adsets";
 
-        //    var countriesList = selectedCountries.Split(',')
-        //                                         .Select(country => country.Trim())
-        //                                         .ToList();
+            var basePayload = new Dictionary<string, object>
+            {
+                { "name", request.AdSetName },
+                { "start_time", request.StartDate.ToString("yyyy-MM-ddTHH:mm:sszzz") },
+                { "campaign_id", request.SelectedCampaignId },
+                { "page_id", request.SelectedFacebookPageId },
+                { "status", "PAUSED" },
+                { "access_token", accessToken.AccessToken }
+            };
 
-        //    var validRatios = ratios.Split(',')
-        //                            .Select(r => Convert.ToDecimal(r.Trim().Replace(',', '.')))
-        //                            .Where(r => r >= 0.01m && r <= 0.20m)
-        //                            .Select(r => r / 100)
-        //                            .ToArray();
+            if (request.SelectedInstagramAccountId != "0")
+            {
+                basePayload.Add("instagram_actor_id", request.SelectedInstagramAccountId);
+            }
 
-        //    var lookalikeSpec = new
-        //    {
-        //        country = countriesList.FirstOrDefault(),
-        //        location_spec = countriesList.Any() ? new { geo_locations = new { countries = countriesList } } : null,
-        //        ratio = validRatios.Select(r => r.ToString("F2")).ToArray()
-        //    };
+            basePayload.Add("billing_event", request.BillingEvent);
 
-        //    string lookalikeSpecJson = JsonConvert.SerializeObject(lookalikeSpec);
+            Dictionary<string, object> targeting;
 
-        //    var parameters = new Dictionary<string, string>
-        //    {
-        //        { "access_token", accessToken.AccessToken },
-        //        { "subtype", "LOOKALIKE" },
-        //        { "origin_audience_id", selectedAudience },
-        //        { "customer_file_source", "USER_PROVIDED_ONLY" },
-        //        { "lookalike_spec", lookalikeSpecJson }
-        //    };
+            if (request.IsAdvantage)
+            {
+                basePayload.Add("automatic_placements", true);
+                targeting = new Dictionary<string, object>();
+            }
+            else
+            {
+                targeting = new Dictionary<string, object>
+                {
+                    { "publisher_platforms", request.PublisherPlatforms },
+                };
 
-        //    var content = new FormUrlEncodedContent(parameters);
+                if (request.FacebookPositions != null && request.FacebookPositions.Any())
+                {
+                    var facebookPositions = new List<string>(request.FacebookPositions);
 
-        //    var response = await client.PostAsync(apiUrl, content);
-        //    if (!response.IsSuccessStatusCode)
-        //    {
-        //        var errorResponse = await response.Content.ReadAsStringAsync();
-        //        return StatusCode((int)response.StatusCode, $"Meta API'ye hedef kitle oluşturulamadı: {errorResponse}");
-        //    }
+                    var requiresFeed = new[] { "marketplace", "search", "profile_feed", "notification" };
+                    if (facebookPositions.Any(x => requiresFeed.Contains(x)) && !facebookPositions.Contains("feed"))
+                    {
+                        facebookPositions.Add("feed");
+                    }
 
-        //    var responseData = await response.Content.ReadAsStringAsync();
-        //    return Ok(responseData);
-        //}
+                    targeting.Add("facebook_positions", facebookPositions);
+                }
+
+                if (request.InstagramPositions != null && request.InstagramPositions.Any())
+                {
+                    var instagramPositions = new List<string>(request.InstagramPositions);
+
+                    if (instagramPositions.Contains("explore") ||
+                        !instagramPositions.Contains("profile_feed") ||
+                        !instagramPositions.Contains("stream"))
+                    {
+                        instagramPositions.Add("stream");
+                    }
+
+                    targeting.Add("instagram_positions", instagramPositions);
+                }
+
+                if (request.AudienceNetworkPositions != null && request.AudienceNetworkPositions.Any())
+                {
+                    targeting.Add("audience_network_positions", request.AudienceNetworkPositions);
+                }
+
+                if (request.MessengerPositions != null && request.MessengerPositions.Any())
+                {
+                    var messengerPositions = new List<string>(request.MessengerPositions);
+
+                    if (messengerPositions.Contains("messenger_home"))
+                    {
+                        if (!request.PublisherPlatforms.Contains("facebook"))
+                        {
+                            request.PublisherPlatforms.Add("facebook");
+                        }
+
+                        if (request.FacebookPositions == null)
+                            request.FacebookPositions = new List<string>();
+
+                        if (!request.FacebookPositions.Contains("feed"))
+                        {
+                            request.FacebookPositions.Add("feed");
+                        }
+
+                        targeting["facebook_positions"] = request.FacebookPositions;
+                    }
+
+                    if (messengerPositions.Contains("story"))
+                    {
+                        if (!request.PublisherPlatforms.Contains("facebook") && !request.PublisherPlatforms.Contains("instagram"))
+                        {
+                            request.PublisherPlatforms.Add("facebook");
+                        }
+                    }
+
+                    if (messengerPositions.Contains("sponsored_messages") && messengerPositions.Count > 1)
+                    {
+                        messengerPositions = new List<string> { "sponsored_messages" };
+                    }
+
+                    targeting.Add("messenger_positions", messengerPositions);
+                }
+            }
+
+            switch (request.SelectedAudienceType?.ToLower())
+            {
+                case "custom":
+                    targeting.Add("custom_audiences", new[]
+                    {
+                        new Dictionary<string, object> { { "id", request.SelectedAudienceId } }
+                    });
+                    break;
+
+                case "lookalike":
+                    targeting.Add("lookalike_audiences", new[]
+                    {
+                        new Dictionary<string, object> { { "id", request.SelectedAudienceId } }
+                    });
+                    break;
+
+                case "saved":
+                    targeting.Add("saved_audience", request.SelectedAudienceId);
+                    break;
+
+                default:
+                    throw new Exception("Geçersiz audience türü: " + request.SelectedAudienceType);
+            }
+
+            basePayload.Add("targeting", targeting);
+
+            if (request.EndDate != null)
+            {
+                basePayload.Add("end_time", request.EndDate.Value.ToString("yyyy-MM-ddTHH:mm:sszzz"));
+            }
+
+            if (request.SelectedCampaignType == "AUCTION")
+            {
+                if (request.BidStrategy != "LOWEST_COST_WITHOUT_CAP")
+                {
+                    basePayload.Add("bid_amount", int.TryParse(request.BidFinished, out var bidFinished) ? (bidFinished * 100) : 10000);
+                }
+
+                if (request.Daily?.ToLower() == "day")
+                {
+                    basePayload["daily_budget"] = int.TryParse(request.Budget, out var daily) ? (daily * 100) : 10000;
+                    basePayload["bid_strategy"] = request.BidStrategy;
+                }
+                else if (request.Daily?.ToLower() == "total")
+                {
+                    basePayload["lifetime_budget"] = int.TryParse(request.Budget, out var lifetime) ? (lifetime * 100) : 50000;
+                    basePayload["bid_strategy"] = request.BidStrategy;
+                }
+            }
+
+            var json = System.Text.Json.JsonSerializer.Serialize(basePayload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+            var responseBytes = await response.Content.ReadAsByteArrayAsync();
+            var responseText = Encoding.UTF8.GetString(responseBytes);
+
+            dynamic error = JsonConvert.DeserializeObject(responseText);
+            if (error?.error != null)
+            {
+                string userTitle = error.error.error_user_title;
+                string userMsg = error.error.error_user_msg;
+
+                return Ok(new
+                {
+                    Success = false,
+                    title = userTitle,
+                    message = userMsg
+                });
+            }
+
+            var adSetId = await response.Content.ReadAsStringAsync();
+
+            return Ok(new
+            {
+                Success = true,
+                Id = adSetId
+            });
+        }
 
         private int UserId()
         {
@@ -732,6 +911,29 @@ namespace AdminPanel.Controllers.Meta
 
             int userId = int.Parse(userIdClaim.Value);
             return userId;
+        }
+
+        public class FacebookPageResponse
+        {
+            public List<FacebookPage> Data { get; set; }
+        }
+
+        public class FacebookPage
+        {
+            public string Id { get; set; }
+            public string Name { get; set; }
+            public string AccessToken { get; set; }
+        }
+
+        public class InstagramAccount
+        {
+            public ConnectedInstagramAccount Connected_Instagram_Account { get; set; }
+        }
+
+        public class ConnectedInstagramAccount
+        {
+            public string Id { get; set; }
+            public string Username { get; set; }
         }
     }
 }

@@ -252,6 +252,9 @@ namespace Utilities.Utilities.MetaData
             [JsonProperty("account_id")]
             public string AccountId { get; set; }
 
+            [JsonProperty("buying_type")]
+            public string BuyingType { get; set; }
+
             [JsonProperty("insights")]
             public InsightResponse Insights { get; set; }
 
