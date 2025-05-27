@@ -22,6 +22,9 @@
             public string SelectedFacebookPageId { get; set; }
             public string SelectedInstagramAccountId { get; set; }
             public string SelectedCampaignType { get; set; }
+            public string SelectedPixelId { get; set; }
+            public string SelectedCampaignObjectiveType { get; set; }
+            public string ConversionEvent { get; set; }
             public string? BillingEvent { get; set; }
             public bool IsAdvantage { get; set; }
             public DateTime StartDate { get; set; }

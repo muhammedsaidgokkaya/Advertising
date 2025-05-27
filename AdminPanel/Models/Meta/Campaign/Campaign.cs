@@ -15,6 +15,8 @@ namespace AdminPanel.Models.Meta.Campaign
 
         public string BuyingType { get; set; }
 
+        public string Objective { get; set; }
+
         public InsightResponse Insights { get; set; }
 
         public DateTime? EndTime { get; set; }

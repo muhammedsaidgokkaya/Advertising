@@ -287,6 +287,7 @@ namespace AdminPanel.Controllers.Meta
                 AccountId = q.AccountId,
                 EndTime = q.EndTime,
                 BuyingType = q.BuyingType,
+                Objective = q.Objective,
                 Insights = new InsightResponse
                 {
                     Data = q.Insights?.Data?.Select(i => new Insight
@@ -667,6 +668,42 @@ namespace AdminPanel.Controllers.Meta
             }
         }
 
+        [HttpGet("get-pixels")]
+        public async Task<IActionResult> GetPixels(string adAccountId)
+        {
+            var accessToken = _metaService.GetLongAccessToken(UserId());
+
+            var businessUrl = $"https://graph.facebook.com/v19.0/{adAccountId}?fields=business&access_token={accessToken.AccessToken}";
+            var businessResponse = await _httpClient.GetAsync(businessUrl);
+            var businessContent = await businessResponse.Content.ReadAsStringAsync();
+
+            dynamic businessData = JsonConvert.DeserializeObject(businessContent);
+            string businessId = businessData?.business?.id;
+
+            if (string.IsNullOrEmpty(businessId))
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "Business ID alınamadı. Access token veya ad account yetkisi yetersiz olabilir."
+                });
+            }
+
+            var pixelsUrl = $"https://graph.facebook.com/v19.0/{businessId}/owned_pixels?access_token={accessToken.AccessToken}";
+            var pixelsResponse = await _httpClient.GetAsync(pixelsUrl);
+            var pixelsContent = await pixelsResponse.Content.ReadAsStringAsync();
+
+            dynamic pixelsData = JsonConvert.DeserializeObject(pixelsContent);
+
+            var pixelIds = new List<string>();
+            foreach (var pixel in pixelsData?.data)
+            {
+                pixelIds.Add((string)pixel.id);
+            }
+
+            return Ok(pixelIds);
+        }
+
         [HttpPost("create-campaign")]
         public async Task<IActionResult> CreateCampaign([FromBody] Models.Meta.Campaign.AddCampaign request)
         {
@@ -717,6 +754,51 @@ namespace AdminPanel.Controllers.Meta
         {
             var userId = UserId();
             var accessToken = _metaService.GetLongAccessToken(userId);
+
+            string predictionId = null;
+            if (request.SelectedCampaignType == "RESERVED")
+            {
+                var predictionUrl = $"https://graph.facebook.com/v19.0/" + request.SelectedAccountId + "/reachfrequencypredictions";
+
+                var targetingT = new Dictionary<string, object>
+                {
+                    { "geo_locations", new { countries = new[] { "TR" } } },
+                    { "genders", new[] { 1, 2 } },
+                    { "age_min", 18 },
+                    { "age_max", 65 }
+                };
+
+                var predictionPayload = new Dictionary<string, object>
+                {
+                    { "campaign_id", request.SelectedCampaignId },
+                    { "objective", request.SelectedCampaignObjectiveType },
+                    { "start_time", ToUnixTimestamp(request.StartDate) },
+                    { "frequency_cap", 2 },
+                    { "targeting_spec", targetingT },
+                    { "budget", int.TryParse(request.Budget, out var budget) ? (budget * 100) : 50000 },
+                    { "access_token", accessToken.AccessToken }
+                };
+
+                var predictionJson = JsonConvert.SerializeObject(predictionPayload);
+                var predictionContent = new StringContent(predictionJson, Encoding.UTF8, "application/json");
+
+                var predictionResponse = await _httpClient.PostAsync(predictionUrl, predictionContent);
+                var predictionResultText = await predictionResponse.Content.ReadAsStringAsync();
+
+                dynamic predictionResult = JsonConvert.DeserializeObject(predictionResultText);
+                if (predictionResult?.id == null)
+                {
+                    return Ok(new
+                    {
+                        Success = false,
+                        title = "Tahmin Başarısız",
+                        message = "Tahmin oluşturulamadı."
+                    });
+                }
+
+                predictionId = predictionResult.id;
+            }
+
             var url = $"https://graph.facebook.com/v19.0/" + request.SelectedAccountId + "/adsets";
 
             var basePayload = new Dictionary<string, object>
@@ -728,6 +810,11 @@ namespace AdminPanel.Controllers.Meta
                 { "status", "PAUSED" },
                 { "access_token", accessToken.AccessToken }
             };
+
+            if (!string.IsNullOrEmpty(predictionId))
+            {
+                basePayload["rf_prediction_id"] = predictionId;
+            }
 
             if (request.SelectedInstagramAccountId != "0")
             {
@@ -821,31 +908,59 @@ namespace AdminPanel.Controllers.Meta
                 }
             }
 
-            switch (request.SelectedAudienceType?.ToLower())
+            if (request.SelectedCampaignType == "AUCTION")
             {
-                case "custom":
-                    targeting.Add("custom_audiences", new[]
-                    {
+                switch (request.SelectedAudienceType?.ToLower())
+                {
+                    case "custom":
+                        targeting.Add("custom_audiences", new[]
+                        {
                         new Dictionary<string, object> { { "id", request.SelectedAudienceId } }
                     });
-                    break;
+                        break;
 
-                case "lookalike":
-                    targeting.Add("lookalike_audiences", new[]
-                    {
+                    case "lookalike":
+                        targeting.Add("lookalike_audiences", new[]
+                        {
                         new Dictionary<string, object> { { "id", request.SelectedAudienceId } }
                     });
-                    break;
+                        break;
 
-                case "saved":
-                    targeting.Add("saved_audience", request.SelectedAudienceId);
-                    break;
+                    case "saved":
+                        targeting.Add("saved_audience", request.SelectedAudienceId);
+                        break;
 
-                default:
-                    throw new Exception("Geçersiz audience türü: " + request.SelectedAudienceType);
+                    default:
+                        throw new Exception("Geçersiz audience türü: " + request.SelectedAudienceType);
+                }
             }
 
             basePayload.Add("targeting", targeting);
+
+            if (request.SelectedCampaignObjectiveType != "OUTCOME_AWARENESS" && request.SelectedCampaignObjectiveType != "OUTCOME_ENGAGEMENT")
+            {
+                var conversionConfig = new Dictionary<string, object>
+                {
+                    { "event_type", request.ConversionEvent },
+                    { "pixel_id", request.SelectedPixelId }
+                };
+
+                basePayload.Add("conversion_configuration", new
+                {
+                    conversions = new[] { conversionConfig }
+                });
+
+                basePayload["promoted_object"] = new Dictionary<string, object>
+                {
+                    { "pixel_id", request.SelectedPixelId },
+                    { "custom_event_type", request.ConversionEvent }
+                };
+            }
+
+            if (request.SelectedCampaignObjectiveType == "OUTCOME_ENGAGEMENT")
+            {
+                basePayload["optimization_goal"] = "REACH";
+            }
 
             if (request.EndDate != null)
             {
@@ -912,6 +1027,9 @@ namespace AdminPanel.Controllers.Meta
             int userId = int.Parse(userIdClaim.Value);
             return userId;
         }
+
+        private long ToUnixTimestamp(DateTime date) =>
+            ((DateTimeOffset)date).ToUnixTimeSeconds();
 
         public class FacebookPageResponse
         {
