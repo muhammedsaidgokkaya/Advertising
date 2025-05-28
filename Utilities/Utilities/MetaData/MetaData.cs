@@ -84,6 +84,29 @@ namespace Utilities.Utilities.MetaData
             }
         }
 
+        public AdSetResponse CampaignAdSetsAdmin(string access_token, string ad_account_id, string campaign_id, string start_date, string end_date)
+        {
+            string pythonScriptPath = GetPythonScriptPath("Meta/AdvertisingManager/campaignAdSet.py");
+            var jsonOutput = _pythonRun.RunPythonScript(pythonScriptPath, access_token, ad_account_id, campaign_id, start_date, end_date);
+
+            try
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<AdSetResponse>(jsonOutput.ToString());
+                if (tokenResponse?.Data != null)
+                {
+                    foreach (var adSet in tokenResponse.Data)
+                    {
+                        adSet.DailyBudget /= 100;
+                    }
+                }
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Hata.");
+            }
+        }
+
         public AdResponse AdsAdmin(string access_token, string ad_account_id, string start_date, string end_date)
         {
             string pythonScriptPath = GetPythonScriptPath("Meta/AdvertisingManager/ads.py");

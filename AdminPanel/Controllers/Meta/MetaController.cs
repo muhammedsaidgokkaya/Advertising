@@ -19,8 +19,10 @@ using Service.Implementations.Meta;
 using Service.Implementations.User;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using Utilities.Helper;
 using Utilities.Utilities.MetaData;
+using static AdminPanel.Models.Meta.Ad.AddAd;
 
 namespace AdminPanel.Controllers.Meta
 {
@@ -227,6 +229,58 @@ namespace AdminPanel.Controllers.Meta
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
             var accessToken = _metaService.GetLongAccessToken(userId);
             var adSets = _metaData.AdSetsAdmin(accessToken.AccessToken, accountId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
+            var data = adSets.Data?.Select(q => new AdSet
+            {
+                Id = q.Id,
+                Name = q.Name,
+                Status = q.Status == "ACTIVE" ? "Aktif" : "Pasif",
+                BidStrategy = _defaultValues.GetFormattedBidStrategy(q.BidStrategy),
+                DailyBudget = q.DailyBudget,
+                LifeTimeBudget = q.LifeTimeBudget,
+                UpdateTime = q.UpdateTime,
+                StartTime = q.StartTime,
+                EndTime = q.EndTime,
+                Insights = new InsightResponse
+                {
+                    Data = q.Insights?.Data?.Select(i => new Insight
+                    {
+                        Reach = i.Reach,
+                        Impressions = i.Impressions,
+                        Cpc = i.Cpc,
+                        Cpm = i.Cpm,
+                        Spend = i.Spend,
+                        DateStart = i.DateStart,
+                        DateStop = i.DateStop,
+                        ResultString = _defaultValues.ProcessResults(
+                            q.Campaign.Objective,
+                            i.Actions.Select(a => new Utilities.Helper.DefaultValues.Action
+                            {
+                                ActionType = a.ActionType,
+                                Value = a.Value
+                            })
+                        ),
+                        ResultDouble = _defaultValues.ProcessResultsInt(
+                            q.Campaign.Objective,
+                            i.Actions.Select(a => new Utilities.Helper.DefaultValues.Action
+                            {
+                                ActionType = a.ActionType,
+                                Value = a.Value
+                            })
+                        )
+                    }).ToList() ?? new List<Insight>()
+                }
+            }).ToList() ?? new List<AdSet>();
+
+            return Ok(data);
+        }
+        
+        [HttpGet("campaign-adsets")]
+        public ActionResult<IEnumerable<AdSet>> GetCampaignAdSets(string accountId, string campaignId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate);
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var adSets = _metaData.CampaignAdSetsAdmin(accessToken.AccessToken, accountId, campaignId, defaultValues[0].ToString("yyyy-MM-dd"), defaultValues[1].ToString("yyyy-MM-dd"));
             var data = adSets.Data?.Select(q => new AdSet
             {
                 Id = q.Id,
@@ -1013,6 +1067,112 @@ namespace AdminPanel.Controllers.Meta
             {
                 Success = true,
                 Id = adSetId
+            });
+        }
+        
+        [HttpPost("create-ad-only")]
+        public async Task<IActionResult> CreateAdOnly([FromForm] Models.Meta.Ad.AddAd.AdDto request)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var httpClient = new HttpClient();
+
+            //1.GÖRSEL EKLEME
+            string imageHash = null;
+            if (request.Image != null && request.Image.Length > 0)
+            {
+                var imageUploadContent = new MultipartFormDataContent();
+                var imageStream = request.Image.OpenReadStream();
+                var streamContent = new StreamContent(imageStream);
+                streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(request.Image.ContentType);
+
+                imageUploadContent.Add(streamContent, "source", request.Image.FileName);
+                imageUploadContent.Add(new StringContent(accessToken.AccessToken), "access_token");
+
+                var uploadResponse = await httpClient.PostAsync(
+                    $"https://graph.facebook.com/v19.0/{request.AdAccountId}/adimages",
+                    imageUploadContent);
+
+                var uploadJson = await uploadResponse.Content.ReadAsStringAsync();
+                if (!uploadResponse.IsSuccessStatusCode)
+                {
+                    return BadRequest(new { Success = false, Error = uploadJson });
+                }
+
+                var uploadResult = System.Text.Json.JsonSerializer.Deserialize<MetaImageUploadResponse>(uploadJson);
+                imageHash = uploadResult.images.First().Value.hash;
+            }
+
+            //2.KREATİF OLUŞTURMA
+            var creativePayload = new
+            {
+                name = request.AdName ?? "AdCreative",
+                object_story_spec = new
+                {
+                    page_id = request.FacebookPageId,
+                    link_data = new
+                    {
+                        image_hash = imageHash,
+                        link = request.WebsiteUrl,
+                        message = request.MainText,
+                        name = request.Title,
+                        description = request.Description,
+                        call_to_action = new
+                        {
+                            type = request.CallToActionType
+                        }
+                    }
+                },
+            };
+
+            var url = $"https://graph.facebook.com/v19.0/{request.AdAccountId}/adcreatives?access_token={accessToken.AccessToken}";
+
+            var creativeContent = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(creativePayload),
+                Encoding.UTF8,
+                "application/json");
+
+            var creativeResponse = await httpClient.PostAsync(url, creativeContent);
+
+            var creativeJson = await creativeResponse.Content.ReadAsStringAsync();
+            if (!creativeResponse.IsSuccessStatusCode)
+            {
+                return BadRequest(new { Success = false, Error = creativeJson });
+            }
+
+            var creativeResult = System.Text.Json.JsonSerializer.Deserialize<MetaCreativeResponse>(creativeJson);
+            var creativeId = creativeResult.Id;
+
+            // 3. REKLAM OLUŞTURMA
+            var adPayload = new
+            {
+                name = request.AdName,
+                adset_id = request.AdSetId,
+                creative = new { creative_id = creativeId },
+                status = "PAUSED",
+                access_token = accessToken
+            };
+
+            var adContent = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(adPayload),
+                Encoding.UTF8,
+                "application/json");
+
+            var adResponse = await httpClient.PostAsync(
+                $"https://graph.facebook.com/v19.0/{request.AdAccountId}/ads",
+                adContent);
+
+            var adJson = await adResponse.Content.ReadAsStringAsync();
+            if (!adResponse.IsSuccessStatusCode)
+            {
+                return BadRequest(new { Success = false, Error = adJson });
+            }
+
+            return Ok(new
+            {
+                Success = true,
+                CreativeId = creativeId,
+                AdJson = adJson
             });
         }
 
