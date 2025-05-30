@@ -61,7 +61,7 @@ namespace AdminPanel.Controllers.Organization
             _emailHelper.SendEmail(account.Mail, account.FirstName, username, password);
 
             _userService.AddUserRole(newUser, 1);
-
+            _userService.AddUserRole(newUser, 2);
             return Ok(new
             {
                 id = newUser

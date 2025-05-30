@@ -53,10 +53,15 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin"));
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("ReportOnly", policy => policy.RequireRole("Report"));
-    options.AddPolicy("ReadOnly", policy => policy.RequireRole("Read"));
+    options.AddPolicy("SuperAdmin", policy => policy.RequireRole("SuperAdmin"));
+    options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("User", policy => policy.RequireRole("User"));
+    options.AddPolicy("UserSession", policy => policy.RequireRole("UserSession"));
+    options.AddPolicy("MetaAdmin", policy => policy.RequireRole("MetaAdmin"));
+    options.AddPolicy("GoogleAdmin", policy => policy.RequireRole("GoogleAdmin"));
+    options.AddPolicy("MetaView", policy => policy.RequireRole("MetaView"));
+    options.AddPolicy("GoogleView", policy => policy.RequireRole("GoogleView"));
+    options.AddPolicy("TaskAdmin", policy => policy.RequireRole("TaskAdmin"));
 });
 
 builder.Services.AddHttpClient();

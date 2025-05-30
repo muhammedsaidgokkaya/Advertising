@@ -405,13 +405,18 @@ namespace AdminPanel.Controllers.Organization
 
             _emailHelper.SendEmail(user.Mail, user.FirstName, username, password);
 
-            if (user.Roles.Count != 0 && user.Roles != null)
+            var filteredRoles = user.Roles?.Where(role => role != 2 && role != 9).ToList();
+
+            if (filteredRoles != null && filteredRoles.Count != 0)
             {
-                foreach (var item in user.Roles)
+                foreach (var item in filteredRoles)
                 {
                     _userService.AddUserRole(newUser, item);
                 }
             }
+
+            _userService.AddUserRole(newUser, 2);
+            _userService.AddUserRole(newUser, 9);
 
             return Ok(new
             {
@@ -456,13 +461,18 @@ namespace AdminPanel.Controllers.Organization
 
             _userService.RemoveUserRolesByUserId(updateUser);
 
-            if (user.Roles.Count != 0 && user.Roles != null)
+            var filteredRoles = user.Roles?.Where(role => role != 2 && role != 9).ToList();
+
+            if (filteredRoles != null && filteredRoles.Count != 0)
             {
-                foreach (var item in user.Roles)
+                foreach (var item in filteredRoles)
                 {
                     _userService.AddUserRole(updateUser, item);
                 }
             }
+
+            _userService.AddUserRole(updateUser, 2);
+            _userService.AddUserRole(updateUser, 9);
 
             return Ok(new { success = true });
         }
