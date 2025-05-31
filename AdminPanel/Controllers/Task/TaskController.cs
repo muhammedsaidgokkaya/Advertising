@@ -132,9 +132,42 @@ namespace AdminPanel.Controllers.Task
 			.ToList();
 
 			return Ok(taskList);
-		}
+        }
 
-		[HttpGet("task")]
+        [HttpGet("tasks-user-only")]
+        public async Task<ActionResult<IEnumerable<Models.Task.Task.Tasks>>> GetTasksUserOnly()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var tasks = await _taskService.GetTasks(user.OrganizationId);
+
+            var filteredTasks = tasks
+				.Where(task => task.TaskUser.Any(tu => tu.UserId == userId))
+				.ToList();
+
+            var taskList = filteredTasks.Select(task =>
+            {
+                var createdUser = _userService.GetUserById(task.CreatedUser);
+                return new Models.Task.Task.Tasks
+                {
+                    Id = task.Id,
+                    CreatedDate = task.InsertedDate ?? DateTime.MinValue,
+                    Name = task.TaskName,
+                    State = task.State,
+                    Priority = task.Priority,
+                    CreatedUser = createdUser != null ? $"{createdUser.FirstName} {createdUser.LastName}" : "Bilinmiyor",
+                    Duration = task.Deadline ?? DateTime.MinValue,
+                    Team = task.TaskUser.Count,
+                };
+            })
+            .OrderByDescending(task => task.Priority)
+            .ThenBy(task => task.Duration)
+            .ToList();
+
+            return Ok(taskList);
+        }
+
+        [HttpGet("task")]
 		public ActionResult<GetTask> GetTask(int taskId)
 		{
 			var task = _taskService.GetTaskById(taskId);

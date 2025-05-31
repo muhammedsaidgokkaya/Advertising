@@ -305,6 +305,25 @@ namespace Service.Implementations.User
             return 0;
         }
 
+        public int UpdateOnlyUser(int id, string firstName, string lastName, string mail, string phone, DateTime? dateOfBirth, string gender)
+        {
+            var user = GetUserById(id);
+            if (user != null)
+            {
+                user.FirstName = firstName;
+                user.LastName = lastName;
+                user.Mail = mail;
+                user.Phone = phone;
+                user.DateOfBirth = dateOfBirth;
+                user.Gender = gender;
+                user.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(user);
+                return user.Id;
+            }
+            return 0;
+        }
+
 		public int UpdateLastActivity(int id)
 		{
 			var user = GetUserById(id);

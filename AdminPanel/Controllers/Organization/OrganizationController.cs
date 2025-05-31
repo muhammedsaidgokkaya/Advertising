@@ -444,6 +444,26 @@ namespace AdminPanel.Controllers.Organization
             return Ok(new { success = true });
         }
 
+        [HttpPost("update-only-user")]
+        public IActionResult UpdateOnlyUser([FromBody] UpdateOnlyUser user)
+        {
+            var userId = UserId();
+            var org = _userService.GetUserById(userId);
+            DateTime? dateOfBirth = null;
+            if (DateTime.TryParse(user.DateOfBirth, out var parsedDate))
+            {
+                dateOfBirth = parsedDate.ToUniversalTime();
+            }
+
+            var updateUser = _userService.UpdateOnlyUser(userId, user.FirstName, user.LastName, user.Mail, user.Phone, dateOfBirth, user.Gender);
+            
+            if (updateUser == 0)
+            {
+                return BadRequest(new { success = false, message = "User could not be added." });
+            }
+            return Ok(new { success = true });
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPost("update-user")]
         public IActionResult UpdateUser([FromBody] UpdateUser user)
@@ -687,7 +707,6 @@ namespace AdminPanel.Controllers.Organization
             return Ok(new { success = false, message = "Google Ads hesabı seçtiğinize emin olun!" });
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost("update-user-password")]
         public IActionResult UpdatePassword([FromBody] UpdatePassword user)
         {
