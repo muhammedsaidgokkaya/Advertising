@@ -86,8 +86,8 @@ namespace AdminPanel.Controllers.Google.Ads
 
 			GoogleAdsClient client = new GoogleAdsClient(config);
 
-			var service = client.GetService(Services.V17.CustomerService);
-			string[] customers = service.ListAccessibleCustomers();
+            var customerService = client.GetService(Services.V18.CustomerService);
+            string[] customers = customerService.ListAccessibleCustomers();
 
 			var accountDetails = new List<GoogleAccountDto>();
 
