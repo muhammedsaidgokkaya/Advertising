@@ -1,6 +1,7 @@
 ﻿using AdminPanel.Controllers.Google.SearchConsole;
 using AdminPanel.Models.Auth;
 using AdminPanel.Models.Meta.AdvertisingAccount;
+using AdminPanel.Models.Organization.Plan;
 using AdminPanel.Models.Organization.Role;
 using AdminPanel.Models.Organization.User;
 using Core.Domain.User;
@@ -374,7 +375,25 @@ namespace AdminPanel.Controllers.Organization
 			return Ok(data);
 		}
 
-		[Authorize(Roles = "Admin")]
+        [HttpGet("card")]
+        public ActionResult<Card> GetCard()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetCard(user.OrganizationId);
+
+            var data = new Card
+            {
+                CardHolder = organization.CardHolder,
+                CardNumber = organization.CardNumber,
+                Cvv = organization.Cvv,
+                ExpirationDate = organization.ExpirationDate,
+            };
+
+            return Ok(data);
+        }
+
+        [Authorize(Roles = "Admin")]
         [HttpPost("add-user")]
         public IActionResult AddUser([FromBody] AddUser user)
         {
@@ -716,6 +735,36 @@ namespace AdminPanel.Controllers.Organization
             if (newUser == 0)
             {
                 return Ok(new { success = false });
+            }
+            return Ok(new { success = true });
+        }
+
+        [HttpPost("add-card")]
+        public IActionResult AddCard([FromBody] AddCard card)
+        {
+            var userId = UserId();
+            var org = _userService.GetUserById(userId);
+
+            var addCard = _userService.AddCard(org.OrganizationId, card.CardHolder, card.CardNumber, card.Cvv, card.ExpirationDate);
+
+            if (addCard == 0)
+            {
+                return BadRequest(new { success = false, message = "User could not be added." });
+            }
+            return Ok(new { success = true });
+        }
+
+        [HttpPost("update-card")]
+        public IActionResult UpdateCard([FromBody] AddCard card)
+        {
+            var userId = UserId();
+            var org = _userService.GetUserById(userId);
+
+            var updateCard = _userService.UpdateCard(org.OrganizationId, card.CardHolder, card.CardNumber, card.Cvv, card.ExpirationDate);
+
+            if (updateCard == 0)
+            {
+                return BadRequest(new { success = false, message = "User could not be added." });
             }
             return Ok(new { success = true });
         }

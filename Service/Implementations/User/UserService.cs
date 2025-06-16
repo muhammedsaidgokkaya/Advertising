@@ -497,6 +497,59 @@ namespace Service.Implementations.User
             return data;
         }
         #endregion
+
+        #region Plan
+
+        #endregion
+
+        #region Payment
+        public int AddCard(int organizationId, string cardHolder, string cardNumber, string cvv, string expirationDate)
+        {
+            var card = new Payment
+            {
+                CardHolder = cardHolder,
+                CardNumber = cardNumber,
+                Cvv = cvv,
+                ExpirationDate = expirationDate,
+                OrganizationId = organizationId,
+                InsertedDate = DateTime.UtcNow,
+                IsActive = true,
+                IsDeleted = false
+            };
+
+            _repository.Save(card);
+            return card.Id;
+        }
+
+        public int UpdateCard(int organizationId, string cardHolder, string cardNumber, string cvv, string expirationDate)
+        {
+            var card = GetCard(organizationId);
+            var updateCard = GetPaymentById(card.Id);
+            if (updateCard != null)
+            {
+                updateCard.CardHolder = cardHolder;
+                updateCard.CardNumber = cardNumber;
+                updateCard.Cvv = cvv;
+                updateCard.ExpirationDate = expirationDate;
+                updateCard.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(updateCard);
+                return updateCard.Id;
+            }
+            return 0;
+        }
+
+        public Payment GetPaymentById(int id)
+        {
+            return _repository.GetById<Payment>(id);
+        }
+
+        public Payment GetCard(int organizationId)
+        {
+            var data = _repository.Filter<Payment>(p => p.IsActive && !p.IsDeleted && p.OrganizationId.Equals(organizationId));
+            return data.SingleOrDefault();
+        }
+        #endregion
     }
 
     public static class UserExtensions
