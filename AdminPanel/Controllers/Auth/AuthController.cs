@@ -1,5 +1,7 @@
 ﻿using AdminPanel.Models.Auth;
 using Core.Data;
+using Iyzipay.Model;
+using Iyzipay.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,15 +18,17 @@ namespace AdminPanel.Controllers.Auth
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private readonly IConfiguration _configuration;
         private readonly JwtService _jwtService;
         private readonly UserService _userService;
         private readonly DefaultValues _defaultValues;
         private readonly MetaService _metaService;
         private readonly GoogleService _googleService;
 
-        public AuthController(JwtService jwtService, MetaService metaService, GoogleService googleService)
+        public AuthController(JwtService jwtService, MetaService metaService, GoogleService googleService, IConfiguration configuration)
         {
             _jwtService = jwtService;
+            _configuration = configuration;
             _userService = new UserService();
             _defaultValues = new DefaultValues();
             _metaService = metaService;
@@ -46,7 +50,38 @@ namespace AdminPanel.Controllers.Auth
             return Ok(new { IsSuccess = true, Token = token });
         }
 
-		[Authorize]
+        [HttpPost("iyzico-callback")]
+        public async Task<IActionResult> IyzipayCallback([FromForm] string token)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest("Token bulunamadı.");
+            }
+
+            var request = new RetrieveCheckoutFormRequest
+            {
+                Token = token
+            };
+
+            var _iyzicoOptions = new Iyzipay.Options
+            {
+                ApiKey = _configuration["Iyzico:ApiKey"],
+                SecretKey = _configuration["Iyzico:SecretKey"],
+                BaseUrl = _configuration["Iyzico:BaseUrl"],
+            };
+
+            var checkoutForm = CheckoutForm.Retrieve(request, _iyzicoOptions);
+            var paymentStatus = checkoutForm.Result.PaymentStatus;
+            if (paymentStatus == "SUCCESS")
+            {
+				var tokenControl = _userService.GetPlanToken(token);
+				var payment = _userService.UpdatePaymentPlan(tokenControl.OrganizationId, true);
+				return Redirect(_configuration["Iyzico:SuccessUrl"]);
+            }
+            return Redirect(_configuration["Iyzico:FailUrl"]);
+        }
+
+        [Authorize]
         [HttpGet("control")]
         public IActionResult Control()
         {

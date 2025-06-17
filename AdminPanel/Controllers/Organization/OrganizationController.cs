@@ -5,6 +5,9 @@ using AdminPanel.Models.Organization.Plan;
 using AdminPanel.Models.Organization.Role;
 using AdminPanel.Models.Organization.User;
 using Core.Domain.User;
+using Iyzipay.Model.V2.Subscription;
+using Iyzipay.Model;
+using Iyzipay.Request.V2.Subscription;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,11 +17,16 @@ using Service.Implementations.Google;
 using Service.Implementations.Meta;
 using Service.Implementations.Task;
 using Service.Implementations.User;
+using SixLabors.ImageSharp;
 using System.ComponentModel.Design;
 using Utilities.Helper;
 using Utilities.Utilities.GoogleData;
 using Utilities.Utilities.MetaData;
 using static AdminPanel.Controllers.Auth.AuthController;
+using AdminPanel.Helpers;
+using Iyzipay.Request;
+using static Google.Rpc.Context.AttributeContext.Types;
+using System.Numerics;
 
 namespace AdminPanel.Controllers.Organization
 {
@@ -28,15 +36,17 @@ namespace AdminPanel.Controllers.Organization
     public class OrganizationController : ControllerBase
     {
         private readonly ILogger<OrganizationController> _logger;
+        private readonly IConfiguration _configuration;
         private readonly UserService _userService;
         private readonly DefaultValues _defaultValues;
         private readonly EmailHelper _emailHelper;
 		private readonly TaskService _taskService;
 		private readonly CalendarService _calendarService;
 
-		public OrganizationController(ILogger<OrganizationController> logger)
+		public OrganizationController(ILogger<OrganizationController> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
             _userService = new UserService();
             _defaultValues = new DefaultValues();
             _emailHelper = new EmailHelper();
@@ -140,6 +150,33 @@ namespace AdminPanel.Controllers.Organization
                 Gender = user.Gender,
                 Address = user.Address,
                 Roles = role.Select(q => q.RoleId).ToList()
+            };
+
+            return Ok(data);
+        }
+
+        [HttpGet("admin-payment-user")]
+        public ActionResult<PaymentOrg> GetAdminPaymentUser(int userId = 0)
+        {
+            if (userId == 0)
+            {
+                userId = UserId();
+            }
+
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(user.OrganizationId);
+            var role = _userService.GetUserRole(userId);
+
+            var data = new PaymentOrg
+            {
+                Name = organization.Name,
+                TaskNumber = organization.TaskNumber,
+                OrgAddress = organization.Address,
+                ZipCode = organization.ZipCode,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Mail = user.Mail,
+                Phone = organization.Phone,
             };
 
             return Ok(data);
@@ -376,18 +413,51 @@ namespace AdminPanel.Controllers.Organization
 		}
 
         [HttpGet("card")]
-        public ActionResult<Card> GetCard()
+        public ActionResult<AdminPanel.Models.Organization.Plan.Card> GetCard()
         {
             var userId = UserId();
             var user = _userService.GetUserById(userId);
             var organization = _userService.GetCard(user.OrganizationId);
-
-            var data = new Card
+            if (organization == null)
+                return NotFound("Kart bilgisi bulunamadı.");
+            var data = new AdminPanel.Models.Organization.Plan.Card
             {
                 CardHolder = organization.CardHolder,
                 CardNumber = organization.CardNumber,
                 Cvv = organization.Cvv,
                 ExpirationDate = organization.ExpirationDate,
+            };
+
+            return Ok(data);
+        }
+
+        [HttpGet("plan")]
+        public ActionResult<AdminPanel.Models.Organization.Plan.Plan> GetPlan()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetPlan(user.OrganizationId);
+            if (organization == null)
+                return NotFound("Plan bilgisi bulunamadı.");
+            var data = new AdminPanel.Models.Organization.Plan.Plan
+            {
+                Amount = organization.Amount,
+                PlanId = organization.PlanId,
+                IsYearly = organization.IsYearly,
+                IsPayment = organization.IsPayment,
+            };
+
+            return Ok(data);
+        }
+
+        [HttpGet("subscription")]
+        public ActionResult<AdminPanel.Models.Organization.Plan.Subscription> GetSubscription(int planId, bool isYearly)
+        {
+            var subscription = _userService.GetSubscription(planId, isYearly);
+
+            var data = new AdminPanel.Models.Organization.Plan.Subscription
+            {
+                Code = subscription.Code,
             };
 
             return Ok(data);
@@ -769,6 +839,21 @@ namespace AdminPanel.Controllers.Organization
             return Ok(new { success = true });
         }
 
+        [HttpPost("add-or-update-plan")]
+        public IActionResult AddOrUpdatePlan([FromBody] AddPlan plan)
+        {
+            var userId = UserId();
+            var org = _userService.GetUserById(userId);
+
+            var addplan = _userService.AddOrUpdatePlan(org.OrganizationId, plan.Amount, plan.PlanId, plan.IsYearly, plan.IsPayment);
+
+            if (addplan == 0)
+            {
+                return BadRequest(new { success = false, message = "User could not be added." });
+            }
+            return Ok(new { success = true });
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPost("delete-user")]
         public IActionResult DeleteUser(int userId)
@@ -807,6 +892,121 @@ namespace AdminPanel.Controllers.Organization
             }
             return Ok(new { success = true });
         }
+
+        #region Payment
+        [HttpPost("live-payment")]
+        public IActionResult LivePayment([FromBody] AddSubscription request)
+        {
+            var userId = UserId();
+            var org = _userService.GetUserById(userId);
+
+            var _iyzicoOptions = new Iyzipay.Options
+            {
+                ApiKey = _configuration["Iyzico:ApiKey"],
+                SecretKey = _configuration["Iyzico:SecretKey"],
+                BaseUrl = _configuration["Iyzico:BaseUrl"],
+            };
+
+            var searchRequest = new SearchSubscriptionRequest
+            {
+                ConversationId = org.OrganizationId.ToString(),
+                Page = 1,
+                Count = 10
+            };
+
+            var searchResult = Iyzipay.Model.V2.Subscription.Subscription.Search(searchRequest, _iyzicoOptions);
+
+            var firstSubscription = searchResult.Data.Items[0];
+            var subscriptionRefCode = firstSubscription.ReferenceCode;
+
+            var cancelRequest = new CancelSubscriptionRequest
+            {
+                ConversationId = org.OrganizationId.ToString(),
+                SubscriptionReferenceCode = subscriptionRefCode
+            };
+
+            var cancelResult = Iyzipay.Model.V2.Subscription.Subscription.Cancel(cancelRequest, _iyzicoOptions);
+
+            var requestForm = new InitializeCheckoutFormRequest
+            {
+                ConversationId = org.OrganizationId.ToString(),
+                Locale = Locale.TR.ToString(),
+                PricingPlanReferenceCode = request.Code,
+                CallbackUrl = _configuration["Iyzico:CallBack"],
+                Customer = new CheckoutFormCustomer
+                {
+                    Name = request.Name,
+                    Surname = "-",
+                    GsmNumber = request.Phone,
+                    Email = request.Mail,
+                    IdentityNumber = request.Identity,
+                    BillingAddress = new Address
+                    {
+                        ContactName = request.FirstName + " " + request.LastName,
+                        City = request.OrgAddress,
+                        Country = "Turkey",
+                        Description = "Fatura adresi",
+                        ZipCode = request.Zip
+                    },
+                    ShippingAddress = new Address
+                    {
+                        ContactName = request.FirstName + " " + request.LastName,
+                        City = request.OrgAddress,
+                        Country = "Turkey",
+                        Description = "Ev adresi",
+                        ZipCode = request.Zip
+                    }
+                }
+            };
+
+            var response = Iyzipay.Model.V2.Subscription.Subscription.InitializeCheckoutForm(requestForm, _iyzicoOptions);
+            if (response.Status == "success")
+            {
+                var addplan = _userService.AddOrUpdatePlan(org.OrganizationId, request.Amount, request.PlanId, request.IsYearly, request.IsPayment);
+                var updateToken = _userService.UpdateTokenPlan(org.OrganizationId, response.Token);
+            }
+            
+            return Ok(response);
+        }
+
+        [HttpPost("cancel-payment")]
+        public IActionResult CancelPayment()
+        {
+            var userId = UserId();
+            var org = _userService.GetUserById(userId);
+
+            var _iyzicoOptions = new Iyzipay.Options
+            {
+                ApiKey = _configuration["Iyzico:ApiKey"],
+                SecretKey = _configuration["Iyzico:SecretKey"],
+                BaseUrl = _configuration["Iyzico:BaseUrl"],
+            };
+
+            var searchRequest = new SearchSubscriptionRequest
+            {
+                ConversationId = org.OrganizationId.ToString(),
+                Page = 1,
+                Count = 10
+            };
+
+            var searchResult = Iyzipay.Model.V2.Subscription.Subscription.Search(searchRequest, _iyzicoOptions);
+
+            var firstSubscription = searchResult.Data.Items[0];
+            var subscriptionRefCode = firstSubscription.ReferenceCode;
+
+            var cancelRequest = new CancelSubscriptionRequest
+            {
+                ConversationId = org.OrganizationId.ToString(),
+                SubscriptionReferenceCode = subscriptionRefCode
+            };
+
+            var cancelResult = Iyzipay.Model.V2.Subscription.Subscription.Cancel(cancelRequest, _iyzicoOptions);
+
+            var deletedPlan = _userService.DeletePlan(org.OrganizationId);
+
+            return Ok(1);
+        }
+        #endregion
 
         private int UserId()
         {

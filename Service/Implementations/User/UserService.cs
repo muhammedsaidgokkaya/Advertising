@@ -1,4 +1,5 @@
 ﻿using Core.Data;
+using Core.Domain.App;
 using Core.Domain.Meta;
 using Core.Domain.User;
 using Microsoft.EntityFrameworkCore;
@@ -499,7 +500,118 @@ namespace Service.Implementations.User
         #endregion
 
         #region Plan
+        public int AddOrUpdatePlan(int organizationId, float amount, int planId, bool isYearly, bool isPayment)
+        {
+            var card = GetPlan(organizationId);
+            if (card == null)
+            {
+                var plan = new Plan
+                {
+                    Amount = amount,
+                    PlanId = planId,
+                    IsYearly = isYearly,
+                    IsPayment = isPayment,
+                    OrganizationId = organizationId,
+                    InsertedDate = DateTime.UtcNow,
+                    IsActive = true,
+                    IsDeleted = false
+                };
 
+                _repository.Save(plan);
+                return plan.Id;
+            }
+            else
+            {
+                var updatePlan = GetPlanById(card.Id);
+                if (updatePlan != null)
+                {
+                    updatePlan.Amount = amount;
+                    updatePlan.PlanId = planId;
+                    updatePlan.IsYearly = isYearly;
+                    updatePlan.IsPayment = isPayment;
+                    updatePlan.UpdateDate = DateTime.UtcNow;
+
+                    _repository.Update(updatePlan);
+                    return updatePlan.Id;
+                }
+            }
+
+            return 0;
+        }
+
+        public int UpdateTokenPlan(int organizationId, string token)
+        {
+            var card = GetPlan(organizationId);
+            if (card != null)
+            {
+                var updatePlan = GetPlanById(card.Id);
+                if (updatePlan != null)
+                {
+                    updatePlan.Token = token;
+                    updatePlan.UpdateDate = DateTime.UtcNow;
+
+                    _repository.Update(updatePlan);
+                    return updatePlan.Id;
+                }
+            }
+
+            return 0;
+        }
+
+        public int UpdatePaymentPlan(int organizationId, bool payment)
+        {
+            var card = GetPlan(organizationId);
+            if (card != null)
+            {
+                var updatePlan = GetPlanById(card.Id);
+                if (updatePlan != null)
+                {
+                    updatePlan.IsPayment = payment;
+                    updatePlan.UpdateDate = DateTime.UtcNow;
+
+                    _repository.Update(updatePlan);
+                    return updatePlan.Id;
+                }
+            }
+
+            return 0;
+        }
+
+        public int DeletePlan(int organizationId)
+        {
+            var card = GetPlan(organizationId);
+            if (card != null)
+            {
+                var updatePlan = GetPlanById(card.Id);
+                if (updatePlan != null)
+                {
+                    updatePlan.IsDeleted = true;
+                    updatePlan.UpdateDate = DateTime.UtcNow;
+
+                    _repository.Update(updatePlan);
+                    return updatePlan.Id;
+                }
+            }
+
+            return 0;
+        }
+
+        public Plan GetPlanById(int id)
+        {
+            return _repository.GetById<Plan>(id);
+        }
+
+        public Plan GetPlan(int organizationId)
+        {
+            var data = _repository.Filter<Plan>(p => p.IsActive && !p.IsDeleted && p.OrganizationId.Equals(organizationId));
+            return data.SingleOrDefault();
+        }
+
+        public Plan GetPlanToken(string token)
+        {
+            var data = _repository.Filter<Plan>(p => p.IsActive && !p.IsDeleted && p.Token == token);
+            return data.SingleOrDefault();
+        }
         #endregion
 
         #region Payment
@@ -547,6 +659,14 @@ namespace Service.Implementations.User
         public Payment GetCard(int organizationId)
         {
             var data = _repository.Filter<Payment>(p => p.IsActive && !p.IsDeleted && p.OrganizationId.Equals(organizationId));
+            return data.SingleOrDefault();
+        }
+        #endregion
+
+        #region Subscription
+        public Subscription GetSubscription(int planId, bool isYearly)
+        {
+            var data = _repository.Filter<Subscription>(p => p.PlanId == planId && p.IsYearly == isYearly);
             return data.SingleOrDefault();
         }
         #endregion

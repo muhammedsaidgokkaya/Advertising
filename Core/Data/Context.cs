@@ -9,6 +9,7 @@ using Core.Domain.Task;
 using System.Globalization;
 using Core.Domain.Calendar;
 using Core.Domain.Chat;
+using Core.Domain.App;
 
 namespace Core.Data
 {
@@ -43,6 +44,7 @@ namespace Core.Data
         }
 
         public DbSet<Organization> Organization { get; set; }
+        public DbSet<Subscription> Subscription { get; set; }
         public DbSet<Plan> Plan { get; set; }
         public DbSet<Payment> Payment { get; set; }
         public DbSet<User> User { get; set; }
