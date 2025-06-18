@@ -1176,6 +1176,100 @@ namespace AdminPanel.Controllers.Meta
             });
         }
 
+        [HttpPost("update-campaign-status")]
+        public async Task<IActionResult> UpdateCampaignStatus(long campaignId, int statusType)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var url = $"https://graph.facebook.com/v19.0/{campaignId.ToString()}";
+
+            string status = statusType switch
+            {
+                1 => "ACTIVE",
+                2 => "PAUSED",
+                _ => null
+            };
+
+            if (status == null)
+                return BadRequest("Geçersiz durum tipi. 1 = ACTIVE, 2 = PAUSED");
+
+            var payload = new Dictionary<string, string>
+            {
+                { "status", status },
+                { "access_token", accessToken.AccessToken }
+            };
+
+            var content = new FormUrlEncodedContent(payload);
+            var response = await _httpClient.PostAsync(url, content);
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            return response.IsSuccessStatusCode ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPost("delete-campaign")]
+        public async Task<IActionResult> DeleteCampaign(long campaignId)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+
+            var url = $"https://graph.facebook.com/v19.0/{campaignId.ToString()}?access_token={accessToken.AccessToken}";
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            var response = await _httpClient.SendAsync(request);
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            return response.IsSuccessStatusCode ? Ok("Kampanya başarıyla silindi.") : BadRequest(result);
+        }
+
+        [HttpPost("update-adset-status")]
+        public async Task<IActionResult> UpdateAdSetStatus(long adSetId, int statusType)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var url = $"https://graph.facebook.com/v19.0/{adSetId.ToString()}";
+
+            string status = statusType switch
+            {
+                1 => "ACTIVE",
+                2 => "PAUSED",
+                _ => null
+            };
+
+            if (status == null)
+                return BadRequest("Geçersiz durum tipi. 1 = ACTIVE, 2 = PAUSED");
+
+            var payload = new Dictionary<string, string>
+            {
+                { "status", status },
+                { "access_token", accessToken.AccessToken }
+            };
+
+            var content = new FormUrlEncodedContent(payload);
+            var response = await _httpClient.PostAsync(url, content);
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            return response.IsSuccessStatusCode ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPost("delete-adset")]
+        public async Task<IActionResult> DeleteAdSet(long adSetId)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+
+            var url = $"https://graph.facebook.com/v19.0/{adSetId.ToString()}?access_token={accessToken.AccessToken}";
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            var response = await _httpClient.SendAsync(request);
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            return response.IsSuccessStatusCode ? Ok("Reklam seti başarıyla silindi.") : BadRequest(result);
+        }
+
         private int UserId()
         {
             var userIdClaim = HttpContext.User.FindFirst("userId");

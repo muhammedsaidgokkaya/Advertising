@@ -573,6 +573,7 @@ namespace AdminPanel.Controllers.Google.Ads
 				SELECT
 				  campaign.name,
 				  ad_group.name,
+				  ad_group.id,
 				  ad_group_ad.ad.id,
 				  ad_group_ad.ad.responsive_search_ad.headlines,
 				  ad_group_ad.ad.responsive_search_ad.descriptions,
@@ -611,6 +612,7 @@ namespace AdminPanel.Controllers.Google.Ads
 				{
 					Name = headline + " / " + description + " " + (row.AdGroupAd.Ad.FinalUrls.Count > 0 ? row.AdGroupAd.Ad.FinalUrls[0] : null),
 					AdId = row.AdGroupAd.Ad.Id,
+                    AdGroupId = row.AdGroup.Id,
 					CampaignName = row.Campaign.Name,
 					AdGroupName = row.AdGroup.Name,
 					Status = row.AdGroupAd.Status.ToString() == "Enabled" ? "Aktif" : "Pasif",
@@ -1812,6 +1814,182 @@ namespace AdminPanel.Controllers.Google.Ads
             };
 
             var response = campaignService.MutateCampaigns(customer, new[] { operation });
+
+            return Ok(1);
+        }
+
+        [HttpPost("adgroup-status")]
+        public async Task<IActionResult> UpdateAdGroupStatus(string customer, long adGroupId, int statusType)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var adGroupService = client.GetService(Services.V18.AdGroupService);
+
+            var newStatus = AdGroupStatusEnum.Types.AdGroupStatus.Paused;
+
+            if (statusType == 1)
+            {
+                newStatus = AdGroupStatusEnum.Types.AdGroupStatus.Enabled;
+            }
+            else if (statusType == 2)
+            {
+                newStatus = AdGroupStatusEnum.Types.AdGroupStatus.Paused;
+            }
+            else if (statusType == 3)
+            {
+                var removeOperation = new AdGroupOperation
+                {
+                    Remove = ResourceNames.AdGroup(long.Parse(customer), adGroupId)
+                };
+
+                var removeResponse = adGroupService.MutateAdGroups(customer, new[] { removeOperation });
+                return Ok(1);
+            }
+
+            var adGroup = new AdGroup
+            {
+                ResourceName = ResourceNames.AdGroup(long.Parse(customer), adGroupId),
+                Status = newStatus
+            };
+
+            var operation = new AdGroupOperation
+            {
+                Update = adGroup,
+                UpdateMask = FieldMask.FromString("status")
+            };
+
+            var response = adGroupService.MutateAdGroups(customer, new[] { operation });
+
+            return Ok(1);
+        }
+
+        [HttpPost("ad-status")]
+        public async Task<IActionResult> UpdateAdStatus(string customer, long adGroupId, long adId, int statusType)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var adGroupAdService = client.GetService(Services.V18.AdGroupAdService);
+
+            var adResourceName = ResourceNames.AdGroupAd(long.Parse(customer), adGroupId, adId);
+
+            var newStatus = AdGroupAdStatusEnum.Types.AdGroupAdStatus.Paused;
+
+            if (statusType == 1)
+            {
+                newStatus = AdGroupAdStatusEnum.Types.AdGroupAdStatus.Enabled;
+            }
+            else if (statusType == 2)
+            {
+                newStatus = AdGroupAdStatusEnum.Types.AdGroupAdStatus.Paused;
+            }
+            else if (statusType == 3)
+            {
+                var removeOperation = new AdGroupAdOperation
+                {
+                    Remove = adResourceName
+                };
+
+                var removeResponse = adGroupAdService.MutateAdGroupAds(customer, new[] { removeOperation });
+                return Ok(1);
+            }
+
+            var adGroupAd = new AdGroupAd
+            {
+                ResourceName = adResourceName,
+                Status = newStatus
+            };
+
+            var operation = new AdGroupAdOperation
+            {
+                Update = adGroupAd,
+                UpdateMask = FieldMask.FromString("status")
+            };
+
+            var response = adGroupAdService.MutateAdGroupAds(customer, new[] { operation });
+
+            return Ok(1);
+        }
+
+        [HttpPost("assetgroup-status")]
+        public async Task<IActionResult> UpdateAssetGroupStatus(string customer, long assetGroupId, int statusType)
+        {
+            var userId = UserId();
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var assetGroupService = client.GetService(Services.V18.AssetGroupService);
+
+            var assetGroupResourceName = ResourceNames.AssetGroup(long.Parse(customer), assetGroupId);
+
+            if (statusType == 3)
+            {
+                var removeOperation = new AssetGroupOperation
+                {
+                    Remove = assetGroupResourceName
+                };
+
+                var removeResponse = assetGroupService.MutateAssetGroups(customer, new[] { removeOperation });
+                return Ok(1);
+            }
+
+            var newStatus = AssetGroupStatusEnum.Types.AssetGroupStatus.Paused;
+
+            if (statusType == 1)
+            {
+                newStatus = AssetGroupStatusEnum.Types.AssetGroupStatus.Enabled;
+            }
+            else if (statusType == 2)
+            {
+                newStatus = AssetGroupStatusEnum.Types.AssetGroupStatus.Paused;
+            }
+
+            var assetGroup = new AssetGroup
+            {
+                ResourceName = assetGroupResourceName,
+                Status = newStatus
+            };
+
+            var operation = new AssetGroupOperation
+            {
+                Update = assetGroup,
+                UpdateMask = FieldMask.FromString("status")
+            };
+
+            var response = assetGroupService.MutateAssetGroups(customer, new[] { operation });
 
             return Ok(1);
         }
