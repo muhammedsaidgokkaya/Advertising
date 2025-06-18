@@ -170,7 +170,77 @@ namespace AdminPanel.Controllers.Google.Ads
 			return Ok(result);
 		}
 
-		[HttpGet("ads-summary")]
+        [HttpGet("ads-summary-filter")]
+        public IActionResult GetAccountSummaryFilter(string customerId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+
+            var service = client.GetService(Services.V18.GoogleAdsService);
+
+            string query = @"
+				SELECT
+					customer.id,
+					customer.descriptive_name,
+					customer.currency_code,
+					customer.time_zone,
+					customer.manager,
+					metrics.clicks,
+					metrics.impressions,
+					metrics.ctr,
+					metrics.average_cpc,
+					metrics.cost_micros,
+					metrics.conversions,
+					metrics.cost_per_conversion
+				FROM customer
+                WHERE segments.date BETWEEN '" + defaultValues[0].ToString("yyyy-MM-dd") + "' AND '" + defaultValues[1].ToString("yyyy-MM-dd") + "'";
+
+            var request = new SearchGoogleAdsRequest()
+            {
+                CustomerId = customerId,
+                Query = query
+            };
+
+            var response = service.Search(request);
+
+            var summaryList = new List<object>();
+
+            foreach (var row in response)
+            {
+                summaryList.Add(new
+                {
+                    AccountId = row.Customer.Id,
+                    AccountName = string.IsNullOrEmpty(row.Customer.DescriptiveName) ? "Google Ads Hesabı" : row.Customer.DescriptiveName,
+                    Currency = row.Customer.CurrencyCode,
+                    TimeZone = row.Customer.TimeZone,
+                    IsManagerAccount = row.Customer.Manager,
+                    Clicks = row.Metrics.Clicks,
+                    Impressions = row.Metrics.Impressions,
+                    Ctr = row.Metrics.Ctr * 100,
+                    AverageCpc = row.Metrics.AverageCpc != null ? Convert.ToDouble(row.Metrics.AverageCpc) / 1_000_000.0 : 0,
+                    Cost = row.Metrics.CostMicros / 1_000_000.0,
+                    Conversions = row.Metrics.Conversions,
+                    CostPerConversion = row.Metrics.CostPerConversion != null ? Convert.ToDouble(row.Metrics.CostPerConversion) / 1_000_000.0 : 0
+                });
+            }
+
+            return Ok(summaryList);
+        }
+
+        [HttpGet("ads-summary")]
 		public IActionResult GetAccountSummary(string customerId)
 		{
 			var userId = UserId();
@@ -326,7 +396,398 @@ namespace AdminPanel.Controllers.Google.Ads
 			});
 		}
 
-		[HttpGet("campaigns")]
+        [HttpGet("campaigns-filter")]
+        public IActionResult GetCampaignsFilter(string customerId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+
+            var service = client.GetService(Services.V18.GoogleAdsService);
+
+            string query = @"
+					SELECT
+					  campaign.id,
+					  campaign.name,
+					  campaign.status,
+					  campaign.start_date,
+					  campaign.end_date,
+					  campaign.advertising_channel_type,
+					  campaign_budget.amount_micros,
+					  campaign.optimization_score,
+					  campaign.advertising_channel_sub_type,
+					  metrics.clicks,
+					  metrics.impressions,
+					  metrics.ctr,
+					  metrics.average_cpc,
+					  metrics.cost_micros,
+					  campaign.bidding_strategy_type,
+					  metrics.conversions,
+					  metrics.cost_per_conversion
+					FROM campaign
+					WHERE campaign.status != 'REMOVED'
+                            AND segments.date BETWEEN '" + defaultValues[0].ToString("yyyy-MM-dd") + "' AND '" + defaultValues[1].ToString("yyyy-MM-dd") + "'";
+
+            var searchRequest = new SearchGoogleAdsRequest()
+            {
+                CustomerId = customerId,
+                Query = query
+            };
+
+            var response = service.Search(searchRequest);
+
+            var campaignList = new List<object>();
+
+            foreach (var row in response)
+            {
+                campaignList.Add(new
+                {
+                    Id = row.Campaign.Id,
+                    Name = row.Campaign.Name,
+                    Status = row.Campaign.Status.ToString() == "Enabled" ? "Aktif" : "Pasif",
+                    StartDate = row.Campaign.StartDate,
+                    EndDate = row.Campaign.EndDate,
+                    ChannelType = _defaultValues.GetAdvertisingChannelTypeName(_defaultValues.ToUpperSnakeCase(row.Campaign.AdvertisingChannelType.ToString())),
+                    Budget = row.CampaignBudget?.AmountMicros / 1_000_000.0,
+                    OptimizationScore = row.Campaign.OptimizationScore * 100,
+                    CampaignSubType = row.Campaign.AdvertisingChannelSubType.ToString(),
+                    Clicks = row.Metrics.Clicks,
+                    Impressions = row.Metrics.Impressions,
+                    Ctr = row.Metrics.Ctr * 100,
+                    AverageCpc = row.Metrics.AverageCpc != null ? Convert.ToDouble(row.Metrics.AverageCpc) / 1_000_000.0 : 0,
+                    Cost = row.Metrics.CostMicros / 1_000_000.0,
+                    BiddingStrategyType = _defaultValues.GetBiddingStrategyTypeName(_defaultValues.ToUpperSnakeCase(row.Campaign.BiddingStrategyType.ToString())),
+                    Conversions = row.Metrics.Conversions,
+                    ConversionRate = row.Metrics.Clicks != 0 ? (row.Metrics.Conversions / row.Metrics.Clicks) * 100 : 0,
+                    CostPerConversion = row.Metrics.CostPerConversion != null ? Convert.ToDouble(row.Metrics.CostPerConversion) / 1_000_000.0 : 0,
+                });
+            }
+
+            return Ok(campaignList);
+        }
+
+        [HttpGet("ad-groups-filter")]
+        public IActionResult GetAdGroupsFilter(string customerId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+
+            var service = client.GetService(Services.V18.GoogleAdsService);
+
+            string query = @"
+				SELECT
+				  campaign.name,
+				  ad_group.id,
+				  ad_group.name,
+				  ad_group.status,
+				  ad_group.type,
+				  ad_group.cpc_bid_micros,
+				  metrics.clicks,
+				  metrics.impressions,
+				  metrics.ctr,
+				  metrics.average_cpc,
+				  metrics.cost_micros,
+				  metrics.conversions,
+				  metrics.cost_per_conversion
+				FROM ad_group
+				WHERE ad_group.status != 'REMOVED' AND campaign.status != 'REMOVED' 
+                    AND segments.date BETWEEN '" + defaultValues[0].ToString("yyyy-MM-dd") + "' AND '" + defaultValues[1].ToString("yyyy-MM-dd") + "'";
+
+            var request = new SearchGoogleAdsRequest()
+            {
+                CustomerId = customerId,
+                Query = query
+            };
+
+            var response = service.Search(request);
+            var adGroupList = new List<object>();
+
+            foreach (var row in response)
+            {
+                adGroupList.Add(new
+                {
+                    CampaignName = row.Campaign.Name,
+                    AdGroupId = row.AdGroup.Id,
+                    AdGroupName = row.AdGroup.Name,
+                    Status = row.AdGroup.Status.ToString() == "Enabled" ? "Aktif" : "Pasif",
+                    Type = _defaultValues.GetAdGroupTypeName(row.AdGroup.Type.ToString()),
+                    Clicks = row.Metrics.Clicks,
+                    Impressions = row.Metrics.Impressions,
+                    Ctr = row.Metrics.Ctr * 100,
+                    AverageCpc = row.Metrics.AverageCpc != null ? Convert.ToDouble(row.Metrics.AverageCpc) / 1_000_000.0 : 0,
+                    Cost = row.Metrics.CostMicros / 1_000_000.0,
+                    Conversions = row.Metrics.Conversions,
+                    ConversionRate = row.Metrics.Clicks != 0 ? (row.Metrics.Conversions / row.Metrics.Clicks) * 100 : 0,
+                    CostPerConversion = row.Metrics.CostPerConversion != null ? Convert.ToDouble(row.Metrics.CostPerConversion) / 1_000_000.0 : 0,
+                    TargetEbm = row.Metrics.Conversions != 0 ? (row.Metrics.CostMicros / 1_000_000.0) / row.Metrics.Conversions : 0
+                });
+            }
+
+            return Ok(adGroupList);
+        }
+
+        [HttpGet("ads-filter")]
+        public IActionResult GetAdsFilter(string customerId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+
+            var service = client.GetService(Services.V18.GoogleAdsService);
+
+            string query = @"
+				SELECT
+				  campaign.name,
+				  ad_group.name,
+				  ad_group.id,
+				  ad_group_ad.ad.id,
+				  ad_group_ad.ad.responsive_search_ad.headlines,
+				  ad_group_ad.ad.responsive_search_ad.descriptions,
+				  ad_group_ad.ad.final_urls,
+				  ad_group_ad.status,
+				  ad_group_ad.ad.type,
+				  ad_group_ad.ad_strength,
+				  metrics.clicks,
+				  metrics.impressions,
+				  metrics.ctr,
+				  metrics.average_cpc,
+				  metrics.cost_micros,
+				  metrics.conversions,
+				  metrics.cost_per_conversion
+				FROM ad_group_ad
+				WHERE ad_group_ad.status != 'REMOVED'
+				  AND ad_group.status != 'REMOVED'
+				  AND campaign.status != 'REMOVED'
+                  AND segments.date BETWEEN '" + defaultValues[0].ToString("yyyy-MM-dd") + "' AND '" + defaultValues[1].ToString("yyyy-MM-dd") + "'";
+
+            var request = new SearchGoogleAdsRequest()
+            {
+                CustomerId = customerId,
+                Query = query
+            };
+
+            var response = service.Search(request);
+            var adList = new List<object>();
+
+            foreach (var row in response)
+            {
+                var responsiveAd = row.AdGroupAd.Ad.ResponsiveSearchAd;
+                string headline = responsiveAd?.Headlines.Count > 0 ? responsiveAd.Headlines[0].Text : "";
+                string description = responsiveAd?.Descriptions.Count > 0 ? responsiveAd.Descriptions[0].Text : "";
+
+                adList.Add(new
+                {
+                    Name = headline + " / " + description + " " + (row.AdGroupAd.Ad.FinalUrls.Count > 0 ? row.AdGroupAd.Ad.FinalUrls[0] : null),
+                    AdId = row.AdGroupAd.Ad.Id,
+                    AdGroupId = row.AdGroup.Id,
+                    CampaignName = row.Campaign.Name,
+                    AdGroupName = row.AdGroup.Name,
+                    Status = row.AdGroupAd.Status.ToString() == "Enabled" ? "Aktif" : "Pasif",
+                    AdType = _defaultValues.GetAdTypeName(row.AdGroupAd.Ad.Type.ToString()),
+                    AdStrength = _defaultValues.GetAdStrengthName(row.AdGroupAd.AdStrength.ToString()),
+                    Headline = headline,
+                    Description = description,
+                    FinalUrl = row.AdGroupAd.Ad.FinalUrls.Count > 0 ? row.AdGroupAd.Ad.FinalUrls[0] : null,
+                    Clicks = row.Metrics.Clicks,
+                    Impressions = row.Metrics.Impressions,
+                    Ctr = row.Metrics.Ctr * 100,
+                    AverageCpc = row.Metrics.AverageCpc != null ? Convert.ToDouble(row.Metrics.AverageCpc) / 1_000_000.0 : 0,
+                    Cost = row.Metrics.CostMicros / 1_000_000.0,
+                    Conversions = row.Metrics.Conversions,
+                    ConversionRate = row.Metrics.Clicks != 0 ? (row.Metrics.Conversions / row.Metrics.Clicks) * 100 : 0,
+                    CostPerConversion = row.Metrics.CostPerConversion != null ? Convert.ToDouble(row.Metrics.CostPerConversion) / 1_000_000.0 : 0,
+                });
+            }
+
+            return Ok(adList);
+        }
+
+        [HttpGet("asset-groups-filter")]
+        public IActionResult GetAssetGroupsFilter(string customerId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+            var service = client.GetService(Services.V18.GoogleAdsService);
+
+            string query = @"
+		        SELECT
+			        campaign.name,
+			        asset_group.id,
+			        asset_group.name,
+			        asset_group.status,
+			        metrics.clicks,
+		            metrics.impressions,
+		            metrics.ctr,
+		            metrics.average_cpc,
+		            metrics.cost_micros,
+		            metrics.conversions,
+		            metrics.cost_per_conversion
+		        FROM asset_group
+		        WHERE campaign.status != 'REMOVED'
+		          AND asset_group.status != 'REMOVED'
+                  AND segments.date BETWEEN '" + defaultValues[0].ToString("yyyy-MM-dd") + "' AND '" + defaultValues[1].ToString("yyyy-MM-dd") + "'";
+
+            var request = new SearchGoogleAdsRequest()
+            {
+                CustomerId = customerId,
+                Query = query
+            };
+
+            var response = service.Search(request);
+            var assetGroups = new List<object>();
+
+            foreach (var row in response)
+            {
+                assetGroups.Add(new
+                {
+                    CampaignName = row.Campaign.Name,
+                    AssetGroupId = row.AssetGroup.Id,
+                    AssetGroupName = row.AssetGroup.Name,
+                    Status = row.AssetGroup.Status.ToString() == "Enabled" ? "Aktif" : "Pasif",
+                    Clicks = row.Metrics.Clicks,
+                    Impressions = row.Metrics.Impressions,
+                    Ctr = row.Metrics.Ctr * 100,
+                    AverageCpc = row.Metrics.AverageCpc != null ? Convert.ToDouble(row.Metrics.AverageCpc) / 1_000_000.0 : 0,
+                    Cost = row.Metrics.CostMicros / 1_000_000.0,
+                    Conversions = row.Metrics.Conversions,
+                    ConversionRate = row.Metrics.Clicks != 0 ? (row.Metrics.Conversions / row.Metrics.Clicks) * 100 : 0,
+                    CostPerConversion = row.Metrics.CostPerConversion != null ? Convert.ToDouble(row.Metrics.CostPerConversion) / 1_000_000.0 : 0,
+                });
+            }
+
+            return Ok(assetGroups);
+        }
+
+        [HttpGet("ads-keywords-filter")]
+        public IActionResult GetAdKeywordsFilter(string customerId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var userId = UserId();
+            var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
+            var control = _googleTokenControl.GetTokenAds(userId);
+            var app = _googleService.GetGoogleApp();
+
+            var config = new GoogleAdsConfig()
+            {
+                DeveloperToken = app.DeveloperToken,
+                OAuth2Mode = OAuth2Flow.APPLICATION,
+                OAuth2ClientId = app.AppId,
+                OAuth2ClientSecret = app.AppSecret,
+                OAuth2RefreshToken = control
+            };
+
+            GoogleAdsClient client = new GoogleAdsClient(config);
+
+            var service = client.GetService(Services.V18.GoogleAdsService);
+
+            string query = @"
+				SELECT
+				  campaign.name,
+				  ad_group.name,
+				  ad_group.id,
+				  ad_group_criterion.criterion_id,
+				  ad_group_criterion.keyword.text,
+				  ad_group_criterion.keyword.match_type,
+				  ad_group_criterion.status,
+				  campaign.serving_status,
+				  metrics.clicks,
+				  metrics.impressions,
+				  metrics.ctr,
+				  metrics.average_cpc,
+				  metrics.cost_micros,
+				  metrics.conversions,
+				  metrics.cost_per_conversion
+				FROM keyword_view
+				WHERE campaign.status != 'REMOVED'
+				  AND ad_group.status != 'REMOVED'
+				  AND ad_group_criterion.status != 'REMOVED'
+                  AND segments.date BETWEEN '" + defaultValues[0].ToString("yyyy-MM-dd") + "' AND '" + defaultValues[1].ToString("yyyy-MM-dd") + "' ORDER BY metrics.clicks DESC";
+
+            var request = new SearchGoogleAdsRequest()
+            {
+                CustomerId = customerId,
+                Query = query
+            };
+
+            var response = service.Search(request);
+            var keywords = new List<object>();
+
+            foreach (var row in response)
+            {
+                keywords.Add(new
+                {
+                    CampaignName = row.Campaign.Name,
+                    AdGroupName = row.AdGroup.Name,
+                    AdGroupId = row.AdGroup.Id,
+                    CriterionId = row.AdGroupCriterion.CriterionId,
+                    KeywordText = row.AdGroupCriterion.Keyword.Text,
+                    MatchType = _defaultValues.GetKeywordMatchTypeName(row.AdGroupCriterion.Keyword.MatchType.ToString()),
+                    Status = row.AdGroupCriterion.Status.ToString() == "Enabled" ? "Aktif" : "Pasif",
+                    ChangeStatus = _defaultValues.GetSystemServingStatusName(row.Campaign.ServingStatus.ToString()),
+                    Clicks = row.Metrics.Clicks,
+                    Impressions = row.Metrics.Impressions,
+                    Ctr = row.Metrics.Ctr * 100,
+                    AverageCpc = row.Metrics.AverageCpc != null ? Convert.ToDouble(row.Metrics.AverageCpc) / 1_000_000.0 : 0,
+                    Cost = row.Metrics.CostMicros / 1_000_000.0,
+                    Conversions = row.Metrics.Conversions,
+                    ConversionRate = row.Metrics.Clicks != 0 ? (row.Metrics.Conversions / row.Metrics.Clicks) * 100 : 0,
+                    CostPerConversion = row.Metrics.CostPerConversion != null ? Convert.ToDouble(row.Metrics.CostPerConversion) / 1_000_000.0 : 0,
+                });
+            }
+
+            return Ok(keywords);
+        }
+
+        [HttpGet("campaigns")]
 		public IActionResult GetCampaigns(string customerId)
 		{
 			var userId = UserId();

@@ -325,28 +325,29 @@ namespace AdminPanel.Controllers.Report
             var userId = UserId();
             var user = _userService.GetUserById(userId);
             var defaultValues = _defaultValues.DefaultDate(startDate, endDate, 120);
-
-			var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+            var formattedStart = defaultValues[0].ToString("yyyy-MM-dd");
+            var formattedEnd = defaultValues[1].ToString("yyyy-MM-dd");
+            var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
 			var url = "";
             if (typeId == "Genel")
             {
-				url = $"{baseUrl}/api/GoogleAds/ads-summary?customerId={accountId}";
+				url = $"{baseUrl}/api/GoogleAds/ads-summary-filter?customerId={accountId}&startDate={formattedStart}&endDate={formattedEnd}";
 			}
             else if (typeId == "Kampanya")
             {
-				url = $"{baseUrl}/api/GoogleAds/campaigns?customerId={accountId}";
+				url = $"{baseUrl}/api/GoogleAds/campaigns-filter?customerId={accountId}&startDate={formattedStart}&endDate={formattedEnd}";
 			}
             else if (typeId == "Reklam Grubu")
             {
-				url = $"{baseUrl}/api/GoogleAds/ad-groups?customerId={accountId}";
+				url = $"{baseUrl}/api/GoogleAds/ad-groups-filter?customerId={accountId}&startDate={formattedStart}&endDate={formattedEnd}";
 			}
             else if (typeId == "Reklam")
             {
-				url = $"{baseUrl}/api/GoogleAds/ads?customerId={accountId}";
+				url = $"{baseUrl}/api/GoogleAds/ads-filter?customerId={accountId}&startDate={formattedStart}&endDate={formattedEnd}";
 			}
             else if (typeId == "Anahtar Kelime")
             {
-				url = $"{baseUrl}/api/GoogleAds/ads-keywords?customerId={accountId}";
+				url = $"{baseUrl}/api/GoogleAds/ads-keywords-filter?customerId={accountId}&startDate={formattedStart}&endDate={formattedEnd}";
 			}
 
 			var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "").Trim();
