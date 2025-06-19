@@ -1118,39 +1118,73 @@ namespace AdminPanel.Controllers.Meta
 
             //2.KREATİF OLUŞTURMA
             string campaignObjective = MapObjective(request.Objective);
+            object objectStorySpec;
 
-            object objectStorySpec = campaignObjective switch
+            if (campaignObjective == "BRAND_AWARENESS")
             {
-                "BRAND_AWARENESS" => new
-                {
-                    page_id = request.FacebookPageId,
-                    link_data = new
+                objectStorySpec = request.InstagramId != "0"
+                    ? new
                     {
-                        message = request.MainText,
-                        link = request.WebsiteUrl,
-                        name = request.Title,
-                        description = request.Description,
-                        call_to_action = new { type = request.CallToActionType }
+                        page_id = request.FacebookPageId,
+                        instagram_user_id = request.InstagramId,
+                        link_data = new
+                        {
+                            message = request.MainText,
+                            link = request.WebsiteUrl,
+                            name = request.Title,
+                            description = request.Description,
+                            call_to_action = new { type = request.CallToActionType }
+                        }
                     }
-                },
-
-                "TRAFFIC" or "LEAD_GENERATION" or "ENGAGEMENT" => new
-                {
-                    page_id = request.FacebookPageId,
-                    link_data = new
+                    : new
                     {
-                        message = request.MainText,
-                        link = request.WebsiteUrl,
-                        name = request.Title,
-                        description = request.Description,
-                        image_hash = imageHash,
-                        call_to_action = new { type = request.CallToActionType }
+                        page_id = request.FacebookPageId,
+                        link_data = new
+                        {
+                            message = request.MainText,
+                            link = request.WebsiteUrl,
+                            name = request.Title,
+                            description = request.Description,
+                            call_to_action = new { type = request.CallToActionType }
+                        }
+                    };
+            }
+            else if (campaignObjective is "TRAFFIC" or "LEAD_GENERATION" or "ENGAGEMENT")
+            {
+                objectStorySpec = request.InstagramId != "0"
+                    ? new
+                    {
+                        page_id = request.FacebookPageId,
+                        instagram_user_id = request.InstagramId,
+                        link_data = new
+                        {
+                            message = request.MainText,
+                            link = request.WebsiteUrl,
+                            name = request.Title,
+                            description = request.Description,
+                            image_hash = imageHash,
+                            call_to_action = new { type = request.CallToActionType }
+                        }
                     }
-                },
+                    : new
+                    {
+                        page_id = request.FacebookPageId,
+                        link_data = new
+                        {
+                            message = request.MainText,
+                            link = request.WebsiteUrl,
+                            name = request.Title,
+                            description = request.Description,
+                            image_hash = imageHash,
+                            call_to_action = new { type = request.CallToActionType }
+                        }
+                    };
+            }
+            else
+            {
+                throw new ArgumentException("Unsupported campaign objective for creative: " + campaignObjective);
+            }
 
-                _ => throw new ArgumentException("Unsupported campaign objective for creative: " + campaignObjective)
-            };
-            
             using var multipartContent = new MultipartFormDataContent();
 
             multipartContent.Add(new StringContent(request.AdName ?? "AdCreative"), "name");
