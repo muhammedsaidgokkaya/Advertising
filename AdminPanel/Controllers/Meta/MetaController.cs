@@ -23,6 +23,7 @@ using System.Text.Json;
 using Utilities.Helper;
 using Utilities.Utilities.MetaData;
 using static AdminPanel.Models.Meta.Ad.AddAd;
+using static Google.Rpc.Context.AttributeContext.Types;
 
 namespace AdminPanel.Controllers.Meta
 {
@@ -1094,9 +1095,21 @@ namespace AdminPanel.Controllers.Meta
                     imageUploadContent);
 
                 var uploadJson = await uploadResponse.Content.ReadAsStringAsync();
-                if (!uploadResponse.IsSuccessStatusCode)
+                var responseBytes = await uploadResponse.Content.ReadAsByteArrayAsync();
+                var responseText = Encoding.UTF8.GetString(responseBytes);
+
+                dynamic error = JsonConvert.DeserializeObject(responseText);
+                if (error?.error != null)
                 {
-                    return BadRequest(new { Success = false, Error = uploadJson });
+                    string userTitle = error.error.error_user_title;
+                    string userMsg = error.error.error_user_msg;
+
+                    return Ok(new
+                    {
+                        Success = false,
+                        title = userTitle,
+                        message = userMsg
+                    });
                 }
 
                 var uploadResult = System.Text.Json.JsonSerializer.Deserialize<MetaImageUploadResponse>(uploadJson);
@@ -1104,44 +1117,69 @@ namespace AdminPanel.Controllers.Meta
             }
 
             //2.KREATİF OLUŞTURMA
-            var creativePayload = new
+            string campaignObjective = MapObjective(request.Objective);
+
+            object objectStorySpec = campaignObjective switch
             {
-                name = request.AdName ?? "AdCreative",
-                object_story_spec = new
+                "BRAND_AWARENESS" => new
                 {
                     page_id = request.FacebookPageId,
                     link_data = new
                     {
-                        image_hash = imageHash,
-                        link = request.WebsiteUrl,
                         message = request.MainText,
+                        link = request.WebsiteUrl,
                         name = request.Title,
                         description = request.Description,
-                        call_to_action = new
-                        {
-                            type = request.CallToActionType
-                        }
+                        call_to_action = new { type = request.CallToActionType }
                     }
                 },
+
+                "TRAFFIC" or "LEAD_GENERATION" or "ENGAGEMENT" => new
+                {
+                    page_id = request.FacebookPageId,
+                    link_data = new
+                    {
+                        message = request.MainText,
+                        link = request.WebsiteUrl,
+                        name = request.Title,
+                        description = request.Description,
+                        image_hash = imageHash,
+                        call_to_action = new { type = request.CallToActionType }
+                    }
+                },
+
+                _ => throw new ArgumentException("Unsupported campaign objective for creative: " + campaignObjective)
             };
+            
+            using var multipartContent = new MultipartFormDataContent();
 
-            var url = $"https://graph.facebook.com/v19.0/{request.AdAccountId}/adcreatives?access_token={accessToken.AccessToken}";
+            multipartContent.Add(new StringContent(request.AdName ?? "AdCreative"), "name");
+            multipartContent.Add(new StringContent("SHARE"), "object_type");
+            multipartContent.Add(new StringContent(accessToken.AccessToken), "access_token");
+            multipartContent.Add(new StringContent(System.Text.Json.JsonSerializer.Serialize(objectStorySpec)), "object_story_spec");
 
-            var creativeContent = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(creativePayload),
-                Encoding.UTF8,
-                "application/json");
-
-            var creativeResponse = await httpClient.PostAsync(url, creativeContent);
-
+            var url = $"https://graph.facebook.com/v23.0/{request.AdAccountId}/adcreatives";
+            var creativeResponse = await httpClient.PostAsync(url, multipartContent);
             var creativeJson = await creativeResponse.Content.ReadAsStringAsync();
-            if (!creativeResponse.IsSuccessStatusCode)
+            var responseBytess = await creativeResponse.Content.ReadAsByteArrayAsync();
+            var responseTexts = Encoding.UTF8.GetString(responseBytess);
+
+            dynamic errors = JsonConvert.DeserializeObject(responseTexts);
+            if (errors?.error != null)
             {
-                return BadRequest(new { Success = false, Error = creativeJson });
+                string userTitle = errors.error.error_user_title;
+                string userMsg = errors.error.error_user_msg;
+
+                return Ok(new
+                {
+                    Success = false,
+                    title = userTitle,
+                    message = userMsg
+                });
             }
 
-            var creativeResult = System.Text.Json.JsonSerializer.Deserialize<MetaCreativeResponse>(creativeJson);
-            var creativeId = creativeResult.Id;
+            using var doc = System.Text.Json.JsonDocument.Parse(creativeJson);
+            var creativeId = doc.RootElement.GetProperty("id").GetString();
 
             // 3. REKLAM OLUŞTURMA
             var adPayload = new
@@ -1150,7 +1188,7 @@ namespace AdminPanel.Controllers.Meta
                 adset_id = request.AdSetId,
                 creative = new { creative_id = creativeId },
                 status = "PAUSED",
-                access_token = accessToken
+                access_token = accessToken.AccessToken
             };
 
             var adContent = new StringContent(
@@ -1159,13 +1197,25 @@ namespace AdminPanel.Controllers.Meta
                 "application/json");
 
             var adResponse = await httpClient.PostAsync(
-                $"https://graph.facebook.com/v19.0/{request.AdAccountId}/ads",
+                $"https://graph.facebook.com/v23.0/{request.AdAccountId}/ads",
                 adContent);
 
             var adJson = await adResponse.Content.ReadAsStringAsync();
-            if (!adResponse.IsSuccessStatusCode)
+            var responseByte = await adResponse.Content.ReadAsByteArrayAsync();
+            var responsesText = Encoding.UTF8.GetString(responseByte);
+
+            dynamic errorss = JsonConvert.DeserializeObject(responsesText);
+            if (errorss?.error != null)
             {
-                return BadRequest(new { Success = false, Error = adJson });
+                string userTitle = errorss.error.error_user_title;
+                string userMsg = errorss.error.error_user_msg;
+
+                return Ok(new
+                {
+                    Success = false,
+                    title = userTitle,
+                    message = userMsg
+                });
             }
 
             return Ok(new
@@ -1270,6 +1320,53 @@ namespace AdminPanel.Controllers.Meta
             return response.IsSuccessStatusCode ? Ok("Reklam seti başarıyla silindi.") : BadRequest(result);
         }
 
+        [HttpPost("update-ad-status")]
+        public async Task<IActionResult> UpdateAdStatus(long adId, int statusType)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var url = $"https://graph.facebook.com/v19.0/{adId}";
+
+            string status = statusType switch
+            {
+                1 => "ACTIVE",
+                2 => "PAUSED",
+                _ => null
+            };
+
+            if (status == null)
+                return BadRequest("Geçersiz durum tipi. 1 = ACTIVE, 2 = PAUSED");
+
+            var payload = new Dictionary<string, string>
+            {
+                { "status", status },
+                { "access_token", accessToken.AccessToken }
+            };
+
+            var content = new FormUrlEncodedContent(payload);
+            var response = await _httpClient.PostAsync(url, content);
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            return response.IsSuccessStatusCode ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPost("delete-ad")]
+        public async Task<IActionResult> DeleteAd(long adId)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+
+            var url = $"https://graph.facebook.com/v19.0/{adId}?access_token={accessToken.AccessToken}";
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            var response = await _httpClient.SendAsync(request);
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            return response.IsSuccessStatusCode ? Ok("Reklam başarıyla silindi.") : BadRequest(result);
+        }
+
         private int UserId()
         {
             var userIdClaim = HttpContext.User.FindFirst("userId");
@@ -1306,6 +1403,20 @@ namespace AdminPanel.Controllers.Meta
         {
             public string Id { get; set; }
             public string Username { get; set; }
+        }
+
+        private string MapObjective(string objective)
+        {
+            return objective switch
+            {
+                "OUTCOME_AWARENESS" => "BRAND_AWARENESS",
+                "OUTCOME_TRAFFIC" => "TRAFFIC",
+                "OUTCOME_ENGAGEMENT" => "ENGAGEMENT",
+                "OUTCOME_LEADS" => "LEAD_GENERATION",
+                "OUTCOME_APP_PROMOTION" => "APP_INSTALLS",
+                "OUTCOME_SALES" => "CONVERSIONS",
+                _ => throw new ArgumentException("Bilinmeyen Objective değeri: " + objective)
+            };
         }
     }
 }
