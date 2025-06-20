@@ -18,6 +18,7 @@ using OpenAI.API.Embedding;
 using Service.Implementations.Meta;
 using Service.Implementations.User;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Utilities.Helper;
@@ -1080,105 +1081,148 @@ namespace AdminPanel.Controllers.Meta
 
             //1.GÖRSEL EKLEME
             string imageHash = null;
+            string videoId = null;
+            string thumbnailUrl = null;
+
             if (request.Image != null && request.Image.Length > 0)
             {
-                var imageUploadContent = new MultipartFormDataContent();
-                var imageStream = request.Image.OpenReadStream();
-                var streamContent = new StreamContent(imageStream);
-                streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(request.Image.ContentType);
+                var contentType = request.Image.ContentType.ToLower();
 
-                imageUploadContent.Add(streamContent, "source", request.Image.FileName);
-                imageUploadContent.Add(new StringContent(accessToken.AccessToken), "access_token");
+                var uploadContent = new MultipartFormDataContent();
+                var stream = request.Image.OpenReadStream();
+                var streamContent = new StreamContent(stream);
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
 
-                var uploadResponse = await httpClient.PostAsync(
-                    $"https://graph.facebook.com/v19.0/{request.AdAccountId}/adimages",
-                    imageUploadContent);
+                uploadContent.Add(streamContent, "source", request.Image.FileName);
+                uploadContent.Add(new StringContent(accessToken.AccessToken), "access_token");
+
+                HttpResponseMessage uploadResponse;
+
+                if (contentType.StartsWith("video"))
+                {
+                    uploadResponse = await httpClient.PostAsync(
+                        $"https://graph-video.facebook.com/v19.0/{request.AdAccountId}/advideos",
+                        uploadContent);
+                }
+                else
+                {
+                    uploadResponse = await httpClient.PostAsync(
+                        $"https://graph.facebook.com/v19.0/{request.AdAccountId}/adimages",
+                        uploadContent);
+                }
 
                 var uploadJson = await uploadResponse.Content.ReadAsStringAsync();
-                var responseBytes = await uploadResponse.Content.ReadAsByteArrayAsync();
-                var responseText = Encoding.UTF8.GetString(responseBytes);
+                dynamic uploadResult = JsonConvert.DeserializeObject(uploadJson);
 
-                dynamic error = JsonConvert.DeserializeObject(responseText);
-                if (error?.error != null)
+                if (uploadResult?.error != null)
                 {
-                    string userTitle = error.error.error_user_title;
-                    string userMsg = error.error.error_user_msg;
-
                     return Ok(new
                     {
                         Success = false,
-                        title = userTitle,
-                        message = userMsg
+                        title = uploadResult.error.error_user_title,
+                        message = uploadResult.error.error_user_msg
                     });
                 }
 
-                var uploadResult = System.Text.Json.JsonSerializer.Deserialize<MetaImageUploadResponse>(uploadJson);
-                imageHash = uploadResult.images.First().Value.hash;
+                if (contentType.StartsWith("video"))
+                {
+                    videoId = uploadResult.id;
+                    var thumbnailurls = $"https://graph.facebook.com/v19.0/{videoId}?fields=thumbnails&access_token={accessToken.AccessToken}";
+
+                    var thumbnailresponse = await httpClient.GetStringAsync(thumbnailurls);
+                    dynamic thumbnailjson = JsonConvert.DeserializeObject(thumbnailresponse);
+
+                    thumbnailUrl = thumbnailjson.thumbnails.data[0].uri;
+                }
+                else
+                {
+                    imageHash = uploadResult.images?.First?.Value?.hash;
+                }
             }
 
             //2.KREATİF OLUŞTURMA
             string campaignObjective = MapObjective(request.Objective);
             object objectStorySpec;
 
-            if (campaignObjective == "BRAND_AWARENESS")
+            bool hasVideo = !string.IsNullOrEmpty(videoId);
+            bool hasInstagram = request.InstagramId != "0";
+
+            if (campaignObjective == "BRAND_AWARENESS" || campaignObjective == "TRAFFIC" || campaignObjective == "LEAD_GENERATION" || campaignObjective == "ENGAGEMENT")
             {
-                objectStorySpec = request.InstagramId != "0"
-                    ? new
-                    {
-                        page_id = request.FacebookPageId,
-                        instagram_user_id = request.InstagramId,
-                        link_data = new
+                if (hasVideo)
+                {
+                    objectStorySpec = hasInstagram
+                        ? new
                         {
-                            message = request.MainText,
-                            link = request.WebsiteUrl,
-                            name = request.Title,
-                            description = request.Description,
-                            call_to_action = new { type = request.CallToActionType }
+                            page_id = request.FacebookPageId,
+                            instagram_user_id = request.InstagramId,
+                            video_data = new
+                            {
+                                video_id = videoId,
+                                title = request.Title,
+                                message = request.MainText,
+                                image_url = thumbnailUrl,
+                                call_to_action = new
+                                {
+                                    type = request.CallToActionType,
+                                    value = new
+                                    {
+                                        link = request.WebsiteUrl
+                                    }
+                                }
+                            }
                         }
-                    }
-                    : new
-                    {
-                        page_id = request.FacebookPageId,
-                        link_data = new
+                        : new
                         {
-                            message = request.MainText,
-                            link = request.WebsiteUrl,
-                            name = request.Title,
-                            description = request.Description,
-                            call_to_action = new { type = request.CallToActionType }
-                        }
-                    };
-            }
-            else if (campaignObjective is "TRAFFIC" or "LEAD_GENERATION" or "ENGAGEMENT")
-            {
-                objectStorySpec = request.InstagramId != "0"
-                    ? new
-                    {
-                        page_id = request.FacebookPageId,
-                        instagram_user_id = request.InstagramId,
-                        link_data = new
+                            page_id = request.FacebookPageId,
+                            video_data = new
+                            {
+                                video_id = videoId,
+                                title = request.Title,
+                                message = request.MainText,
+                                image_url = thumbnailUrl,
+                                call_to_action = new
+                                {
+                                    type = request.CallToActionType,
+                                    value = new
+                                    {
+                                        link = request.WebsiteUrl
+                                    }
+                                }
+                            }
+                        };
+                }
+                else
+                {
+                    objectStorySpec = hasInstagram
+                        ? new
                         {
-                            message = request.MainText,
-                            link = request.WebsiteUrl,
-                            name = request.Title,
-                            description = request.Description,
-                            image_hash = imageHash,
-                            call_to_action = new { type = request.CallToActionType }
+                            page_id = request.FacebookPageId,
+                            instagram_user_id = request.InstagramId,
+                            link_data = new
+                            {
+                                message = request.MainText,
+                                link = request.WebsiteUrl,
+                                name = request.Title,
+                                description = request.Description,
+                                image_hash = imageHash,
+                                call_to_action = new { type = request.CallToActionType }
+                            }
                         }
-                    }
-                    : new
-                    {
-                        page_id = request.FacebookPageId,
-                        link_data = new
+                        : new
                         {
-                            message = request.MainText,
-                            link = request.WebsiteUrl,
-                            name = request.Title,
-                            description = request.Description,
-                            image_hash = imageHash,
-                            call_to_action = new { type = request.CallToActionType }
-                        }
-                    };
+                            page_id = request.FacebookPageId,
+                            link_data = new
+                            {
+                                message = request.MainText,
+                                link = request.WebsiteUrl,
+                                name = request.Title,
+                                description = request.Description,
+                                image_hash = imageHash,
+                                call_to_action = new { type = request.CallToActionType }
+                            }
+                        };
+                }
             }
             else
             {
