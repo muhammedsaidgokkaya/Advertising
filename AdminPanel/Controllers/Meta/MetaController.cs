@@ -1304,6 +1304,186 @@ namespace AdminPanel.Controllers.Meta
             });
         }
 
+        [HttpPost("create-ad-carousel")]
+        public async Task<IActionResult> CreateAdCarousel([FromForm] Models.Meta.Ad.AddAd.AdMultiDto request)
+        {
+            var userId = UserId();
+            var accessToken = _metaService.GetLongAccessToken(userId);
+            var httpClient = new HttpClient();
+
+            var childAttachments = new List<object>();
+
+            foreach (var slide in request.Slide)
+            {
+                if (slide.Image == null || slide.Image.Length == 0)
+                    continue;
+
+                var contentType = slide.Image.ContentType.ToLower();
+                var uploadContent = new MultipartFormDataContent();
+                var stream = slide.Image.OpenReadStream();
+                var streamContent = new StreamContent(stream);
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                uploadContent.Add(streamContent, "source", slide.Image.FileName);
+                uploadContent.Add(new StringContent(accessToken.AccessToken), "access_token");
+
+                HttpResponseMessage uploadResponse;
+
+                bool isVideo = contentType.StartsWith("video");
+                if (isVideo)
+                {
+                    uploadResponse = await httpClient.PostAsync(
+                        $"https://graph-video.facebook.com/v19.0/{request.AdAccountId}/advideos",
+                        uploadContent);
+                }
+                else
+                {
+                    uploadResponse = await httpClient.PostAsync(
+                        $"https://graph.facebook.com/v19.0/{request.AdAccountId}/adimages",
+                        uploadContent);
+                }
+
+                var uploadJson = await uploadResponse.Content.ReadAsStringAsync();
+                dynamic uploadResult = JsonConvert.DeserializeObject(uploadJson);
+
+                if (uploadResult?.error != null)
+                {
+                    return Ok(new
+                    {
+                        Success = false,
+                        title = uploadResult.error.error_user_title,
+                        message = uploadResult.error.error_user_msg
+                    });
+                }
+
+                if (isVideo)
+                {
+                    string videoId = uploadResult.id;
+                    string thumbnailUrl = null;
+
+                    var thumbResponse = await httpClient.GetAsync(
+                        $"https://graph.facebook.com/v19.0/{videoId}?fields=thumbnails&access_token={accessToken.AccessToken}");
+                    var thumbJson = await thumbResponse.Content.ReadAsStringAsync();
+                    dynamic thumbResult = JsonConvert.DeserializeObject(thumbJson);
+
+                    try
+                    {
+                        thumbnailUrl = thumbResult?.thumbnails?.data?[0]?.uri;
+                    }
+                    catch { }
+
+                    childAttachments.Add(new
+                    {
+                        link = slide.WebsiteUrl ?? request.WebsiteUrl,
+                        name = slide.Title,
+                        description = slide.Description,
+                        video_id = videoId,
+                        image_url = thumbnailUrl,
+                        call_to_action = new { type = request.CallToActionType }
+                    });
+                }
+                else
+                {
+                    string imageHash = uploadResult.images?.First?.Value?.hash;
+
+                    childAttachments.Add(new
+                    {
+                        link = slide.WebsiteUrl ?? request.WebsiteUrl,
+                        name = slide.Title,
+                        description = slide.Description,
+                        image_hash = imageHash,
+                        call_to_action = new { type = request.CallToActionType }
+                    });
+                }
+            }
+
+            var objectStorySpec = new
+            {
+                page_id = request.FacebookPageId,
+                instagram_user_id = request.InstagramId,
+                link_data = new
+                {
+                    message = request.MainText,
+                    link = request.WebsiteUrl,
+                    child_attachments = childAttachments,
+                    multi_share_optimized = true,
+                    call_to_action = new { type = request.CallToActionType }
+                }
+            };
+
+            var creativeContent = new MultipartFormDataContent();
+            creativeContent.Add(new StringContent(request.AdName ?? "CarouselAd"), "name");
+            creativeContent.Add(new StringContent("SHARE"), "object_type");
+            creativeContent.Add(new StringContent(accessToken.AccessToken), "access_token");
+            creativeContent.Add(new StringContent(System.Text.Json.JsonSerializer.Serialize(objectStorySpec)), "object_story_spec");
+
+            var url = $"https://graph.facebook.com/v23.0/{request.AdAccountId}/adcreatives";
+            var creativeResponse = await httpClient.PostAsync(url, creativeContent);
+            var creativeJson = await creativeResponse.Content.ReadAsStringAsync();
+            var responseBytess = await creativeResponse.Content.ReadAsByteArrayAsync();
+            var responseTexts = Encoding.UTF8.GetString(responseBytess);
+
+            dynamic errors = JsonConvert.DeserializeObject(responseTexts);
+            if (errors?.error != null)
+            {
+                string userTitle = errors.error.error_user_title;
+                string userMsg = errors.error.error_user_msg;
+
+                return Ok(new
+                {
+                    Success = false,
+                    title = userTitle,
+                    message = userMsg
+                });
+            }
+
+            using var doc = System.Text.Json.JsonDocument.Parse(creativeJson);
+            var creativeId = doc.RootElement.GetProperty("id").GetString();
+
+            // 3. REKLAM OLUŞTURMA
+            var adPayload = new
+            {
+                name = request.AdName,
+                adset_id = request.AdSetId,
+                creative = new { creative_id = creativeId },
+                status = "PAUSED",
+                access_token = accessToken.AccessToken
+            };
+
+            var adContent = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(adPayload),
+                Encoding.UTF8,
+                "application/json");
+
+            var adResponse = await httpClient.PostAsync(
+                $"https://graph.facebook.com/v23.0/{request.AdAccountId}/ads",
+                adContent);
+
+            var adJson = await adResponse.Content.ReadAsStringAsync();
+            var responseByte = await adResponse.Content.ReadAsByteArrayAsync();
+            var responsesText = Encoding.UTF8.GetString(responseByte);
+
+            dynamic errorss = JsonConvert.DeserializeObject(responsesText);
+            if (errorss?.error != null)
+            {
+                string userTitle = errorss.error.error_user_title;
+                string userMsg = errorss.error.error_user_msg;
+
+                return Ok(new
+                {
+                    Success = false,
+                    title = userTitle,
+                    message = userMsg
+                });
+            }
+
+            return Ok(new
+            {
+                Success = true,
+                CreativeId = creativeId,
+                AdJson = adJson
+            });
+        }
+
         [HttpPost("update-campaign-status")]
         public async Task<IActionResult> UpdateCampaignStatus(long campaignId, int statusType)
         {
