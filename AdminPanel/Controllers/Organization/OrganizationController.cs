@@ -463,7 +463,17 @@ namespace AdminPanel.Controllers.Organization
             var user = _userService.GetUserById(userId);
             var organization = _userService.GetPlan(user.OrganizationId);
             if (organization == null)
-                return NotFound("Plan bilgisi bulunamadı.");
+            {
+                var error = new AdminPanel.Models.Organization.Plan.Plan
+                {
+                    Amount = 0,
+                    PlanId = 0,
+                    IsYearly = false,
+                    IsPayment = false,
+                };
+
+                return Ok(error);
+            }
             var data = new AdminPanel.Models.Organization.Plan.Plan
             {
                 Amount = organization.Amount,
