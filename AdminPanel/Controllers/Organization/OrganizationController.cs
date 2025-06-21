@@ -604,7 +604,7 @@ namespace AdminPanel.Controllers.Organization
         {
             if (photo?.Photo != null)
             {
-                var uploadsDirectory = @"C:\Users\furka\Desktop\dijitals\public\user";
+                var uploadsDirectory = _configuration["UserPhotoPath"];
 
                 if (!Directory.Exists(uploadsDirectory))
                 {

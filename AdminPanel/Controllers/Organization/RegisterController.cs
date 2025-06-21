@@ -19,13 +19,15 @@ namespace AdminPanel.Controllers.Organization
         private readonly UserService _userService;
         private readonly DefaultValues _defaultValues;
         private readonly EmailHelper _emailHelper;
+        private readonly IConfiguration _configuration;
 
-        public RegisterController(ILogger<RegisterController> logger)
+        public RegisterController(ILogger<RegisterController> logger, IConfiguration configuration)
         {
             _logger = logger;
             _userService = new UserService();
             _defaultValues = new DefaultValues();
             _emailHelper = new EmailHelper();
+            _configuration = configuration;
         }
 
         [HttpPost("add-account")]
@@ -73,7 +75,7 @@ namespace AdminPanel.Controllers.Organization
         {
             if (photo?.Photo != null)
             {
-                var uploadsDirectory = @"C:\Users\furka\Desktop\dijitals\public\user";
+                var uploadsDirectory = _configuration["UserPhotoPath"];
 
                 if (!Directory.Exists(uploadsDirectory))
                 {
