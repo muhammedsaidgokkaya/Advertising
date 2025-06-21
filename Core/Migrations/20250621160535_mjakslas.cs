@@ -6,7 +6,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Core.Migrations
 {
-    public partial class mksalaas : Migration
+    public partial class mjakslas : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -16,15 +16,10 @@ namespace Core.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    CardNumber = table.Column<string>(type: "text", nullable: false),
-                    CardHolder = table.Column<string>(type: "text", nullable: false),
-                    Cvv = table.Column<string>(type: "text", nullable: false),
-                    ExpirationDate = table.Column<string>(type: "text", nullable: false),
+                    CardUserKey = table.Column<string>(type: "text", nullable: false),
+                    CardToken = table.Column<string>(type: "text", nullable: false),
+                    CardAlias = table.Column<string>(type: "text", nullable: false),
                     OrganizationId = table.Column<int>(type: "integer", nullable: false),
-                    _CardNumber = table.Column<string>(type: "text", nullable: false),
-                    _CardHolder = table.Column<string>(type: "text", nullable: false),
-                    _Cvv = table.Column<string>(type: "text", nullable: false),
-                    _ExpirationDate = table.Column<string>(type: "text", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     InsertedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -47,10 +42,11 @@ namespace Core.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Amount = table.Column<int>(type: "integer", nullable: false),
+                    Amount = table.Column<float>(type: "real", nullable: false),
                     PlanId = table.Column<int>(type: "integer", nullable: false),
                     IsYearly = table.Column<bool>(type: "boolean", nullable: false),
                     IsPayment = table.Column<bool>(type: "boolean", nullable: false),
+                    NextPaymentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     OrganizationId = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
@@ -66,6 +62,22 @@ namespace Core.Migrations
                         principalTable: "Organization",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Subscription",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    PlanId = table.Column<int>(type: "integer", nullable: false),
+                    IsYearly = table.Column<bool>(type: "boolean", nullable: false),
+                    Price = table.Column<float>(type: "real", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Subscription", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
@@ -86,6 +98,9 @@ namespace Core.Migrations
 
             migrationBuilder.DropTable(
                 name: "Plan");
+
+            migrationBuilder.DropTable(
+                name: "Subscription");
         }
     }
 }

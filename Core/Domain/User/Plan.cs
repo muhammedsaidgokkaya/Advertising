@@ -12,7 +12,7 @@ namespace Core.Domain.User
         public int PlanId { get; set; }
         public bool IsYearly { get; set; }
         public bool IsPayment { get; set; }
-        public string? Token { get; set; }
+        public DateTime? NextPaymentDate { get; set; }
         public int OrganizationId { get; set; }
         public virtual Organization Organization { get; set; }
     }

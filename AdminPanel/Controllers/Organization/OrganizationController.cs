@@ -27,6 +27,10 @@ using AdminPanel.Helpers;
 using Iyzipay.Request;
 using static Google.Rpc.Context.AttributeContext.Types;
 using System.Numerics;
+using Org.BouncyCastle.Asn1.Ocsp;
+using NPOI.SS.Formula.Functions;
+using System.Globalization;
+using System.Xml;
 
 namespace AdminPanel.Controllers.Organization
 {
@@ -413,22 +417,43 @@ namespace AdminPanel.Controllers.Organization
 		}
 
         [HttpGet("card")]
-        public ActionResult<AdminPanel.Models.Organization.Plan.Card> GetCard()
+        public async Task<IActionResult> ListFirstCard()
         {
             var userId = UserId();
-            var user = _userService.GetUserById(userId);
-            var organization = _userService.GetCard(user.OrganizationId);
-            if (organization == null)
-                return NotFound("Kart bilgisi bulunamadı.");
-            var data = new AdminPanel.Models.Organization.Plan.Card
+            var org = _userService.GetUserById(userId);
+            var card = _userService.GetCard(org.OrganizationId);
+
+            var _iyzicoOptions = new Iyzipay.Options
             {
-                CardHolder = organization.CardHolder,
-                CardNumber = organization.CardNumber,
-                Cvv = organization.Cvv,
-                ExpirationDate = organization.ExpirationDate,
+                ApiKey = _configuration["Iyzico:ApiKey"],
+                SecretKey = _configuration["Iyzico:SecretKey"],
+                BaseUrl = _configuration["Iyzico:BaseUrl"],
             };
 
-            return Ok(data);
+            if (card != null)
+            {
+                var request = new RetrieveCardListRequest
+                {
+                    CardUserKey = card.CardUserKey,
+                    Locale = Locale.TR.ToString(),
+                    ConversationId = org.OrganizationId.ToString(),
+                };
+
+                var result = await CardList.Retrieve(request, _iyzicoOptions);
+
+                if (result.Status != "success" || result.CardDetails == null || !result.CardDetails.Any())
+                {
+                    return NotFound("Kullanıcının kayıtlı kartı bulunamadı.");
+                }
+
+                var firstCard = result.CardDetails.First();
+
+                return Ok(firstCard);
+            }
+            else
+            {
+                return BadRequest("");
+            }
         }
 
         [HttpGet("plan")]
@@ -445,19 +470,6 @@ namespace AdminPanel.Controllers.Organization
                 PlanId = organization.PlanId,
                 IsYearly = organization.IsYearly,
                 IsPayment = organization.IsPayment,
-            };
-
-            return Ok(data);
-        }
-
-        [HttpGet("subscription")]
-        public ActionResult<AdminPanel.Models.Organization.Plan.Subscription> GetSubscription(int planId, bool isYearly)
-        {
-            var subscription = _userService.GetSubscription(planId, isYearly);
-
-            var data = new AdminPanel.Models.Organization.Plan.Subscription
-            {
-                Code = subscription.Code,
             };
 
             return Ok(data);
@@ -810,47 +822,75 @@ namespace AdminPanel.Controllers.Organization
         }
 
         [HttpPost("add-card")]
-        public IActionResult AddCard([FromBody] AddCard card)
+        public async Task<IActionResult> AddCard([FromBody] AddCard request)
         {
             var userId = UserId();
             var org = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(org.OrganizationId);
+            var card = _userService.GetCard(org.OrganizationId);
 
-            var addCard = _userService.AddCard(org.OrganizationId, card.CardHolder, card.CardNumber, card.Cvv, card.ExpirationDate);
-
-            if (addCard == 0)
+            string[] dateParts = request.ExpirationDate.Split('/');
+            if (dateParts.Length != 2)
             {
-                return BadRequest(new { success = false, message = "User could not be added." });
+                return BadRequest("Geçersiz tarih formatı. Beklenen format: MM/YYYY");
             }
-            return Ok(new { success = true });
-        }
 
-        [HttpPost("update-card")]
-        public IActionResult UpdateCard([FromBody] AddCard card)
-        {
-            var userId = UserId();
-            var org = _userService.GetUserById(userId);
+            string expireMonth = dateParts[0].PadLeft(2, '0');
+            string expireYear = dateParts[1];
 
-            var updateCard = _userService.UpdateCard(org.OrganizationId, card.CardHolder, card.CardNumber, card.Cvv, card.ExpirationDate);
-
-            if (updateCard == 0)
+            var _iyzicoOptions = new Iyzipay.Options
             {
-                return BadRequest(new { success = false, message = "User could not be added." });
-            }
-            return Ok(new { success = true });
-        }
+                ApiKey = _configuration["Iyzico:ApiKey"],
+                SecretKey = _configuration["Iyzico:SecretKey"],
+                BaseUrl = _configuration["Iyzico:BaseUrl"],
+            };
 
-        [HttpPost("add-or-update-plan")]
-        public IActionResult AddOrUpdatePlan([FromBody] AddPlan plan)
-        {
-            var userId = UserId();
-            var org = _userService.GetUserById(userId);
-
-            var addplan = _userService.AddOrUpdatePlan(org.OrganizationId, plan.Amount, plan.PlanId, plan.IsYearly, plan.IsPayment);
-
-            if (addplan == 0)
+            if (card != null)
             {
-                return BadRequest(new { success = false, message = "User could not be added." });
+                var deleteRequest = new DeleteCardRequest
+                {
+                    CardUserKey = card.CardUserKey,
+                    CardToken = card.CardToken,
+                    Locale = Locale.TR.ToString(),
+                    ConversationId = org.OrganizationId.ToString()
+                };
+
+                var result = await Iyzipay.Model.Card.Delete(deleteRequest, _iyzicoOptions);
             }
+
+            string lastFourDigits = request.CardNumber.Length >= 4
+                ? request.CardNumber.Substring(request.CardNumber.Length - 4)
+                : "****";
+
+            string cardAlias = $"**** **** **** {lastFourDigits}";
+
+            var cards = new CreateCardRequest
+            {
+                Locale = Locale.TR.ToString(),
+                ConversationId = org.OrganizationId.ToString(),
+                Email = org.Mail,
+                ExternalId = org.OrganizationId.ToString(),
+                Card = new CardInformation
+                {
+                    CardAlias = cardAlias,
+                    CardHolderName = request.CardHolder,
+                    CardNumber = request.CardNumber,
+                    ExpireMonth = expireMonth,
+                    ExpireYear = expireYear
+                }
+            };
+
+            var cardResponse = await Iyzipay.Model.Card.Create(cards, _iyzicoOptions);
+            if (cardResponse.Status == "success")
+            {
+                var addOrUpdateCard = _userService.AddOrUpdateCard(org.OrganizationId, cardResponse.CardUserKey, cardResponse.CardToken, cardResponse.CardAlias);
+
+                if (addOrUpdateCard == 0)
+                {
+                    return BadRequest(new { success = false, message = "User could not be added." });
+                }
+            }
+            
             return Ok(new { success = true });
         }
 
@@ -895,10 +935,12 @@ namespace AdminPanel.Controllers.Organization
 
         #region Payment
         [HttpPost("live-payment")]
-        public IActionResult LivePayment([FromBody] AddSubscription request)
+        public async Task<IActionResult> LivePayment([FromBody] AddSubscription request)
         {
             var userId = UserId();
             var org = _userService.GetUserById(userId);
+            var priceUSD = _userService.GetSubscription(request.PlanId, request.IsYearly);
+            var card = _userService.GetCard(org.OrganizationId);
 
             var _iyzicoOptions = new Iyzipay.Options
             {
@@ -907,73 +949,103 @@ namespace AdminPanel.Controllers.Organization
                 BaseUrl = _configuration["Iyzico:BaseUrl"],
             };
 
-            var searchRequest = new SearchSubscriptionRequest
+            var priceInTRY = CalculatePriceInTRY(Convert.ToDecimal(priceUSD.Price));
+
+            var paymentRequest = new CreatePaymentRequest
             {
-                ConversationId = org.OrganizationId.ToString(),
-                Page = 1,
-                Count = 10
-            };
+                Locale = Iyzipay.Model.Locale.TR.ToString(),
+                ConversationId = Guid.NewGuid().ToString(),
+                Price = priceInTRY.ToString("F2", CultureInfo.InvariantCulture),
+                PaidPrice = priceInTRY.ToString("F2", CultureInfo.InvariantCulture),
+                Currency = Iyzipay.Model.Currency.TRY.ToString(),
+                Installment = 1,
+                BasketId = "basket-001",
+                PaymentChannel = Iyzipay.Model.PaymentChannel.WEB.ToString(),
+                PaymentGroup = Iyzipay.Model.PaymentGroup.PRODUCT.ToString(),
 
-            var searchResult = Iyzipay.Model.V2.Subscription.Subscription.Search(searchRequest, _iyzicoOptions);
-
-            var firstSubscription = searchResult.Data.Items[0];
-            var subscriptionRefCode = firstSubscription.ReferenceCode;
-
-            var cancelRequest = new CancelSubscriptionRequest
-            {
-                ConversationId = org.OrganizationId.ToString(),
-                SubscriptionReferenceCode = subscriptionRefCode
-            };
-
-            var cancelResult = Iyzipay.Model.V2.Subscription.Subscription.Cancel(cancelRequest, _iyzicoOptions);
-
-            var requestForm = new InitializeCheckoutFormRequest
-            {
-                ConversationId = org.OrganizationId.ToString(),
-                Locale = Locale.TR.ToString(),
-                PricingPlanReferenceCode = request.Code,
-                CallbackUrl = _configuration["Iyzico:CallBack"],
-                Customer = new CheckoutFormCustomer
+                PaymentCard = new Iyzipay.Model.PaymentCard
                 {
+                    CardToken = card.CardToken,
+                    CardUserKey = card.CardUserKey
+                },
+
+                Buyer = new Iyzipay.Model.Buyer
+                {
+                    Id = userId.ToString(),
                     Name = request.Name,
                     Surname = "-",
                     GsmNumber = request.Phone,
                     Email = request.Mail,
                     IdentityNumber = request.Identity,
-                    BillingAddress = new Address
+                    RegistrationAddress = request.OrgAddress,
+                    Ip = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    City = request.OrgAddress,
+                    Country = "Turkey"
+                },
+
+                BillingAddress = new Iyzipay.Model.Address
+                {
+                    ContactName = request.Name,
+                    City = request.OrgAddress,
+                    Country = "Turkey",
+                    Description = "Fatura Adresi",
+                    ZipCode = request.Zip
+                },
+
+                ShippingAddress = new Iyzipay.Model.Address
+                {
+                    ContactName = request.Name,
+                    City = request.OrgAddress,
+                    Country = "Turkey",
+                    Description = "Teslimat Adresi",
+                    ZipCode = request.Zip
+                },
+
+                BasketItems = new List<Iyzipay.Model.BasketItem>
+                {
+                    new Iyzipay.Model.BasketItem
                     {
-                        ContactName = request.FirstName + " " + request.LastName,
-                        City = request.OrgAddress,
-                        Country = "Turkey",
-                        Description = "Fatura adresi",
-                        ZipCode = request.Zip
-                    },
-                    ShippingAddress = new Address
-                    {
-                        ContactName = request.FirstName + " " + request.LastName,
-                        City = request.OrgAddress,
-                        Country = "Turkey",
-                        Description = "Ev adresi",
-                        ZipCode = request.Zip
+                        Id = Guid.NewGuid().ToString(),
+                        Name = "Abonelik Paketi",
+                        Category1 = "Abonelik",
+                        ItemType = Iyzipay.Model.BasketItemType.VIRTUAL.ToString(),
+                        Price = priceInTRY.ToString("F2", CultureInfo.InvariantCulture)
                     }
                 }
             };
 
-            var response = Iyzipay.Model.V2.Subscription.Subscription.InitializeCheckoutForm(requestForm, _iyzicoOptions);
-            if (response.Status == "success")
+            var payment = await Iyzipay.Model.Payment.Create(paymentRequest, _iyzicoOptions);
+
+            if (payment.Status == "success")
             {
-                var addplan = _userService.AddOrUpdatePlan(org.OrganizationId, request.Amount, request.PlanId, request.IsYearly, request.IsPayment);
-                var updateToken = _userService.UpdateTokenPlan(org.OrganizationId, response.Token);
+                var addplan = _userService.AddOrUpdatePlan(org.OrganizationId, priceUSD.Price, request.PlanId, request.IsYearly, true);
+                var nextAmount = _userService.UpdateNextPaymentDatePlan(addplan, request.IsYearly);
+
+                return Ok(payment);
             }
-            
-            return Ok(response);
+            else
+            {
+                return Ok(payment);
+            }
         }
 
-        [HttpPost("cancel-payment")]
-        public IActionResult CancelPayment()
+        [HttpPost("live-new-card-payment")]
+        public async Task<IActionResult> LiveNewCardPayment([FromBody] AddNewCardSubscription request)
         {
             var userId = UserId();
             var org = _userService.GetUserById(userId);
+            var organization = _userService.GetOrganizationById(org.OrganizationId);
+            var priceUSD = _userService.GetSubscription(request.PlanId, request.IsYearly);
+            var card = _userService.GetCard(org.OrganizationId);
+
+            string[] dateParts = request.ExpirationDate.Split('/');
+            if (dateParts.Length != 2)
+            {
+                return BadRequest("Geçersiz tarih formatı. Beklenen format: MM/YYYY");
+            }
+
+            string expireMonth = dateParts[0].PadLeft(2, '0');
+            string expireYear = dateParts[1];
 
             var _iyzicoOptions = new Iyzipay.Options
             {
@@ -982,27 +1054,166 @@ namespace AdminPanel.Controllers.Organization
                 BaseUrl = _configuration["Iyzico:BaseUrl"],
             };
 
-            var searchRequest = new SearchSubscriptionRequest
+            if (card != null)
             {
+                var deleteRequest = new DeleteCardRequest
+                {
+                    CardUserKey = card.CardUserKey,
+                    CardToken = card.CardToken,
+                    Locale = Locale.TR.ToString(),
+                    ConversationId = org.OrganizationId.ToString()
+                };
+
+                var result = await Iyzipay.Model.Card.Delete(deleteRequest, _iyzicoOptions);
+            }
+
+            string lastFourDigits = request.CardNumber.Length >= 4
+                ? request.CardNumber.Substring(request.CardNumber.Length - 4)
+                : "****";
+
+            string cardAlias = $"**** **** **** {lastFourDigits}";
+
+            var cards = new CreateCardRequest
+            {
+                Locale = Locale.TR.ToString(),
                 ConversationId = org.OrganizationId.ToString(),
-                Page = 1,
-                Count = 10
+                Email = org.Mail,
+                ExternalId = org.OrganizationId.ToString(),
+                Card = new CardInformation
+                {
+                    CardAlias = cardAlias,
+                    CardHolderName = request.CardHolder,
+                    CardNumber = request.CardNumber,
+                    ExpireMonth = expireMonth,
+                    ExpireYear = expireYear
+                }
             };
 
-            var searchResult = Iyzipay.Model.V2.Subscription.Subscription.Search(searchRequest, _iyzicoOptions);
-
-            var firstSubscription = searchResult.Data.Items[0];
-            var subscriptionRefCode = firstSubscription.ReferenceCode;
-
-            var cancelRequest = new CancelSubscriptionRequest
+            var cardResponse = await Iyzipay.Model.Card.Create(cards, _iyzicoOptions);
+            if (cardResponse.Status == "success")
             {
-                ConversationId = org.OrganizationId.ToString(),
-                SubscriptionReferenceCode = subscriptionRefCode
+                var addOrUpdateCard = _userService.AddOrUpdateCard(org.OrganizationId, cardResponse.CardUserKey, cardResponse.CardToken, cardResponse.CardAlias);
+
+                if (addOrUpdateCard == 0)
+                {
+                    return BadRequest(new { success = false, message = "User could not be added." });
+                }
+            }
+            else
+            {
+                return Ok(cardResponse);
+            }
+
+            var priceInTRY = CalculatePriceInTRY(Convert.ToDecimal(priceUSD.Price));
+
+            var newCard = _userService.GetCard(org.OrganizationId);
+
+            var paymentRequest = new CreatePaymentRequest
+            {
+                Locale = Iyzipay.Model.Locale.TR.ToString(),
+                ConversationId = Guid.NewGuid().ToString(),
+                Price = priceInTRY.ToString("F2", CultureInfo.InvariantCulture),
+                PaidPrice = priceInTRY.ToString("F2", CultureInfo.InvariantCulture),
+                Currency = Iyzipay.Model.Currency.TRY.ToString(),
+                Installment = 1,
+                BasketId = "basket-001",
+                PaymentChannel = Iyzipay.Model.PaymentChannel.WEB.ToString(),
+                PaymentGroup = Iyzipay.Model.PaymentGroup.PRODUCT.ToString(),
+
+                PaymentCard = new Iyzipay.Model.PaymentCard
+                {
+                    CardToken = newCard.CardToken,
+                    CardUserKey = newCard.CardUserKey
+                },
+
+                Buyer = new Iyzipay.Model.Buyer
+                {
+                    Id = userId.ToString(),
+                    Name = request.Name,
+                    Surname = "-",
+                    GsmNumber = request.Phone,
+                    Email = request.Mail,
+                    IdentityNumber = request.Identity,
+                    RegistrationAddress = request.OrgAddress,
+                    Ip = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    City = request.OrgAddress,
+                    Country = "Turkey"
+                },
+
+                BillingAddress = new Iyzipay.Model.Address
+                {
+                    ContactName = request.Name,
+                    City = request.OrgAddress,
+                    Country = "Turkey",
+                    Description = "Fatura Adresi",
+                    ZipCode = request.Zip
+                },
+
+                ShippingAddress = new Iyzipay.Model.Address
+                {
+                    ContactName = request.Name,
+                    City = request.OrgAddress,
+                    Country = "Turkey",
+                    Description = "Teslimat Adresi",
+                    ZipCode = request.Zip
+                },
+
+                BasketItems = new List<Iyzipay.Model.BasketItem>
+                {
+                    new Iyzipay.Model.BasketItem
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Name = "Abonelik Paketi",
+                        Category1 = "Abonelik",
+                        ItemType = Iyzipay.Model.BasketItemType.VIRTUAL.ToString(),
+                        Price = priceInTRY.ToString("F2", CultureInfo.InvariantCulture)
+                    }
+                }
             };
 
-            var cancelResult = Iyzipay.Model.V2.Subscription.Subscription.Cancel(cancelRequest, _iyzicoOptions);
+            var payment = await Iyzipay.Model.Payment.Create(paymentRequest, _iyzicoOptions);
 
-            var deletedPlan = _userService.DeletePlan(org.OrganizationId);
+            if (payment.Status == "success")
+            {
+                var addplan = _userService.AddOrUpdatePlan(org.OrganizationId, priceUSD.Price, request.PlanId, request.IsYearly, true);
+                var nextAmount = _userService.UpdateNextPaymentDatePlan(addplan, request.IsYearly);
+
+                return Ok(payment);
+            }
+            else
+            {
+                return Ok(payment);
+            }
+        }
+
+        [HttpPost("cancel-payment")]
+        public async Task<IActionResult> CancelPayment()
+        {
+            var userId = UserId();
+            var org = _userService.GetUserById(userId);
+            var card = _userService.GetCard(org.OrganizationId);
+
+            var _iyzicoOptions = new Iyzipay.Options
+            {
+                ApiKey = _configuration["Iyzico:ApiKey"],
+                SecretKey = _configuration["Iyzico:SecretKey"],
+                BaseUrl = _configuration["Iyzico:BaseUrl"],
+            };
+
+            if (card != null)
+            {
+                var deleteRequest = new DeleteCardRequest
+                {
+                    CardUserKey = card.CardUserKey,
+                    CardToken = card.CardToken,
+                    Locale = Locale.TR.ToString(),
+                    ConversationId = org.OrganizationId.ToString()
+                };
+
+                var result = await Iyzipay.Model.Card.Delete(deleteRequest, _iyzicoOptions);
+            }
+
+            var deletePlan = _userService.DeletePlan(org.OrganizationId);
 
             return Ok(1);
         }
@@ -1018,6 +1229,37 @@ namespace AdminPanel.Controllers.Organization
 
             int userId = int.Parse(userIdClaim.Value);
             return userId;
+        }
+
+        private decimal GetCurrentUsdTryRate()
+        {
+            try
+            {
+                var xmlUrl = "https://www.tcmb.gov.tr/kurlar/today.xml";
+                var xmlDoc = new XmlDocument();
+                xmlDoc.Load(xmlUrl);
+
+                var usdNode = xmlDoc.SelectSingleNode("//Currency[@CurrencyCode='USD']");
+
+                var rateString = usdNode.SelectSingleNode("BanknoteSelling")?.InnerText;
+
+                if (decimal.TryParse(rateString, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal rate))
+                {
+                    return rate;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Kur bilgisi alınamadı: " + ex.Message);
+            }
+
+            return 0m;
+        }
+
+        private decimal CalculatePriceInTRY(decimal priceInUSD)
+        {
+            var rate = GetCurrentUsdTryRate();
+            return Math.Round(priceInUSD * rate, 2);
         }
     }
 }

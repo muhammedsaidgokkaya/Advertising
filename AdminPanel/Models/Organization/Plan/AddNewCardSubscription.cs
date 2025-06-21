@@ -1,6 +1,6 @@
 ﻿namespace AdminPanel.Models.Organization.Plan
 {
-    public class AddSubscription
+    public class AddNewCardSubscription
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -12,5 +12,9 @@
         public string Phone { get; set; }
         public int PlanId { get; set; }
         public string Zip { get; set; }
+        public string CardHolder { get; set; }
+        public string CardNumber { get; set; }
+        public string Cvv { get; set; }
+        public string ExpirationDate { get; set; }
     }
 }

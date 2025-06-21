@@ -30,10 +30,6 @@ namespace Core.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsYearly")
                         .HasColumnType("boolean");
 
@@ -43,6 +39,9 @@ namespace Core.Migrations
 
                     b.Property<int>("PlanId")
                         .HasColumnType("integer");
+
+                    b.Property<float>("Price")
+                        .HasColumnType("real");
 
                     b.HasKey("Id");
 
@@ -921,19 +920,15 @@ namespace Core.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CardHolder")
+                    b.Property<string>("CardAlias")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("CardNumber")
+                    b.Property<string>("CardToken")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Cvv")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ExpirationDate")
+                    b.Property<string>("CardUserKey")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -951,22 +946,6 @@ namespace Core.Migrations
 
                     b.Property<DateTime?>("UpdateDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("_CardHolder")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("_CardNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("_Cvv")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("_ExpirationDate")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -1001,14 +980,14 @@ namespace Core.Migrations
                     b.Property<bool>("IsYearly")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("NextPaymentDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("OrganizationId")
                         .HasColumnType("integer");
 
                     b.Property<int>("PlanId")
                         .HasColumnType("integer");
-
-                    b.Property<string>("Token")
-                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdateDate")
                         .HasColumnType("timestamp with time zone");

@@ -539,39 +539,27 @@ namespace Service.Implementations.User
             return 0;
         }
 
-        public int UpdateTokenPlan(int organizationId, string token)
+        public int UpdateNextPaymentDatePlan(int id, bool isYearly)
         {
-            var card = GetPlan(organizationId);
-            if (card != null)
+            DateTime now = DateTime.UtcNow;
+            DateTime next;
+            if (isYearly)
             {
-                var updatePlan = GetPlanById(card.Id);
-                if (updatePlan != null)
-                {
-                    updatePlan.Token = token;
-                    updatePlan.UpdateDate = DateTime.UtcNow;
-
-                    _repository.Update(updatePlan);
-                    return updatePlan.Id;
-                }
+                next = now.AddYears(1);
+            }
+            else
+            {
+                next = now.AddMonths(1);
             }
 
-            return 0;
-        }
-
-        public int UpdatePaymentPlan(int organizationId, bool payment)
-        {
-            var card = GetPlan(organizationId);
-            if (card != null)
+            var updatePlan = GetPlanById(id);
+            if (updatePlan != null)
             {
-                var updatePlan = GetPlanById(card.Id);
-                if (updatePlan != null)
-                {
-                    updatePlan.IsPayment = payment;
-                    updatePlan.UpdateDate = DateTime.UtcNow;
+                updatePlan.NextPaymentDate = next;
+                updatePlan.UpdateDate = DateTime.UtcNow;
 
-                    _repository.Update(updatePlan);
-                    return updatePlan.Id;
-                }
+                _repository.Update(updatePlan);
+                return updatePlan.Id;
             }
 
             return 0;
@@ -606,48 +594,43 @@ namespace Service.Implementations.User
             var data = _repository.Filter<Plan>(p => p.IsActive && !p.IsDeleted && p.OrganizationId.Equals(organizationId));
             return data.SingleOrDefault();
         }
-
-        public Plan GetPlanToken(string token)
-        {
-            var data = _repository.Filter<Plan>(p => p.IsActive && !p.IsDeleted && p.Token == token);
-            return data.SingleOrDefault();
-        }
         #endregion
 
         #region Payment
-        public int AddCard(int organizationId, string cardHolder, string cardNumber, string cvv, string expirationDate)
-        {
-            var card = new Payment
-            {
-                CardHolder = cardHolder,
-                CardNumber = cardNumber,
-                Cvv = cvv,
-                ExpirationDate = expirationDate,
-                OrganizationId = organizationId,
-                InsertedDate = DateTime.UtcNow,
-                IsActive = true,
-                IsDeleted = false
-            };
-
-            _repository.Save(card);
-            return card.Id;
-        }
-
-        public int UpdateCard(int organizationId, string cardHolder, string cardNumber, string cvv, string expirationDate)
+        public int AddOrUpdateCard(int organizationId, string cardUserKey, string cardToken, string cardAlias)
         {
             var card = GetCard(organizationId);
-            var updateCard = GetPaymentById(card.Id);
-            if (updateCard != null)
+            if (card == null)
             {
-                updateCard.CardHolder = cardHolder;
-                updateCard.CardNumber = cardNumber;
-                updateCard.Cvv = cvv;
-                updateCard.ExpirationDate = expirationDate;
-                updateCard.UpdateDate = DateTime.UtcNow;
+                var payment = new Payment
+                {
+                    CardUserKey = cardUserKey,
+                    CardToken = cardToken,
+                    CardAlias = cardAlias,
+                    OrganizationId = organizationId,
+                    InsertedDate = DateTime.UtcNow,
+                    IsActive = true,
+                    IsDeleted = false
+                };
 
-                _repository.Update(updateCard);
-                return updateCard.Id;
+                _repository.Save(payment);
+                return payment.Id;
             }
+            else
+            {
+                var updatePayment = GetPaymentById(card.Id);
+                if (updatePayment != null)
+                {
+                    updatePayment.CardUserKey = cardUserKey;
+                    updatePayment.CardToken = cardToken;
+                    updatePayment.CardAlias = cardAlias;
+                    updatePayment.UpdateDate = DateTime.UtcNow;
+
+                    _repository.Update(updatePayment);
+                    return updatePayment.Id;
+                }
+            }
+
             return 0;
         }
 

@@ -12,6 +12,6 @@ namespace Core.Domain.App
         public string Name { get; set; }
         public int PlanId { get; set; }
         public bool IsYearly { get; set; }
-        public string Code { get; set; }
+        public float Price { get; set; }
     }
 }
