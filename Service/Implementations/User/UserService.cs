@@ -377,6 +377,18 @@ namespace Service.Implementations.User
             return data;
         }
 
+        public Core.Domain.User.User GetPaymentUser(int organizationId)
+        {
+            var data = _repository
+                .FilterAsQueryable<Core.Domain.User.User>(p =>
+                    !p.IsDeleted &&
+                    p.Organization.Id == organizationId &&
+                    p.UserRole.Any(ur => ur.RoleId == 1))
+                .IncludeUser();
+
+            return data.SingleOrDefault();
+        }
+
         public IEnumerable<Core.Domain.User.User> GetUsers(int organizationId, int userId)
         {
             var data = _repository
@@ -565,6 +577,31 @@ namespace Service.Implementations.User
             return 0;
         }
 
+        public int UpdateCronJobNextPaymentDatePlan(int id, bool isYearly, DateTime? date)
+        {
+            DateTime next;
+            if (isYearly)
+            {
+                next = date.Value.AddYears(1);
+            }
+            else
+            {
+                next = date.Value.AddMonths(1);
+            }
+
+            var updatePlan = GetPlanById(id);
+            if (updatePlan != null)
+            {
+                updatePlan.NextPaymentDate = next;
+                updatePlan.UpdateDate = DateTime.UtcNow;
+
+                _repository.Update(updatePlan);
+                return updatePlan.Id;
+            }
+
+            return 0;
+        }
+
         public int DeletePlan(int organizationId)
         {
             var card = GetPlan(organizationId);
@@ -584,6 +621,44 @@ namespace Service.Implementations.User
             return 0;
         }
 
+        public int UpdateIsPaymentSuccessPlan(int organizationId)
+        {
+            var card = GetPlan(organizationId);
+            if (card != null)
+            {
+                var updatePlan = GetPlanById(card.Id);
+                if (updatePlan != null)
+                {
+                    updatePlan.IsPayment = true;
+                    updatePlan.UpdateDate = DateTime.UtcNow;
+
+                    _repository.Update(updatePlan);
+                    return updatePlan.Id;
+                }
+            }
+
+            return 0;
+        }
+
+        public int UpdateIsPaymentFailPlan(int organizationId)
+        {
+            var card = GetPlan(organizationId);
+            if (card != null)
+            {
+                var updatePlan = GetPlanById(card.Id);
+                if (updatePlan != null)
+                {
+                    updatePlan.IsPayment = false;
+                    updatePlan.UpdateDate = DateTime.UtcNow;
+
+                    _repository.Update(updatePlan);
+                    return updatePlan.Id;
+                }
+            }
+
+            return 0;
+        }
+
         public Plan GetPlanById(int id)
         {
             return _repository.GetById<Plan>(id);
@@ -593,6 +668,29 @@ namespace Service.Implementations.User
         {
             var data = _repository.Filter<Plan>(p => p.IsActive && !p.IsDeleted && p.OrganizationId.Equals(organizationId));
             return data.SingleOrDefault();
+        }
+
+        public IEnumerable<Plan> GetExpiredOrDuePlansNotMatchedWithPayments()
+        {
+            var today = DateTime.UtcNow.Date;
+
+            var payments = _repository.FilterAsQueryable<PaymentSuccess>(p => p.IsActive && !p.IsDeleted);
+
+            var plans = _repository.FilterAsQueryable<Plan>(p => p.IsActive && !p.IsDeleted && p.NextPaymentDate <= today);
+
+            if (payments.ToList() == null || plans.ToList() == null)
+            {
+                return plans.ToList();
+            }
+
+            var unmatchedPlans = plans.Where(plan =>
+                !payments.Any(payment =>
+                    payment.OrganizationId == plan.OrganizationId &&
+                    payment.PaymentDate.Value.Date == plan.NextPaymentDate.Value.Date
+                )
+            );
+
+            return unmatchedPlans.ToList();
         }
         #endregion
 
@@ -650,6 +748,73 @@ namespace Service.Implementations.User
         public Subscription GetSubscription(int planId, bool isYearly)
         {
             var data = _repository.Filter<Subscription>(p => p.PlanId == planId && p.IsYearly == isYearly);
+            return data.SingleOrDefault();
+        }
+        #endregion
+
+        #region PaymentSuccess
+        public int AddPaymentSuccess(int organizationId, DateTime? date)
+        {
+            var payment = new PaymentSuccess
+            {
+                PaymentDate = date,
+                OrganizationId = organizationId,
+                InsertedDate = DateTime.UtcNow,
+                IsActive = true,
+                IsDeleted = false
+            };
+
+            _repository.Save(payment);
+            return payment.Id;
+        }
+
+        public IEnumerable<PaymentSuccess> GetPaymentSuccess()
+        {
+            var data = _repository.FilterAsQueryable<PaymentSuccess>(p => p.IsActive && !p.IsDeleted);
+            return data;
+        }
+        #endregion
+
+        #region PaymentFail
+        public int AddPaymentFail(int organizationId, string message)
+        {
+            var payment = new PaymentFail
+            {
+                Message = message,
+                OrganizationId = organizationId,
+                InsertedDate = DateTime.UtcNow,
+                IsActive = true,
+                IsDeleted = false
+            };
+
+            _repository.Save(payment);
+            return payment.Id;
+        }
+
+        public int DeletePaymentFail(int organizationId)
+        {
+            var existingFails = _repository.Filter<PaymentFail>(
+                p => p.OrganizationId == organizationId && !p.IsDeleted
+            ).ToList();
+
+            if (existingFails != null)
+            {
+                foreach (var fail in existingFails)
+                {
+                    fail.IsDeleted = true;
+                    fail.UpdateDate = DateTime.UtcNow;
+
+                    _repository.Update(fail);
+                    return fail.Id;
+                }
+            }
+
+            return 0;
+        }
+
+        public PaymentFail GetPaymentFail(int organizationId)
+        {
+            var data = _repository.Filter<PaymentFail>(p => p.IsActive && !p.IsDeleted && p.OrganizationId.Equals(organizationId));
             return data.SingleOrDefault();
         }
         #endregion

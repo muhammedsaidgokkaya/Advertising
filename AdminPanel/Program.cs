@@ -1,6 +1,8 @@
+using AdminPanel.CronJob.Payment;
 using Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Quartz;
 using Repository.Implementations;
 using Service.Implementations;
 using Service.Implementations.Calendar;
@@ -63,6 +65,19 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("GoogleView", policy => policy.RequireRole("GoogleView"));
     options.AddPolicy("TaskAdmin", policy => policy.RequireRole("TaskAdmin"));
 });
+
+builder.Services.AddQuartz(q =>
+{
+    var jobKey = new JobKey("PaymentJob");
+
+    q.AddJob<PaymentTaskService>(opts => opts.WithIdentity(jobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("PaymentJob-trigger")
+        .WithCronSchedule("0 0 10,15 * * ?"));
+});
+
+builder.Services.AddQuartzHostedService();
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<UserService>();

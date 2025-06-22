@@ -485,6 +485,29 @@ namespace AdminPanel.Controllers.Organization
             return Ok(data);
         }
 
+        [HttpGet("fail-payment")]
+        public ActionResult<AdminPanel.Models.Organization.Plan.FailPayment> GetFailPayment()
+        {
+            var userId = UserId();
+            var user = _userService.GetUserById(userId);
+            var organization = _userService.GetPaymentFail(user.OrganizationId);
+            if (organization == null)
+            {
+                var error = new AdminPanel.Models.Organization.Plan.FailPayment
+                {
+                    Message = "",
+                };
+
+                return Ok(error);
+            }
+            var data = new AdminPanel.Models.Organization.Plan.FailPayment
+            {
+                Message = organization.Message,
+            };
+
+            return Ok(data);
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPost("add-user")]
         public IActionResult AddUser([FromBody] AddUser user)
@@ -1224,6 +1247,7 @@ namespace AdminPanel.Controllers.Organization
             }
 
             var deletePlan = _userService.DeletePlan(org.OrganizationId);
+            var deleteFail = _userService.DeletePaymentFail(org.OrganizationId);
 
             return Ok(1);
         }

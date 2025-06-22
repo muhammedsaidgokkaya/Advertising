@@ -47,6 +47,8 @@ namespace Core.Data
         public DbSet<Subscription> Subscription { get; set; }
         public DbSet<Plan> Plan { get; set; }
         public DbSet<Payment> Payment { get; set; }
+        public DbSet<PaymentSuccess> PaymentSuccess { get; set; }
+        public DbSet<PaymentFail> PaymentFail { get; set; }
         public DbSet<User> User { get; set; }
         public DbSet<Role> Role { get; set; }
         public DbSet<UserRole> UserRole { get; set; }
