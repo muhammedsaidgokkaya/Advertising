@@ -537,7 +537,9 @@ namespace AdminPanel.Controllers.Organization
                 return BadRequest(new { success = false, message = "User could not be added." });
             }
 
-            _emailHelper.SendEmail(user.Mail, user.FirstName, username, password);
+            var signInUrl = _configuration["EmailSettings:SignInUrl"];
+
+            _emailHelper.SendEmail(signInUrl, user.Mail, user.FirstName, username, password);
 
             var filteredRoles = user.Roles?.Where(role => role != 2 && role != 9).ToList();
 

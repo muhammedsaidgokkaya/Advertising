@@ -672,7 +672,7 @@ namespace Service.Implementations.User
 
         public IEnumerable<Plan> GetExpiredOrDuePlansNotMatchedWithPayments()
         {
-            var today = DateTime.UtcNow.Date;
+            var today = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1);
 
             var payments = _repository.FilterAsQueryable<PaymentSuccess>(p => p.IsActive && !p.IsDeleted);
 

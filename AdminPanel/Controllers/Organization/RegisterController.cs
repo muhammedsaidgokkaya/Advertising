@@ -60,7 +60,10 @@ namespace AdminPanel.Controllers.Organization
             var username = firstName + "." + lastName;
 
             _userService.UpdateUserName(newUser, username);
-            _emailHelper.SendEmail(account.Mail, account.FirstName, username, password);
+
+            var signInUrl = _configuration["EmailSettings:SignInUrl"];
+
+            _emailHelper.SendEmail(signInUrl, account.Mail, account.FirstName, username, password);
 
             _userService.AddUserRole(newUser, 1);
             _userService.AddUserRole(newUser, 2);
